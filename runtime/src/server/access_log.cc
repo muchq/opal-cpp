@@ -94,10 +94,10 @@ std::size_t Utf8SequenceLength(std::string_view text, std::size_t i) {
 }
 
 void AppendEscaped(std::string& out, std::string_view value) {
-  static constexpr char kHex[] = "0123456789abcdef";
+  static constexpr std::string_view kHex = "0123456789abcdef";
   out += '"';
   for (std::size_t i = 0; i < value.size();) {
-    const unsigned char c = static_cast<unsigned char>(value[i]);
+    const auto c = static_cast<unsigned char>(value[i]);
     if (c >= 0x80) {
       const std::size_t length = Utf8SequenceLength(value, i);
       if (length == 0) {
