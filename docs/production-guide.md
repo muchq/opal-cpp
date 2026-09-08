@@ -378,6 +378,55 @@ wrong thing. A thrown request has no response, so its `response_bytes` is 0;
 exception text stays on the transport's containment log, which carries the
 same trace id.
 
+**Access log:** `FormatAccessLog` (`smithy/server/access_log.h`) renders an
+observation as one line of JSON. It is a pure function — no I/O, no sink, no
+configuration, no dependency — so the line goes wherever your logs already
+go, and `Observe` stays the one clock for metrics and the log alike:
+
+```cpp
+transport.Start(smithy::server::Chain(
+    {smithy::server::Observe(
+         [](const smithy::server::RequestObservation& o) {
+           std::clog << smithy::server::FormatAccessLog(o, {{"service_name", "todo-service"}})
+                     << '\n';
+         },
+         nullptr, nullptr, trusted),
+     smithy::server::PerClientRateLimit(allow, trusted)},
+    server.Handler()));
+```
+
+```json
+{"http_method":"POST","target":"/tasks","route":"AddTask","status":201,"duration_us":1234,"request_bytes":19,"response_bytes":42,"client":"203.0.113.7","client_source":"forwarded","handler_threw":false,"trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","service_name":"todo-service"}
+```
+
+The keys are the metric labels, so a spike on a `route="AddTask"` panel
+pastes into a log query and means the same thing. `route` uses the scrape's
+`unmatched` sentinel for a request that reached no operation (a dispatch
+failure, or a `Guard` rejection — compose `Observe` *outside* the limiter, as
+above, or the 429s never reach the log). `duration_us` is the histogram's
+unit, so a line compares against a bucket without converting. `trace_id` is
+the parsed W3C id, the same one on the contained 500's `x-correlation-id`.
+`client_source` is one of `direct_peer`, `untrusted_header_ignored`,
+`forwarded`, `trusted_tier`, `unknown` — the distribution to watch is the
+one described above. One deliberate divergence from the labels: `http_method`
+is the wire method verbatim, not collapsed to `CUSTOM`; the collapse defends
+series cardinality, which a log line does not have, and the log is where you
+find out what the invented verb was.
+
+`target` is attacker-controlled and reaches the line verbatim, so the
+formatter owns the escaping: quote, backslash, every control character below
+0x20, and invalid UTF-8 replaced with U+FFFD rather than passed through. A
+crafted URI can neither close the record early and start a fake second one
+(log injection) nor produce a line a strict collector rejects — which would
+drop exactly the record about the malformed request. The extra fields are for
+what the observation cannot know: your `service_name` (the label every
+dashboard selects on), a tenant, a request id. They follow the built-ins in
+the order given; a key that shadows a built-in aborts at the call (ADR-0009),
+since duplicate keys in JSON are ambiguous and a collector resolving them
+silently puts the wrong value under the right name. There is no timestamp:
+every sink that receives the line stamps its own, and two on one record is
+one more than anyone can reconcile.
+
 **Client:** two ready-made interceptors in
 `smithy/client/observability.h`:
 

@@ -99,7 +99,8 @@ struct ReadinessCheck {
 // the empty operation that 404s and 405s already use.
 Middleware HealthEndpoint(std::string path = "/health", std::vector<ReadinessCheck> checks = {});
 
-// One served request, as seen from outside the router.
+// One served request, as seen from outside the router. FormatAccessLog
+// (smithy/server/access_log.h) renders one as a JSON access-log line.
 struct RequestObservation {
   std::string method;
   std::string target;

@@ -68,7 +68,7 @@ noexcept:
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	set -e; for target in json_decode cbor_decode uri server_dispatch regex http1; do \
+	set -e; for target in json_decode cbor_decode uri server_dispatch regex http1 access_log; do \
 		echo "== fuzzing $$target"; \
 		CC=clang CXX=clang++ $(BAZEL) build --config=fuzz "//fuzz:$${target}_fuzz"; \
 		./bazel-bin/fuzz/$${target}_fuzz -max_total_time=30 -print_final_stats=1; \

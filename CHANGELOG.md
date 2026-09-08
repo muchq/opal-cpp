@@ -78,6 +78,26 @@ policy in [docs/versioning.md](docs/versioning.md).
   separates a contained crash from a deliberate 500, which report identically
   otherwise.
 
+- **A structured access-log formatter** (#203). `smithy::server::FormatAccessLog`
+  turns a `RequestObservation` into one line of JSON — a pure function with
+  no I/O, no sink, no configuration and no new dependency (`:server` still
+  takes only `:core` and `:http`; the JSON is hand-rolled like the Prometheus
+  exposition beside it). Where the string goes is the consumer's call. The
+  keys are the metric labels — `http_method`, `route` with the same
+  `unmatched` sentinel the scrape uses, and `service_name` when the caller
+  attaches it — so a spike on a panel pastes into a log query and means the
+  same thing; `duration_us` is the histogram's unit; `trace_id` is the parsed
+  W3C id rather than the raw header; `client` and `client_source` are the
+  ADR-0012 derived client with its provenance. Every string value is
+  JSON-escaped, including every control character below 0x20, and invalid
+  UTF-8 is replaced rather than passed through, so a crafted request target
+  can neither terminate the record early and masquerade as a second entry nor
+  produce a line a strict collector drops — the log-injection case is pinned
+  by a test and a fuzz target that parses every line back. Extra fields
+  (`{{"service_name", "svc"}, {"tenant", t}}`) follow the built-ins in the
+  order given; one that shadows a built-in key aborts (ADR-0009). There is
+  deliberately no timestamp — every sink stamps its own.
+
 ### Fixed
 
 - **Health probes are distinguishable from dispatch failures in observability

@@ -574,6 +574,7 @@ cc_test(
 cc_library(
     name = "server",
     srcs = [
+        "src/server/access_log.cc",
         "src/server/metrics.cc",
         "src/server/middleware.cc",
         "src/server/origin_gate.cc",
@@ -581,6 +582,7 @@ cc_library(
         "src/server/websocket_router.cc",
     ],
     hdrs = [
+        "include/smithy/server/access_log.h",
         "include/smithy/server/metrics.h",
         "include/smithy/server/middleware.h",
         "include/smithy/server/origin_gate.h",
@@ -629,6 +631,22 @@ cc_test(
         ":http",
         ":server",
         "@googletest//:gtest_main",
+    ],
+)
+
+# Parses its own output with nlohmann_json — a strict parser is the
+# consumer the formatter is written for, and the runtime's own decoder is
+# not the judge of its own encoder. Test-only: :server takes no JSON dep.
+cc_test(
+    name = "access_log_test",
+    size = "small",
+    srcs = ["tests/server/access_log_test.cc"],
+    copts = COPTS,
+    deps = [
+        ":http",
+        ":server",
+        "@googletest//:gtest_main",
+        "@nlohmann_json//:json",
     ],
 )
 

@@ -1,4 +1,5 @@
-// The access log a consumer actually writes, from outside the module (#202).
+// The access log a consumer actually writes, from outside the module (#202,
+// #203).
 //
 // What only this level proves: that `RequestObservation` carries enough to BE
 // an access log, on the composition the production guide teaches, over a real
@@ -29,6 +30,7 @@
 #include "smithy/client/config.h"
 #include "smithy/http/beast_transport.h"
 #include "smithy/http/forwarded.h"
+#include "smithy/server/access_log.h"
 #include "smithy/server/middleware.h"
 
 namespace {
@@ -41,10 +43,12 @@ using acme::todo::TodoClient;
 using acme::todo::TodoHandler;
 using acme::todo::TodoServer;
 
-// One access-log record, which is all four of the #202 fields plus what was
-// already there. A real sink would render this as JSON (#203); recording it
-// verbatim is what lets the test assert on it.
+// One access-log record: the typed fields, which let the tests compare the
+// log against the limiter without parsing, and the JSON line a real sink
+// would write for the same observation (#203), asserted on where the typed
+// fields cannot stand in for it.
 struct LogLine {
+  std::string json;
   std::string method;
   std::string route;
   int status = 0;
@@ -59,14 +63,16 @@ class AccessLog {
  public:
   void Write(const smithy::server::RequestObservation& o) {
     const std::lock_guard<std::mutex> lock(mutex_);
-    lines_.push_back(LogLine{.method = o.method,
-                             .route = o.operation,
-                             .status = o.status,
-                             .request_bytes = o.request_bytes,
-                             .response_bytes = o.response_bytes,
-                             .handler_threw = o.handler_threw,
-                             .client = o.client.address,
-                             .client_source = o.client.source});
+    lines_.push_back(
+        LogLine{.json = smithy::server::FormatAccessLog(o, {{"service_name", "todo-service"}}),
+                .method = o.method,
+                .route = o.operation,
+                .status = o.status,
+                .request_bytes = o.request_bytes,
+                .response_bytes = o.response_bytes,
+                .handler_threw = o.handler_threw,
+                .client = o.client.address,
+                .client_source = o.client.source});
   }
   std::vector<LogLine> lines() const {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -220,6 +226,37 @@ TEST_F(AccessLogAcceptanceTest, ARejectionIsLoggedWithTheClientItWasRejectedFor)
   EXPECT_EQ(last.client, limiter_->keys().back());
   // The limiter short-circuits, so the request never reached the router.
   EXPECT_EQ(last.route, "");
+  // And the line a sink would write says the same, in the scrape's words:
+  // the bucket's client, and the `unmatched` route rather than an empty one.
+  EXPECT_NE(last.json.find(R"("status":429)"), std::string::npos) << last.json;
+  EXPECT_NE(last.json.find(R"("client":"203.0.113.7","client_source":"forwarded")"),
+            std::string::npos)
+      << last.json;
+  EXPECT_NE(last.json.find(R"("route":"unmatched")"), std::string::npos) << last.json;
+}
+
+TEST_F(AccessLogAcceptanceTest, TheJsonLineIsWhatASinkWouldWrite) {
+  // FormatAccessLog on a real observation: the route is the generated
+  // router's, the trace id is the one the transport minted (ADR-0011), the
+  // caller's service_name rides along, and the whole thing is one line.
+  const auto served = SendForwarded(R"({"title":"ship it"})");
+  ASSERT_TRUE(served.ok()) << served.error().message();
+
+  const auto lines = log_->lines();
+  ASSERT_EQ(lines.size(), 1u);
+  const std::string& json = lines[0].json;
+  EXPECT_EQ(json.find('\n'), std::string::npos) << json;
+  EXPECT_EQ(json.front(), '{');
+  EXPECT_EQ(json.back(), '}');
+  EXPECT_NE(json.find(R"("http_method":"POST","target":"/tasks","route":"AddTask","status":200,)"),
+            std::string::npos)
+      << json;
+  EXPECT_NE(json.find(R"("service_name":"todo-service"})"), std::string::npos) << json;
+  const auto trace = json.find(R"("trace_id":")");
+  ASSERT_NE(trace, std::string::npos) << json;
+  const std::string trace_id = json.substr(trace + 12, 32);
+  EXPECT_EQ(trace_id.find_first_not_of("0123456789abcdef"), std::string::npos)
+      << "no minted trace id on the line: " << json;
 }
 
 TEST_F(AccessLogAcceptanceTest, ByteCountsComeFromTheRealWireBodies) {
@@ -247,6 +284,8 @@ TEST_F(AccessLogAcceptanceTest, AThrownHandlerIsLoggedAsThrownThroughBeastContai
   const auto lines = log_->lines();
   ASSERT_EQ(lines.size(), 1u);
   EXPECT_TRUE(lines[0].handler_threw);
+  EXPECT_NE(lines[0].json.find(R"("status":500,"duration_us":)"), std::string::npos);
+  EXPECT_NE(lines[0].json.find(R"("handler_threw":true)"), std::string::npos) << lines[0].json;
   EXPECT_EQ(lines[0].status, 500);
   // No response was built, so there are no body bytes to report — which is
   // what makes handler_threw the thing that reads it as an absence.
