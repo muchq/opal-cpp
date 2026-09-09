@@ -12,7 +12,7 @@ parity is a permanent maintenance tax, and the target audience builds with Bazel
 
 - **Bazel 9 (bzlmod-only)** is the sole supported build system, for this repository and for
   consumers. `.bazelversion` tracks `9.x`.
-- Consumers use the `smithy_cpp` bzlmod module (published to the Bazel Central Registry from
+- Consumers use the `opal_cpp` bzlmod module (published to the Bazel Central Registry from
   Phase 6) and the `smithy_cpp_*_library` rules, which run the generator hermetically inside the
   build graph.
 - No CMake files are provided or accepted. The `smithy-cpp` CLI (Phase 6) can emit plain C++

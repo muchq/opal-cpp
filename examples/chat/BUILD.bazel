@@ -1,6 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # Full-duplex chat example (ADR-0016; PLAN §Phase 8's exit criterion): the
 # generated client and generated server exercising event streams end to end.
@@ -20,7 +20,7 @@ cc_test(
         "room_handler.h",
         "stream_test_fixture.h",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/chat/generated:client",
         "//examples/chat/generated:server",
@@ -41,7 +41,7 @@ cc_test(
         "chat_e2e_beast_test.cc",
         "room_handler.h",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     tags = ["requires-network"],
     deps = [
         "//examples/chat/generated:client",
@@ -67,7 +67,7 @@ cc_test(
         "chat_browser_e2e_test.cc",
         "room_handler.h",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     tags = ["requires-network"],
     deps = [
         "//examples/chat/generated:client",
@@ -95,7 +95,7 @@ cc_test(
         "hub_handler.h",
         "stream_test_fixture.h",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/chat/generated:client",
         "//examples/chat/generated:server",
@@ -114,7 +114,7 @@ cc_binary(
         "hub_handler.h",
         "hub_server_main.cc",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/chat/generated:server",
         "//runtime:core",
@@ -129,7 +129,7 @@ cc_binary(
 cc_binary(
     name = "hub_client",
     srcs = ["hub_client_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/chat/generated:client",
         "//runtime:client",
@@ -147,7 +147,7 @@ cc_binary(
 cc_binary(
     name = "async_hub_server",
     srcs = ["async_hub_server_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/chat/generated:server",
         "//examples/chat/generated:types",

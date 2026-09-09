@@ -65,9 +65,9 @@
       "groupName": "alloy packages"
     },
     {
-      "description": "smithy_cpp is consumed via local/git override (version 0.0.0 until BCR publication); there is nothing to look up, and the attempt produces a dashboard warning.",
+      "description": "opal_cpp is consumed via local/git override (version 0.0.0 until BCR publication); there is nothing to look up, and the attempt produces a dashboard warning.",
       "matchPackageNames": [
-        "smithy_cpp"
+        "opal_cpp"
       ],
       "enabled": false
     }

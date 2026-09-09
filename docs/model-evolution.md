@@ -53,7 +53,7 @@ are checked in as goldens — so the workflow below is exercised on every commit
    Out of tree, the same generator runs as a CLI:
 
    ```sh
-   bazel run @smithy_cpp//codegen:generator -- \
+   bazel run @opal_cpp//codegen:generator -- \
        --model $PWD/model/todo.smithy --service acme.todo#Todo \
        --namespace acme::todo --mode both --output $PWD/generated
    ```
@@ -93,7 +93,7 @@ A consumer vendoring CLI output wants the same job, substituting the CLI invocat
 - name: check generated code is current
   run: |
     rm -rf generated
-    bazel run @smithy_cpp//codegen:generator -- \
+    bazel run @opal_cpp//codegen:generator -- \
         --model $PWD/model/todo.smithy --service acme.todo#Todo \
         --namespace acme::todo --mode both --output $PWD/generated
     git diff --exit-code -- generated

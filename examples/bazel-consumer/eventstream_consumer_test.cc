@@ -2,7 +2,7 @@
 // slice 1): the consumer surface exactly as the frame.h contract teaches
 // it — plain-value headers, the canonical chunked decode loop, FindString
 // dispatch, and the core-Timestamp interop — consumed through the module
-// boundary like any other @smithy_cpp runtime target.
+// boundary like any other @opal_cpp runtime target.
 
 #include <gtest/gtest.h>
 

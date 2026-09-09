@@ -170,7 +170,7 @@ jobs:
           repository-cache: true
           disk-cache: consumer
       # The quick-start acceptance test (docs/quickstart.md): a standalone
-      # out-of-tree Bazel module consumes smithy_cpp via the rules in
+      # out-of-tree Bazel module consumes opal_cpp via the rules in
       # bazel/defs.bzl — generation runs inside the consumer's build graph,
       # on every OS the runtime itself supports. --config=werror gates the
       # consumer's own code (hand-written and generated alike) at
@@ -187,7 +187,7 @@ jobs:
         working-directory: examples/bazel-consumer
         run: ./model-evolution-check.sh
       # The consumer's resolved boringssl must be exactly the version
-      # smithy_cpp pins — MVS would silently select anything higher that a
+      # opal_cpp pins — MVS would silently select anything higher that a
       # transitive dep requests, and every leg above stays green while
       # consumers link a TLS library no job tested. Resolution is
       # platform-independent, so one OS suffices.

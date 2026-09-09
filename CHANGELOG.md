@@ -8,6 +8,20 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Breaking
 
+- **The Bazel module is `opal_cpp`, not `smithy_cpp`** (#201, ADR-0024; the
+  third and last surface, which closes the issue). `bazel_dep(name =
+  "smithy_cpp")` is now `bazel_dep(name = "opal_cpp")`, the runtime labels
+  are `@opal_cpp//runtime:…`, the codegen plugin's default `runtimeTarget`
+  is `@opal_cpp//runtime:core`, and the copts constant hand-written BUILD
+  files load from `//bazel:copts.bzl` is `OPAL_COPTS`. Migration: `smithy_cpp`
+  → `opal_cpp` in `MODULE.bazel` (the `bazel_dep` and any
+  `local_path_override`/`git_override` naming it) and in every `@smithy_cpp//`
+  label; `SMITHY_COPTS` → `OPAL_COPTS` if you load it. The rules keep their
+  names — `smithy_cpp_types_library`, `smithy_cpp_client_library`,
+  `smithy_cpp_server_library` take a Smithy model as input and are named for
+  it — so `load("@opal_cpp//bazel:defs.bzl", "smithy_cpp_server_library")`
+  is the spelling after this change. The repository URL is unchanged by this
+  entry.
 - **The runtime's include root is `opal/`, not `smithy/`** (#201, ADR-0024;
   the second of three surfaces). `#include "smithy/http/transport.h"` is now
   `#include "opal/http/transport.h"`, for every runtime header and for the
@@ -21,8 +35,7 @@ policy in [docs/versioning.md](docs/versioning.md).
   stays, so if you have one, constrain the substitution to the runtime's
   directories: `smithy/{core,http,json,cbor,client,server,eventstream,compression,testing}/`.
   Anything that greps a log for `smithy: ` now looks for `opal: `. The Bazel
-  module (`@smithy_cpp`) and `SMITHY_COPTS` are unchanged here and move in
-  the PR that follows.
+  module (`@smithy_cpp`) and `SMITHY_COPTS` moved in the entry above.
 - **The runtime namespace is `opal`, not `smithy`** (#201, ADR-0024; the
   first of three surfaces). Smithy is the IDL a service is described in, not
   a property of its JSON codec or its HTTP transport, so `smithy::Outcome`,
@@ -43,8 +56,8 @@ policy in [docs/versioning.md](docs/versioning.md).
   `smithy::protocoltests::`, and the top-level runtime types such as
   `smithy::Outcome`. Smithy namespaces in `.smithy` files and the
   `smithy_cpp_*_library` rules name the model and are unchanged. The
-  include root moved in the entry above; the Bazel module (`@smithy_cpp`)
-  moves in the PR that follows.
+  include root and the Bazel module (`@smithy_cpp`) moved in the two
+  entries above.
 
 ### Added
 

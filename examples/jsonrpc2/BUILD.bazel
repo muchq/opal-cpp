@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # The stream wire's in-memory half (ADR-0023): generated client and server
 # round-tripping through the JSON-RPC envelopes on both serve seams over an
@@ -14,7 +14,7 @@ cc_test(
         "stream_e2e_test.cc",
         "stream_test_fixture.h",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/jsonrpc2/generated:client",
         "//examples/jsonrpc2/generated:server",
@@ -36,7 +36,7 @@ cc_test(
         "accumulate_handler.h",
         "stream_e2e_beast_test.cc",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     tags = ["requires-network"],
     deps = [
         "//examples/jsonrpc2/generated:client",
@@ -54,7 +54,7 @@ cc_test(
     name = "interop_wire_test",
     size = "small",
     srcs = ["interop_wire_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/jsonrpc2/generated:client",
         "//examples/jsonrpc2/generated:server",

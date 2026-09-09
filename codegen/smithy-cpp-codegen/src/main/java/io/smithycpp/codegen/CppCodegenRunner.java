@@ -73,7 +73,7 @@ public final class CppCodegenRunner {
     List<String> modelPaths = new ArrayList<>();
     String service = null;
     String namespace = null;
-    String runtimeTarget = "@smithy_cpp//runtime:core";
+    String runtimeTarget = "@opal_cpp//runtime:core";
     String output = null;
     String testsPackage = null;
     boolean malformedTests = false;

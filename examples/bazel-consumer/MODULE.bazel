@@ -1,16 +1,16 @@
-# Out-of-tree consumer of smithy_cpp: the quick-start acceptance test.
+# Out-of-tree consumer of opal_cpp: the quick-start acceptance test.
 # CI builds this module standalone (cd examples/bazel-consumer && bazel test //...).
 module(
-    name = "smithy_cpp_consumer",
+    name = "opal_cpp_consumer",
     version = "0.0.0",
 )
 
-bazel_dep(name = "smithy_cpp", version = "0.0.0")
+bazel_dep(name = "opal_cpp", version = "0.0.0")
 
-# Until smithy_cpp is published to the Bazel Central Registry (deferred until
+# Until opal_cpp is published to the Bazel Central Registry (deferred until
 # the project is production-validated), consume it by path or git override.
 local_path_override(
-    module_name = "smithy_cpp",
+    module_name = "opal_cpp",
     path = "../..",
 )
 

@@ -47,13 +47,13 @@ or a real socket) → `TodoServer` → your `MyHandler` → back out as a typed 
 ```starlark
 module(name = "my_service", version = "0.0.0")
 
-bazel_dep(name = "smithy_cpp", version = "0.0.0")
+bazel_dep(name = "opal_cpp", version = "0.0.0")
 
-# Until smithy_cpp is published to the Bazel Central Registry (deferred until
+# Until opal_cpp is published to the Bazel Central Registry (deferred until
 # the project is production-validated), consume it by git override, pinning a
 # release tag. The `version` above is ignored while an override is in effect.
 git_override(
-    module_name = "smithy_cpp",
+    module_name = "opal_cpp",
     remote = "https://github.com/muchq/smithy-cpp.git",
     tag = "v0.2.0",
 )
@@ -90,10 +90,10 @@ common --experimental_repository_downloader_retries=5
 # Warnings are errors for this module's own code (smithy-cpp issue #65): the
 # ^// label filter covers the hand-written mains/tests and the generated
 # acme/* libraries (already compiled at -Wall -Wextra by the smithy_cpp_*
-# macros), while @smithy_cpp and every other external module keep their own
+# macros), while @opal_cpp and every other external module keep their own
 # warning posture. CI runs with --config=werror; optional for your builds.
 # external_include_paths compiles external headers as system headers, so a
-# diagnostic inside a googletest or @smithy_cpp header cannot fail the
+# diagnostic inside a googletest or @opal_cpp header cannot fail the
 # including first-party TU on a newer compiler.
 build:werror --per_file_copt=^//@-Werror
 build:werror --features=external_include_paths
@@ -231,7 +231,7 @@ example binds all three side by side.)
 `BUILD.bazel` — pass the base model plus the overlay that picks the protocol:
 
 ```starlark
-load("@smithy_cpp//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library")
+load("@opal_cpp//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library")
 
 smithy_cpp_client_library(
     name = "todo_client",
@@ -335,7 +335,7 @@ bazel test //...
 ```
 
 For production serving, plug `server.Handler()` into `opal::http::BeastServerTransport`
-(`@smithy_cpp//runtime:http_beast`, ADR-0006) — the
+(`@opal_cpp//runtime:http_beast`, ADR-0006) — the
 [Serving lifecycle](production-guide.md#serving-lifecycle) walkthrough and its compiled example
 ([`examples/simplerestjson/serve_main.cc`](../examples/simplerestjson/serve_main.cc)) wire
 SIGTERM → drain → clean exit.
@@ -435,7 +435,7 @@ don't parse as C++ at all. If you hit one of these:
 The generator is also a plain CLI for inspecting output or vendoring generated sources:
 
 ```sh
-bazel run @smithy_cpp//codegen:generator -- \
+bazel run @opal_cpp//codegen:generator -- \
     --model $PWD/model/todo.smithy --service acme.todo#Todo \
     --namespace acme::todo --mode both --output /tmp/generated
 ```

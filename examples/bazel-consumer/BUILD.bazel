@@ -1,7 +1,7 @@
+load("@opal_cpp//bazel:copts.bzl", "OPAL_COPTS")
+load("@opal_cpp//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
-load("@smithy_cpp//bazel:copts.bzl", "SMITHY_COPTS")
-load("@smithy_cpp//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library")
 
 # The base model is protocol-agnostic (the upstream Smithy way); each pair of
 # targets binds it to a concrete protocol with an `apply` overlay. The same
@@ -95,14 +95,14 @@ cc_test(
     name = "redirect_e2e_test",
     size = "small",
     srcs = ["redirect_e2e_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":redirector_client",
         ":redirector_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -114,14 +114,14 @@ cc_test(
     name = "head_e2e_test",
     size = "small",
     srcs = ["head_e2e_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":redirector_client",
         ":redirector_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -134,15 +134,15 @@ cc_test(
     name = "metrics_acceptance_test",
     size = "small",
     srcs = ["metrics_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":todo_client",
         ":todo_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -150,15 +150,15 @@ cc_test(
     name = "access_log_acceptance_test",
     size = "small",
     srcs = ["access_log_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":todo_client",
         ":todo_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -166,17 +166,17 @@ cc_test(
     name = "todo_beast_acceptance_test",
     size = "small",
     srcs = ["todo_beast_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":todo_client",
         ":todo_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:connection_event_recorder",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
-        "@smithy_cpp//runtime:test_tls_identity",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:connection_event_recorder",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
+        "@opal_cpp//runtime:test_tls_identity",
     ],
 )
 
@@ -186,7 +186,7 @@ cc_test(
     name = "todo_integration_test",
     size = "small",
     srcs = ["todo_integration_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":todo_cbor_client",
         ":todo_cbor_server",
@@ -195,9 +195,9 @@ cc_test(
         ":todo_jsonrpc_server",
         ":todo_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -209,11 +209,11 @@ cc_test(
     name = "eventstream_consumer_test",
     size = "small",
     srcs = ["eventstream_consumer_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:eventstream",
     ],
 )
 
@@ -227,13 +227,13 @@ cc_test(
     name = "websocket_contract_consumer_test",
     size = "small",
     srcs = ["websocket_contract_consumer_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:websocket_contract_test_support",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:websocket_contract_test_support",
     ],
 )
 
@@ -246,12 +246,12 @@ cc_test(
     name = "websocket_acceptance_test",
     size = "small",
     srcs = ["websocket_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
     ],
 )
 
@@ -264,13 +264,13 @@ cc_test(
     name = "exception_safety_acceptance_test",
     size = "small",
     srcs = ["exception_safety_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
     ],
 )
 
@@ -284,13 +284,13 @@ cc_test(
     name = "async_acceptance_test",
     size = "small",
     srcs = ["async_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -319,25 +319,25 @@ smithy_cpp_server_library(
 cc_binary(
     name = "chat_reconnect_server",
     srcs = ["chat_reconnect_server_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":chat_stream_server",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
 cc_binary(
     name = "chat_reconnect_client",
     srcs = ["chat_reconnect_client_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":chat_stream_client",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http_beast",  # the generated client's default dialer
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http_beast",  # the generated client's default dialer
     ],
 )
 
@@ -363,12 +363,12 @@ sh_test(
 cc_binary(
     name = "chat_async_reconnect_server",
     srcs = ["chat_async_reconnect_server_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":chat_stream_server",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -398,16 +398,16 @@ cc_test(
     name = "streaming_acceptance_test",
     size = "small",
     srcs = ["streaming_acceptance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":chat_stream_client",
         ":chat_stream_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
@@ -436,24 +436,24 @@ smithy_cpp_server_library(
 cc_binary(
     name = "jsonrpc_stream_server",
     srcs = ["jsonrpc_stream_server_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":tally_stream_server",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:http_beast",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:server",
     ],
 )
 
 cc_binary(
     name = "jsonrpc_stream_client",
     srcs = ["jsonrpc_stream_client_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":tally_stream_client",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:http_beast",  # the generated client's default dialer
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:http_beast",  # the generated client's default dialer
     ],
 )
 
@@ -463,12 +463,12 @@ cc_binary(
 cc_binary(
     name = "jsonrpc_raw_peer",
     srcs = ["jsonrpc_raw_peer_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
-        "@smithy_cpp//runtime:core",
-        "@smithy_cpp//runtime:eventstream",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:http_beast",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:eventstream",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:http_beast",
     ],
 )
 

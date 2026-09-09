@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # Each harness builds two ways: as an ordinary test through the deterministic
 # driver (runs in every CI matrix job, including ASan/UBSan), and as a real
@@ -46,7 +46,7 @@ FUZZ_TARGETS = {
             "fuzz_driver_main.cc",
             name + "_fuzz.cc",
         ],
-        copts = SMITHY_COPTS,
+        copts = OPAL_COPTS,
         deps = deps,
     )
     for name, deps in FUZZ_TARGETS.items()
@@ -56,7 +56,7 @@ FUZZ_TARGETS = {
     cc_binary(
         name = name + "_fuzz",
         srcs = [name + "_fuzz.cc"],
-        copts = SMITHY_COPTS,
+        copts = OPAL_COPTS,
         tags = ["manual"],
         deps = deps,
     )

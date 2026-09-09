@@ -580,7 +580,7 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
 }
 ```
 
-In `examples/bazel-consumer/BUILD.bazel`, add `"@smithy_cpp//runtime:server",` to the `todo_integration_test` deps (keep the list sorted):
+In `examples/bazel-consumer/BUILD.bazel`, add `"@opal_cpp//runtime:server",` to the `todo_integration_test` deps (keep the list sorted):
 
 ```starlark
     deps = [
@@ -591,9 +591,9 @@ In `examples/bazel-consumer/BUILD.bazel`, add `"@smithy_cpp//runtime:server",` t
         ":todo_jsonrpc_server",
         ":todo_server",
         "@googletest//:gtest_main",
-        "@smithy_cpp//runtime:client",
-        "@smithy_cpp//runtime:http",
-        "@smithy_cpp//runtime:server",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:server",
     ],
 ```
 

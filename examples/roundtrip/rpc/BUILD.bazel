@@ -1,11 +1,11 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 cc_test(
     name = "no_input_body_wire_test",
     size = "small",
     srcs = ["no_input_body_wire_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/roundtrip/rpc/generated:server",
         "//runtime:http",

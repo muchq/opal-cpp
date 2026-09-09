@@ -9,7 +9,7 @@ smithy-rs's `codegen-core` structure (PLAN §3.2a).
 | Class | Role |
 |---|---|
 | `CppCodegenPlugin` | `SmithyBuildPlugin` entry point; validates settings, rejects (for now) recursive shapes with a clear error, drives `CodegenDirector` |
-| `CppSettings` | Plugin settings: `service`, C++ `namespace`, `runtimeTarget` (Bazel label of `//runtime:core` / `@smithy_cpp//runtime:core`) |
+| `CppSettings` | Plugin settings: `service`, C++ `namespace`, `runtimeTarget` (Bazel label of `//runtime:core` / `@opal_cpp//runtime:core`) |
 | `CppSymbolProvider` | Shape → C++ type mapping (docs/generated-types.md). A `Symbol`'s name is the full C++ type text; required `#include`s ride along in a symbol property |
 | `CppWriter` | `SymbolWriter` per generated file: collects includes while the body is written, renders header comment + `#pragma once` + sorted includes + namespace wrapper. Byte deterministic |
 | `DirectedCppCodegen` | Implements `DirectedCodegen`; handles structure/error/union/enum/intEnum directives, then (service directive) resolves the protocol and drives serde → client → BUILD generation |

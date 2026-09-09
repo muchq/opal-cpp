@@ -20,10 +20,10 @@ common --experimental_repository_downloader_retries=5
 # Warnings are errors for this module's own code (smithy-cpp issue #65): the
 # ^// label filter covers the hand-written mains/tests and the generated
 # acme/* libraries (already compiled at -Wall -Wextra by the smithy_cpp_*
-# macros), while @smithy_cpp and every other external module keep their own
+# macros), while @opal_cpp and every other external module keep their own
 # warning posture. CI runs with --config=werror; optional for your builds.
 # external_include_paths compiles external headers as system headers, so a
-# diagnostic inside a googletest or @smithy_cpp header cannot fail the
+# diagnostic inside a googletest or @opal_cpp header cannot fail the
 # including first-party TU on a newer compiler.
 build:werror --per_file_copt=^//@-Werror
 build:werror --features=external_include_paths

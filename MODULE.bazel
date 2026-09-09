@@ -4,7 +4,7 @@
 # version consumers actually observe is opal::Version() / the client
 # User-Agent ("0.2.0"). See docs/versioning.md.
 module(
-    name = "smithy_cpp",
+    name = "opal_cpp",
     version = "0.0.0",
 )
 

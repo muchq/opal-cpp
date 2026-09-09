@@ -1,8 +1,8 @@
 """Consumer-facing rules: generate Smithy C++ clients/servers inside the build graph.
 
-Usage (from any Bazel 8/9 module that depends on smithy_cpp):
+Usage (from any Bazel 8/9 module that depends on opal_cpp):
 
-    load("@smithy_cpp//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library")
+    load("@opal_cpp//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library")
 
     smithy_cpp_client_library(
         name = "weather_client",

@@ -11,7 +11,7 @@ import software.amazon.smithy.model.shapes.ShapeId;
  * "cpp-codegen": {
  *   "service": "example.weather#Weather",
  *   "namespace": "example::weather",
- *   "runtimeTarget": "@smithy_cpp//runtime:core"
+ *   "runtimeTarget": "@opal_cpp//runtime:core"
  * }
  * }</pre>
  */
@@ -49,7 +49,7 @@ public final class CppSettings {
     ShapeId service = ShapeId.from(node.expectStringMember("service").getValue());
     String namespace = node.expectStringMember("namespace").getValue();
     String runtimeTarget =
-        node.getStringMemberOrDefault("runtimeTarget", "@smithy_cpp//runtime:core");
+        node.getStringMemberOrDefault("runtimeTarget", "@opal_cpp//runtime:core");
     String testsPackage = node.getStringMemberOrDefault("testsPackage", null);
     boolean malformedTests = node.getBooleanMemberOrDefault("malformedTests", false);
     boolean integrationTests = node.getBooleanMemberOrDefault("integrationTests", false);
@@ -110,7 +110,7 @@ public final class CppSettings {
     return "include/" + includePrefix() + "/server.h";
   }
 
-  /** Bazel package of the runtime, e.g. {@code //runtime} or {@code @smithy_cpp//runtime}. */
+  /** Bazel package of the runtime, e.g. {@code //runtime} or {@code @opal_cpp//runtime}. */
   public String runtimePackage() {
     int colon = runtimeTarget.lastIndexOf(':');
     return colon < 0 ? runtimeTarget : runtimeTarget.substring(0, colon);

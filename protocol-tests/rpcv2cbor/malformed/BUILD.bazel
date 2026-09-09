@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # Hand-written malformed-server coverage for rpcv2Cbor (issue #48): the
 # official conformance suite has no httpMalformedRequestTests for this
@@ -12,7 +12,7 @@ cc_test(
     name = "server_malformed_test",
     size = "small",
     srcs = ["server_malformed_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//protocol-tests/rpcv2cbor/generated:server",
         "//runtime:cbor",

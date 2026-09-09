@@ -1,13 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # The serving-lifecycle example (issue #49); docs/production-guide.md
 # § "Serving lifecycle" is the walkthrough.
 cc_binary(
     name = "bookstore_server",
     srcs = ["serve_main.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/simplerestjson/generated:server",
         "//examples/simplerestjson/generated:types",

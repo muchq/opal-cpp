@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # Hand-written malformed-server coverage for simpleRestJson (issue #48): the
 # alloy conformance suite has no httpMalformedRequestTests, so nothing
@@ -11,7 +11,7 @@ cc_test(
     name = "server_malformed_test",
     size = "small",
     srcs = ["server_malformed_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//protocol-tests/simplerestjson/generated:server",
         "//runtime:http",
@@ -27,7 +27,7 @@ cc_test(
     name = "pattern_violation_test",
     size = "small",
     srcs = ["pattern_violation_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/roundtrip/rest/generated:server",
         "//runtime:http",

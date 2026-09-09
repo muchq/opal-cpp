@@ -1,5 +1,5 @@
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 load("//bazel:defs.bzl", "smithy_cpp_client_library", "smithy_cpp_server_library", "smithy_cpp_types_library")
 load(":defs_test.bzl", "defs_test_suite")
 
@@ -73,7 +73,7 @@ cc_test(
     name = "greeter_roundtrip_test",
     size = "small",
     srcs = ["greeter_roundtrip_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":greeter_client",
         ":greeter_server",
