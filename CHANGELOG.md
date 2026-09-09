@@ -16,7 +16,8 @@ policy in [docs/versioning.md](docs/versioning.md).
   files load from `//bazel:copts.bzl` is `OPAL_COPTS`. Migration: `smithy_cpp`
   → `opal_cpp` in `MODULE.bazel` (the `bazel_dep` and any
   `local_path_override`/`git_override` naming it) and in every `@smithy_cpp//`
-  label; `SMITHY_COPTS` → `OPAL_COPTS` if you load it. The rules keep their
+  label, including a `runtimeTarget` you set in `smithy-build.json`;
+  `SMITHY_COPTS` → `OPAL_COPTS` if you load it. The rules keep their
   names — `smithy_cpp_types_library`, `smithy_cpp_client_library`,
   `smithy_cpp_server_library` take a Smithy model as input and are named for
   it — so `load("@opal_cpp//bazel:defs.bzl", "smithy_cpp_server_library")`
