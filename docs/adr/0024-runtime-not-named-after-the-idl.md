@@ -81,7 +81,9 @@ and the goldens regenerate from them.
 
 - Breaking, on a minor bump, called out in the CHANGELOG with the
   one-line migration each surface needs (a `sed` over the consumer's
-  tree). Consumers migrate once per surface, or once at the release that
+  tree, constrained to the runtime's scopes where the consumer's own model
+  namespace starts with `smithy.`, as this repo's rules-test fixture
+  does). Consumers migrate once per surface, or once at the release that
   carries all three.
 - The rename is mechanical and verified by the existing suites: the
   goldens must regenerate byte-identically from the emitters (the codegen

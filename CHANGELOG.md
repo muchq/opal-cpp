@@ -16,11 +16,18 @@ policy in [docs/versioning.md](docs/versioning.md).
   `opal::http::BeastServerTransport` — every `smithy::` scope in the runtime,
   in generated code, and in the generated protocol-conformance suites (now
   `opal::protocoltests::…`, whose headers moved to
-  `include/opal/protocoltests/`). Migration is one substitution over your
-  tree: `smithy::` → `opal::` and `namespace smithy` → `namespace opal`.
-  Leave alone anything that names the model rather than the runtime: Smithy
-  namespaces in `.smithy` files, the `smithy_cpp_*_library` rules, and any
-  C++ namespace you derived from your own model's Smithy namespace. The
+  `include/opal/protocoltests/`). Migration: `smithy::` → `opal::` and
+  `namespace smithy` → `namespace opal` over your tree, with one exclusion.
+  A C++ namespace you derived from your own model's Smithy namespace is
+  yours, not the runtime's, and when that model namespace starts with
+  `smithy.` a blind substitution would rename it too (this repo's rules-test
+  fixture, `smithy.cpp.ruletest` → `smithy::cpp::ruletest`, is one). Keep
+  it, and constrain the substitution to the runtime's scopes:
+  `smithy::http::`, `smithy::json::`, `smithy::cbor::`,
+  `smithy::eventstream::`, `smithy::server::`, `smithy::testing::`,
+  `smithy::protocoltests::`, and the top-level runtime types such as
+  `smithy::Outcome`. Smithy namespaces in `.smithy` files and the
+  `smithy_cpp_*_library` rules name the model and are unchanged. The
   include root (`smithy/http/transport.h`) and the Bazel module
   (`@smithy_cpp`) are unchanged here and move in the two PRs that follow.
 
