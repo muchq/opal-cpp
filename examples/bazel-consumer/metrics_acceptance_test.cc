@@ -17,10 +17,10 @@
 
 #include "acme/todo/client.h"
 #include "acme/todo/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/server/metrics.h"
-#include "smithy/server/middleware.h"
+#include "opal/client/config.h"
+#include "opal/http/beast_transport.h"
+#include "opal/server/metrics.h"
+#include "opal/server/middleware.h"
 
 namespace {
 

@@ -19,10 +19,10 @@
 
 #include "acme/todo/client.h"
 #include "acme/todo/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/testing/connection_event_recorder.h"
-#include "smithy/testing/tls_test_identity.h"
+#include "opal/client/config.h"
+#include "opal/http/beast_transport.h"
+#include "opal/testing/connection_event_recorder.h"
+#include "opal/testing/tls_test_identity.h"
 
 namespace {
 

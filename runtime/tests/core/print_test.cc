@@ -1,11 +1,11 @@
-// smithy/core/print.h: DebugAppend's scalar/container rendering plus the
+// opal/core/print.h: DebugAppend's scalar/container rendering plus the
 // AppendDebugTo members on the runtime types generated members use (Blob,
 // Timestamp, Document, Unit, Boxed) — the plumbing behind generated
 // DebugString()/operator<< (issue #85). Debug output is for humans: never
 // parse it or pin it across library versions (these pins ARE the versioned
 // definition, updated deliberately).
 
-#include "smithy/core/print.h"
+#include "opal/core/print.h"
 
 #include <gtest/gtest.h>
 
@@ -16,11 +16,11 @@
 #include <string>
 #include <vector>
 
-#include "smithy/core/blob.h"
-#include "smithy/core/boxed.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
-#include "smithy/core/timestamp.h"
+#include "opal/core/blob.h"
+#include "opal/core/boxed.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
+#include "opal/core/timestamp.h"
 
 namespace opal {
 namespace {

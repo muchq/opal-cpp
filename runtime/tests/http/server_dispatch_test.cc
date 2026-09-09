@@ -1,13 +1,13 @@
-#include "smithy/http/server_dispatch.h"
+#include "opal/http/server_dispatch.h"
 
 #include <gtest/gtest.h>
 
 #include <stdexcept>
 #include <string>
 
-#include "smithy/http/message.h"
-#include "smithy/http/trace_context.h"
-#include "smithy/http/transport.h"
+#include "opal/http/message.h"
+#include "opal/http/trace_context.h"
+#include "opal/http/transport.h"
 
 namespace opal::http {
 namespace {

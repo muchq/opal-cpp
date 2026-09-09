@@ -1,11 +1,11 @@
-// opal::PageIterator (smithy/client/pagination.h): the single-pass range
+// opal::PageIterator (opal/client/pagination.h): the single-pass range
 // adapter generated paginators surface through begin()/end() (issue #49), so
 // `for (auto& page : client.PaginateX(input))` works. Iteration yields
 // Outcome<Page>&; a failed call is yielded exactly once and then the range
 // ends without calling Next() again — mirroring the generated paginator's
 // stop-on-first-error contract.
 
-#include "smithy/client/pagination.h"
+#include "opal/client/pagination.h"
 
 #include <gtest/gtest.h>
 
@@ -15,8 +15,8 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/core/error.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/error.h"
+#include "opal/core/outcome.h"
 
 namespace opal {
 namespace {

@@ -30,9 +30,9 @@
 #include <utility>
 
 #include "example/chat/client.h"
-#include "smithy/client/config.h"
-#include "smithy/core/outcome.h"
-#include "smithy/eventstream/event_stream.h"
+#include "opal/client/config.h"
+#include "opal/core/outcome.h"
+#include "opal/eventstream/event_stream.h"
 
 namespace {
 

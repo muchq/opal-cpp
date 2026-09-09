@@ -44,7 +44,7 @@ Pre-1.0 caveat (per semver): minor releases may break. Concretely:
    Consumers write code against generated headers; changes that break
    recompilation of handler implementations or client call sites are
    breaking.
-3. **Public runtime headers** — `runtime/include/smithy/**`. Generated code
+3. **Public runtime headers** — `runtime/include/opal/**`. Generated code
    links against these, so removals/signature changes are breaking; pure
    additions are not.
 

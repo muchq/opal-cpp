@@ -4,8 +4,8 @@
 #define EXAMPLE_BOOKSTORE_SERDE_H_
 
 #include "example/bookstore/types.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 
 namespace example::bookstore {
 

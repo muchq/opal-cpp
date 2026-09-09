@@ -30,14 +30,14 @@
 #include "compile/streaming/jsonrpc/server.h"
 #include "compile/streaming/rest/client.h"
 #include "compile/streaming/rest/server.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/client/config.h"
-#include "smithy/core/document.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/cbor/cbor.h"
+#include "opal/client/config.h"
+#include "opal/core/document.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 
 namespace {
 

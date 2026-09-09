@@ -6,8 +6,8 @@
 
 #include "example/chat/client.h"
 #include "example/chat/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/loopback.h"
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
 
 namespace example::chat {
 

@@ -1,4 +1,4 @@
-#include "smithy/http/forwarded.h"
+#include "opal/http/forwarded.h"
 
 #include <arpa/inet.h>
 
@@ -6,7 +6,7 @@
 #include <optional>
 #include <ranges>
 
-#include "smithy/http/headers.h"
+#include "opal/http/headers.h"
 
 namespace opal::http {
 namespace {

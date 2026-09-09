@@ -6,9 +6,9 @@
 #include <memory>
 
 #include "example/cafe/types.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/transport.h"
-#include "smithy/server/router.h"
+#include "opal/core/outcome.h"
+#include "opal/http/transport.h"
+#include "opal/server/router.h"
 
 namespace example::cafe {
 

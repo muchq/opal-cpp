@@ -43,20 +43,20 @@ final class ClientGenerator {
     w.addInclude("<memory>");
     w.addInclude("<string>");
     w.addInclude("\"" + context.settings().includePrefix() + "/types.h\"");
-    w.addInclude("\"smithy/client/config.h\"");
-    w.addInclude("\"smithy/core/outcome.h\"");
-    w.addInclude("\"smithy/http/transport.h\"");
+    w.addInclude("\"opal/client/config.h\"");
+    w.addInclude("\"opal/core/outcome.h\"");
+    w.addInclude("\"opal/http/transport.h\"");
 
     String name = clientName();
     if (!streamingOperations().isEmpty()) {
-      w.addInclude("\"smithy/eventstream/event_stream.h\"");
+      w.addInclude("\"opal/eventstream/event_stream.h\"");
     }
     List<OperationShape> paginated =
         operations().stream().filter(op -> pagination(op).isPresent()).toList();
     if (!paginated.isEmpty()) {
       w.addInclude("<optional>");
       w.addInclude("<utility>");
-      w.addInclude("\"smithy/client/pagination.h\"");
+      w.addInclude("\"opal/client/pagination.h\"");
       for (OperationShape operation : paginated) {
         w.write("class $L;", paginatorName(operation));
       }
@@ -164,7 +164,7 @@ final class ClientGenerator {
       w.write("opal::Outcome<std::optional<$L>> Next();", outputType);
       w.write("");
       w.write("using Page = $L;", outputType);
-      w.write("/// Single-pass range over pages — contract in smithy/client/pagination.h.");
+      w.write("/// Single-pass range over pages — contract in opal/client/pagination.h.");
       String iterator = "opal::PageIterator<" + paginatorName(operation) + ">";
       w.write("$1L begin() { return $1L(this); }", iterator);
       w.write("$L end() { return {}; }", iterator);

@@ -3,7 +3,7 @@
 // security edges — every way an attacker-authored header must lose to the
 // one fact a client cannot forge.
 
-#include "smithy/http/forwarded.h"
+#include "opal/http/forwarded.h"
 
 #include <gtest/gtest.h>
 

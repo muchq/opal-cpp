@@ -112,15 +112,15 @@ final class IntegrationTestGenerator {
     w.addInclude("<utility>");
     w.addInclude("\"" + context.settings().includePrefix() + "/client.h\"");
     w.addInclude("\"" + context.settings().includePrefix() + "/server.h\"");
-    w.addInclude("\"smithy/client/config.h\"");
-    w.addInclude("\"smithy/http/loopback.h\"");
-    w.addInclude("\"smithy/http/socket_transport.h\"");
-    w.addInclude("\"smithy/testing/protocol_test.h\"");
+    w.addInclude("\"opal/client/config.h\"");
+    w.addInclude("\"opal/http/loopback.h\"");
+    w.addInclude("\"opal/http/socket_transport.h\"");
+    w.addInclude("\"opal/testing/protocol_test.h\"");
     if (protocol.contentType().equals("application/cbor")) {
-      w.addInclude("\"smithy/cbor/cbor.h\"");
-      w.addInclude("\"smithy/core/blob.h\"");
+      w.addInclude("\"opal/cbor/cbor.h\"");
+      w.addInclude("\"opal/core/blob.h\"");
     } else {
-      w.addInclude("\"smithy/json/json.h\"");
+      w.addInclude("\"opal/json/json.h\"");
     }
 
     String name = serviceName();

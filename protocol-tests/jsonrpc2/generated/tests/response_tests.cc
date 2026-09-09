@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "opal/protocoltests/jsonrpc2/client.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/testing/protocol_test.h"
 
 namespace opal::protocoltests::jsonrpc2 {
 

@@ -7,12 +7,12 @@
 #include <utility>
 #include <vector>
 
+#include "opal/cbor/cbor.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
 #include "opal/protocoltests/rpcv2cbor/serde.h"
 #include "opal/protocoltests/rpcv2cbor/server.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/server/router.h"
+#include "opal/server/router.h"
 
 namespace opal::protocoltests::rpcv2cbor {
 

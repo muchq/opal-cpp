@@ -7,18 +7,18 @@
 #include <utility>
 #include <vector>
 
+#include "opal/core/document.h"
+#include "opal/core/regex.h"
+#include "opal/core/text.h"
+#include "opal/eventstream/async_event_stream.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/eventstream/jsonrpc_stream_socket.h"
+#include "opal/http/headers.h"
+#include "opal/http/websocket.h"
+#include "opal/json/json.h"
 #include "opal/protocoltests/jsonrpc2/serde.h"
 #include "opal/protocoltests/jsonrpc2/server.h"
-#include "smithy/core/document.h"
-#include "smithy/core/regex.h"
-#include "smithy/core/text.h"
-#include "smithy/eventstream/async_event_stream.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/eventstream/jsonrpc_stream_socket.h"
-#include "smithy/http/headers.h"
-#include "smithy/http/websocket.h"
-#include "smithy/json/json.h"
-#include "smithy/server/router.h"
+#include "opal/server/router.h"
 
 namespace opal::protocoltests::jsonrpc2 {
 

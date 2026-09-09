@@ -8,6 +8,21 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Breaking
 
+- **The runtime's include root is `opal/`, not `smithy/`** (#201, ADR-0024;
+  the second of three surfaces). `#include "smithy/http/transport.h"` is now
+  `#include "opal/http/transport.h"`, for every runtime header and for the
+  test helpers under `opal/testing/`. The include guards
+  (`OPAL_HTTP_TRANSPORT_H_`), the `SMITHY_*` macro prefix
+  (`OPAL_E2E_HAVE_BEAST`) and the `opal:` prefix on the runtime's own
+  stderr/clog lines follow it, and generated code includes the new paths.
+  Migration: `#include "smithy/` → `#include "opal/` over your tree. A
+  header path derived from your own model's Smithy namespace
+  (`smithy/cpp/ruletest/…` for this repo's rules-test fixture) is yours and
+  stays, so if you have one, constrain the substitution to the runtime's
+  directories: `smithy/{core,http,json,cbor,client,server,eventstream,compression,testing}/`.
+  Anything that greps a log for `smithy: ` now looks for `opal: `. The Bazel
+  module (`@smithy_cpp`) and `SMITHY_COPTS` are unchanged here and move in
+  the PR that follows.
 - **The runtime namespace is `opal`, not `smithy`** (#201, ADR-0024; the
   first of three surfaces). Smithy is the IDL a service is described in, not
   a property of its JSON codec or its HTTP transport, so `smithy::Outcome`,

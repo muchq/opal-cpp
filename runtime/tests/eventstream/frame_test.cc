@@ -4,7 +4,7 @@
 // contract, and the hostile bank — every corrupted byte must surface as an
 // error, never as a wrong message.
 
-#include "smithy/eventstream/frame.h"
+#include "opal/eventstream/frame.h"
 
 #include <gtest/gtest.h>
 

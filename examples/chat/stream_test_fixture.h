@@ -1,5 +1,5 @@
-#ifndef SMITHY_EXAMPLES_CHAT_STREAM_TEST_FIXTURE_H_
-#define SMITHY_EXAMPLES_CHAT_STREAM_TEST_FIXTURE_H_
+#ifndef OPAL_EXAMPLES_CHAT_STREAM_TEST_FIXTURE_H_
+#define OPAL_EXAMPLES_CHAT_STREAM_TEST_FIXTURE_H_
 
 // The directory's one in-memory e2e fixture — the server guide's documented
 // recipe (InMemoryWebSocketPair + an injected dialer), kept in a single
@@ -21,12 +21,12 @@
 
 #include "example/chat/client.h"
 #include "example/chat/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/client/config.h"
+#include "opal/core/outcome.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 
 namespace example::chat {
 
@@ -101,4 +101,4 @@ class StreamTestFixture : public testing::Test {
 
 }  // namespace example::chat
 
-#endif  // SMITHY_EXAMPLES_CHAT_STREAM_TEST_FIXTURE_H_
+#endif  // OPAL_EXAMPLES_CHAT_STREAM_TEST_FIXTURE_H_

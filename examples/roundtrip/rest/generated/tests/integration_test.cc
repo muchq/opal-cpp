@@ -12,11 +12,11 @@
 
 #include "example/roundtrip/rest/client.h"
 #include "example/roundtrip/rest/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/json/json.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
+#include "opal/json/json.h"
+#include "opal/testing/protocol_test.h"
 
 namespace example::roundtrip::rest {
 

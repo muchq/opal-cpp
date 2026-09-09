@@ -7,10 +7,10 @@
 #include <memory>
 #include <utility>
 
-#include "smithy/client/config.h"
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
 #include "smithy/cpp/ruletest/client.h"
 #include "smithy/cpp/ruletest/server.h"
-#include "smithy/http/loopback.h"
 
 namespace smithy::cpp::ruletest {
 namespace {

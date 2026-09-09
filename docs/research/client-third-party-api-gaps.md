@@ -232,7 +232,7 @@ Defer:                           1B/1D, Beast CONNECT, 6c, HTTP/2
 
 - Issue [#189](https://github.com/muchq/smithy-cpp/issues/189)
 - ADR-0005, ADR-0007; `docs/research/libwebsockets-transport.md`
-- `runtime/include/smithy/http/transport.h`, `client/config.h`, `client/retry.h`
+- `runtime/include/opal/http/transport.h`, `client/config.h`, `client/retry.h`
 - `runtime/src/http/beast_transport.cc` (`SetupClientTlsContext`), `socket_transport.cc`
 - `runtime/src/client/retry.cc`; `compression/gzip.h`
 - `codegen/.../ClientGenerator.java` (`Create()` https rejection)

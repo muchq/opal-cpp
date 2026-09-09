@@ -1,8 +1,8 @@
 // Test-only generator of random Document values for property-based round-trip
 // tests. Deterministically seeded by the caller so failures reproduce.
 
-#ifndef SMITHY_TESTS_TESTING_RANDOM_DOCUMENT_H_
-#define SMITHY_TESTS_TESTING_RANDOM_DOCUMENT_H_
+#ifndef OPAL_TESTS_TESTING_RANDOM_DOCUMENT_H_
+#define OPAL_TESTS_TESTING_RANDOM_DOCUMENT_H_
 
 #include <cstdint>
 #include <limits>
@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "smithy/core/document.h"
+#include "opal/core/document.h"
 
 namespace opal::testing {
 
@@ -121,4 +121,4 @@ class RandomDocumentGenerator {
 
 }  // namespace opal::testing
 
-#endif  // SMITHY_TESTS_TESTING_RANDOM_DOCUMENT_H_
+#endif  // OPAL_TESTS_TESTING_RANDOM_DOCUMENT_H_

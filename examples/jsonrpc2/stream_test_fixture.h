@@ -1,5 +1,5 @@
-#ifndef SMITHY_EXAMPLES_JSONRPC2_STREAM_TEST_FIXTURE_H_
-#define SMITHY_EXAMPLES_JSONRPC2_STREAM_TEST_FIXTURE_H_
+#ifndef OPAL_EXAMPLES_JSONRPC2_STREAM_TEST_FIXTURE_H_
+#define OPAL_EXAMPLES_JSONRPC2_STREAM_TEST_FIXTURE_H_
 
 // The directory's in-memory e2e fixture, the chat stream_test_fixture
 // transposed to the jsonRpc2 wire (ADR-0023): a generated CalculatorClient
@@ -20,12 +20,12 @@
 
 #include "example/calculator/client.h"
 #include "example/calculator/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/client/config.h"
+#include "opal/core/outcome.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 
 namespace example::calculator {
 
@@ -97,4 +97,4 @@ class StreamTestFixture : public testing::Test {
 
 }  // namespace example::calculator
 
-#endif  // SMITHY_EXAMPLES_JSONRPC2_STREAM_TEST_FIXTURE_H_
+#endif  // OPAL_EXAMPLES_JSONRPC2_STREAM_TEST_FIXTURE_H_

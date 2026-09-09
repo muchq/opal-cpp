@@ -16,9 +16,9 @@
 #include <string>
 
 #include "acme/chat/server.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/server/session_registry.h"
+#include "opal/core/outcome.h"
+#include "opal/http/beast_transport.h"
+#include "opal/server/session_registry.h"
 
 namespace {
 

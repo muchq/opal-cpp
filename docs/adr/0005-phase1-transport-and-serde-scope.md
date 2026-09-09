@@ -15,7 +15,7 @@ runnable transports for the client↔server test harness.
 ## Decision
 
 1. **Built-in minimal socket transport instead of curl/Beast for now.**
-   `smithy/http` ships `SocketHttpClient` and `SocketHttpServer`: a
+   `opal/http` ships `SocketHttpClient` and `SocketHttpServer`: a
    dependency-free, blocking HTTP/1.1 implementation over POSIX/winsock
    sockets (connection-per-request, `Connection: close`, 127.0.0.1 server
    binding). This fully answers PLAN open question 4's motivation — no Boost
@@ -25,7 +25,7 @@ runnable transports for the client↔server test harness.
    (Phase 7); nothing in the generated code will depend on which transport is
    installed.
 2. **JSON backend: nlohmann/json (BCR module), wrapped.** Only
-   `smithy/json`'s implementation file includes it; the public API speaks
+   `opal/json`'s implementation file includes it; the public API speaks
    `Document`. Benchmarking simdjson or others is a Phase 7 activity per
    PLAN §9.
 3. **CBOR codec: hand-rolled** (~450 lines including a tolerant decoder).
@@ -33,7 +33,7 @@ runnable transports for the client↔server test harness.
    requires, and the codec is small enough that owning it — with RFC 8949
    test vectors and, in Phase 7, a fuzzer — beats patching around a library.
 4. **Serde pivot: `Document`.** Generated (and hand-written prototype) serde
-   converts typed structs to/from `Document`; `smithy/json` and `smithy/cbor`
+   converts typed structs to/from `Document`; `opal/json` and `opal/cbor`
    render `Document` to bytes. `Document` carries blob and timestamp nodes so
    each codec can apply its wire rules (base64 vs byte string; RFC 3339
    string vs tag 1). This is the simplest thing that keeps the two protocols

@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 #include "opal/protocoltests/jsonrpc2/types.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
 
 namespace opal::protocoltests::jsonrpc2 {
 

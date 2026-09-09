@@ -10,7 +10,7 @@
 #include <variant>
 
 #include "example/cafe/types.h"
-#include "smithy/core/overloaded.h"
+#include "opal/core/overloaded.h"
 
 namespace {
 

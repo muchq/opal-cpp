@@ -1,6 +1,6 @@
 # smithy-cpp runtime overview
 
-The runtime (`//runtime`, headers under `smithy/...`) is the hand-written
+The runtime (`//runtime`, headers under `opal/...`) is the hand-written
 library that generated clients and servers link against. Generated code stays
 thin glue; behavior lives here (PLAN §2). Modules mirror smithy-rs's runtime
 crates (PLAN §3.2a).

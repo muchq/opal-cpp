@@ -4,12 +4,12 @@
 #include <string>
 #include <utility>
 
-#include "smithy/core/base64.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/error.h"
-#include "smithy/core/outcome.h"
-#include "smithy/core/text.h"
+#include "opal/core/base64.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/error.h"
+#include "opal/core/outcome.h"
+#include "opal/core/text.h"
 
 namespace opal {
 namespace {

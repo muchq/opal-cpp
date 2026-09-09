@@ -1,4 +1,4 @@
-#include "smithy/json/json.h"
+#include "opal/json/json.h"
 
 #include <gtest/gtest.h>
 

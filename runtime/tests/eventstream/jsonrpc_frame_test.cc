@@ -6,15 +6,15 @@
 // kViolation carrying its reserved code, never as a half-understood
 // message.
 
-#include "smithy/eventstream/jsonrpc_frame.h"
+#include "opal/eventstream/jsonrpc_frame.h"
 
 #include <gtest/gtest.h>
 
 #include <string>
 
-#include "smithy/core/document.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/eventstream/frame.h"
+#include "opal/core/document.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/eventstream/frame.h"
 
 namespace opal::eventstream {
 namespace {

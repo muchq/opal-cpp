@@ -12,10 +12,10 @@
 
 #include "example/roundtrip/rest/serde.h"
 #include "example/roundtrip/rest/types.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/json/json.h"
+#include "opal/cbor/cbor.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/json/json.h"
 
 namespace {
 

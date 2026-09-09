@@ -5,14 +5,14 @@
 // fail-closed bank — every malformed envelope must surface as
 // Error::Serialization, never as a half-understood message.
 
-#include "smithy/eventstream/json_frame.h"
+#include "opal/eventstream/json_frame.h"
 
 #include <gtest/gtest.h>
 
 #include <string>
 
-#include "smithy/eventstream/envelope.h"
-#include "smithy/eventstream/frame.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/eventstream/frame.h"
 
 namespace opal::eventstream {
 namespace {

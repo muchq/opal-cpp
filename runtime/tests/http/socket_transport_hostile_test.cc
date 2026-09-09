@@ -14,7 +14,7 @@
 #include <optional>
 #include <string>
 
-#include "smithy/http/socket_transport.h"
+#include "opal/http/socket_transport.h"
 
 namespace opal::http {
 namespace {

@@ -85,7 +85,7 @@ cc_test(
     size = "small",
     srcs = ["handwritten/weather_e2e_test.cc"],
     copts = SMITHY_COPTS,
-    defines = ["SMITHY_E2E_HAVE_BEAST"],
+    defines = ["OPAL_E2E_HAVE_BEAST"],
     tags = ["requires-network"],
     deps = [
         ":weather_handwritten",

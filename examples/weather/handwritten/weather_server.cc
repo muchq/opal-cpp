@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include "smithy/json/json.h"
+#include "opal/json/json.h"
 
 namespace example::weather::handwritten {
 namespace {

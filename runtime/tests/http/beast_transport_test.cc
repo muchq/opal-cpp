@@ -1,4 +1,4 @@
-#include "smithy/http/beast_transport.h"
+#include "opal/http/beast_transport.h"
 
 #include <arpa/inet.h>
 #include <gtest/gtest.h>
@@ -19,10 +19,10 @@
 #include <thread>
 #include <vector>
 
-#include "smithy/http/socket_transport.h"
-#include "smithy/server/metrics.h"
-#include "smithy/server/middleware.h"
-#include "smithy/testing/connection_event_recorder.h"
+#include "opal/http/socket_transport.h"
+#include "opal/server/metrics.h"
+#include "opal/server/middleware.h"
+#include "opal/testing/connection_event_recorder.h"
 
 namespace opal::http {
 namespace {

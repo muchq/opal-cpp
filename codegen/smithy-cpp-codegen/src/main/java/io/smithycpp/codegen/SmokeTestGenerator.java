@@ -141,8 +141,8 @@ final class SmokeTestGenerator {
     w.addInclude("<utility>");
     w.addInclude("\"" + context.settings().includePrefix() + "/client.h\"");
     w.addInclude("\"" + context.settings().includePrefix() + "/server.h\"");
-    w.addInclude("\"smithy/client/config.h\"");
-    w.addInclude("\"smithy/http/loopback.h\"");
+    w.addInclude("\"opal/client/config.h\"");
+    w.addInclude("\"opal/http/loopback.h\"");
 
     String name = serviceName();
     w.write("// Smoke tests for the generated $L service: the generated client calls the", name);

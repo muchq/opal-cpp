@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "opal/protocoltests/simplerestjson/client.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/testing/protocol_test.h"
 
 namespace opal::protocoltests::simplerestjson {
 

@@ -2,12 +2,12 @@
 
 How to configure generated smithy-cpp clients and servers for production use:
 timeouts, retries, and request compression. Every knob lives on
-`opal::ClientConfig` (`smithy/client/config.h`), so the guidance below
+`opal::ClientConfig` (`opal/client/config.h`), so the guidance below
 applies to every generated client the same way.
 
 ```cpp
 #include "myservice/client.h"
-#include "smithy/client/config.h"
+#include "opal/client/config.h"
 
 opal::ClientConfig config;
 config.endpoint = "http://api.example.com:8080";
@@ -34,7 +34,7 @@ caller wait is roughly `max_attempts × timeout` plus backoff sleeps.
 ## Retries
 
 Every generated client sends through `opal::SendWithRetries`
-(`smithy/client/retry.h`). Two failure classes are retried:
+(`opal/client/retry.h`). Two failure classes are retried:
 
 - **Transport errors flagged retryable** — connection refused/reset,
   timeouts.
@@ -106,7 +106,7 @@ the model binds them — a named header (with the trait's scheme prefix, if
 any) or a query parameter. A null provider leaves requests anonymous.
 
 Server-side, the matching guards ship as middleware
-(`smithy/server/middleware.h`):
+(`opal/server/middleware.h`):
 
 ```cpp
 transport.Start(opal::server::Chain(
@@ -145,7 +145,7 @@ failed call's error. An empty-string token is treated as end-of-pagination
 
 ## Client interceptors
 
-`config.interceptors` (`smithy/client/interceptor.h`) hooks user code around
+`config.interceptors` (`opal/client/interceptor.h`) hooks user code around
 every HTTP attempt a generated client makes — auth headers, tracing ids,
 request/response logging — without touching generated code:
 
@@ -175,7 +175,7 @@ the caller's view. Hooks must not throw.
 Generated servers expose their router as a plain
 `opal::http::RequestHandler`, so cross-cutting server behavior — auth
 checks, request logging, metrics — composes as middleware outside the
-generated code (`smithy/server/middleware.h`), with any transport:
+generated code (`opal/server/middleware.h`), with any transport:
 
 ```cpp
 WeatherServer server(handler);
@@ -199,7 +199,7 @@ transport.Start(opal::server::Chain(
     {// Outermost: shed abusive traffic before it costs anything. The
      // framework derives the client behind the trust boundary and keys
      // admission on it — never the raw header, which any client can write
-     // (smithy/http/forwarded.h has the derivation contract).
+     // (opal/http/forwarded.h has the derivation contract).
      opal::server::PerClientRateLimit(
          [limiter](const std::string& client) { return limiter->Allow(client); },
          trusted, std::chrono::seconds(30)),
@@ -289,7 +289,7 @@ proxied traffic onto one key (the issue-#104 accident, config edition):
 const char* cidrs = std::getenv("TRUSTED_PROXY_CIDRS");
 opal::http::TrustedProxies trusted = opal::http::TrustedProxies::None();
 if (cidrs != nullptr) {
-  // the comma-list splitter from smithy/http/headers.h
+  // the comma-list splitter from opal/http/headers.h
   auto parsed = opal::http::TrustedProxies::Parse(opal::http::SplitHeaderListValues(cidrs));
   if (!parsed) { /* log parsed.error(); refuse to start */ }
   trusted = *std::move(parsed);
@@ -382,7 +382,7 @@ wrong thing. A thrown request has no response, so its `response_bytes` is 0;
 exception text stays on the transport's containment log, which carries the
 same trace id.
 
-**Access log:** `FormatAccessLog` (`smithy/server/access_log.h`) renders an
+**Access log:** `FormatAccessLog` (`opal/server/access_log.h`) renders an
 observation as one line of JSON. It is a pure function — no I/O, no sink, no
 configuration, no dependency — so the line goes wherever your logs already
 go, and `Observe` stays the one clock for metrics and the log alike:
@@ -432,7 +432,7 @@ every sink that receives the line stamps its own, and two on one record is
 one more than anyone can reconcile.
 
 **Client:** two ready-made interceptors in
-`smithy/client/observability.h`:
+`opal/client/observability.h`:
 
 ```cpp
 // Metrics/logging: one callback per HTTP attempt (retries visible).
@@ -448,7 +448,7 @@ config.interceptors.push_back(opal::ObserveAttempts(
 config.interceptors.push_back(opal::PropagateTraceContext());
 ```
 
-`smithy/http/trace_context.h` has the underlying helpers —
+`opal/http/trace_context.h` has the underlying helpers —
 `ParseTraceparent`, `FormatTraceparent`, `GenerateTraceContext`,
 `GenerateSpanId` — for building richer integrations (e.g. a server
 middleware that opens a span from `RequestObservation::trace_parent`).

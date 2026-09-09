@@ -1,7 +1,7 @@
-#include "smithy/compression/gzip.h"
+#include "opal/compression/gzip.h"
 
-#include "smithy/compression/gzip_test_peer.h"
-#include "smithy/core/fatal.h"
+#include "opal/compression/gzip_test_peer.h"
+#include "opal/core/fatal.h"
 
 // next_in becomes const Bytef*, so the feed below takes string_view bytes
 // verbatim — no const_cast (ES.50, issue #109).

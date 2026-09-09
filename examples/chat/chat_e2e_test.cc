@@ -27,14 +27,14 @@
 
 #include "example/chat/client.h"
 #include "example/chat/server.h"
+#include "opal/client/config.h"
+#include "opal/core/blob.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 #include "room_handler.h"
-#include "smithy/client/config.h"
-#include "smithy/core/blob.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
 #include "stream_test_fixture.h"
 
 namespace example::chat {
@@ -200,7 +200,7 @@ TEST_F(ChatEndToEndTest, ModeledMidStreamErrorSurfacesTypedOnTheClient) {
 
 TEST_F(ChatEndToEndTest, UnknownEventTypeIsATerminalSerializationError) {
   // Hold the far end raw: no serve thread, so the test can speak the
-  // envelope convention (smithy/eventstream/envelope.h) at the generated
+  // envelope convention (opal/eventstream/envelope.h) at the generated
   // client directly.
   serve_far_end_ = false;
   ConverseInput input;

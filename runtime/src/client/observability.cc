@@ -1,4 +1,4 @@
-#include "smithy/client/observability.h"
+#include "opal/client/observability.h"
 
 #include <utility>
 

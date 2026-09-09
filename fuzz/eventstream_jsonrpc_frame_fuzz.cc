@@ -14,8 +14,8 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/core/document.h"
-#include "smithy/eventstream/jsonrpc_frame.h"
+#include "opal/core/document.h"
+#include "opal/eventstream/jsonrpc_frame.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const std::string_view text(reinterpret_cast<const char*>(data), size);

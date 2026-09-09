@@ -222,7 +222,7 @@ final class ValidationGenerator {
     w.addInclude("<string>");
     w.addInclude("<utility>");
     w.addInclude("<vector>");
-    w.addInclude("\"smithy/core/document.h\"");
+    w.addInclude("\"opal/core/document.h\"");
     w.write("// [[maybe_unused]]: only unary routes reject invalid input over HTTP; a");
     w.write("// service whose operations all stream reports validation on the stream.");
     w.openBlock(
@@ -460,7 +460,7 @@ final class ValidationGenerator {
         };
     if (target.getType() == software.amazon.smithy.model.shapes.ShapeType.STRING
         || target.getType() == software.amazon.smithy.model.shapes.ShapeType.ENUM) {
-      w.addInclude("\"smithy/core/text.h\"");
+      w.addInclude("\"opal/core/text.h\"");
     }
     // A 0 lower bound can never fail (member_length is unsigned), and the dead
     // `< 0ULL` comparison trips -Wextra's -Wtype-limits — drop the arm, not
@@ -546,7 +546,7 @@ final class ValidationGenerator {
       CppWriter w, PatternTrait pattern, String valueExpr, String pathVar) {
     rejectUnsupportedPattern(pattern);
     String variable = "kPattern" + patternCounter++;
-    w.addInclude("\"smithy/core/regex.h\"");
+    w.addInclude("\"opal/core/regex.h\"");
     // opal::Regex is a linear-time engine, so no pattern/input combination
     // can backtrack catastrophically (ReDoS). The raw string literal keeps
     // the regex byte-exact; the failure message needs C++ escaping instead.

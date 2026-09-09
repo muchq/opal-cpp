@@ -1,4 +1,4 @@
-#include "smithy/server/middleware.h"
+#include "opal/server/middleware.h"
 
 #include <gtest/gtest.h>
 
@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "smithy/http/loopback.h"
-#include "smithy/http/trace_context.h"
+#include "opal/http/loopback.h"
+#include "opal/http/trace_context.h"
 
 namespace opal::server {
 namespace {

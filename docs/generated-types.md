@@ -68,7 +68,7 @@ compatibility contract: changes to it are breaking for consumers of generated co
   **not gated**: recursion and `Document` members print fine (value semantics keep the data
   acyclic). The runtime member types render via the same mechanism: `Blob` as size plus a
   bounded hex prefix (never full contents), `Timestamp` as RFC 3339, `Document` JSON-ish,
-  `opal::DebugString(x)`/`DebugAppend` in `smithy/core/print.h` for anything else. Debug
+  `opal::DebugString(x)`/`DebugAppend` in `opal/core/print.h` for anything else. Debug
   output is for **humans and logs only** — it is not a serialization format; never parse it,
   and never pin exact bytes across library versions.
 - **Deliberately not generated**:
@@ -131,7 +131,7 @@ terminates the process with the union, requested, and engaged member named (e.g.
 `std::bad_variant_access`. For access that can't die, branch on `is_x()`, use
 `as_x_or_null()` (`if (const auto* dairy = milk.as_dairy_or_null()) …`), or `visit()` with a
 visitor that covers every member plus `std::monostate` for the empty state —
-`opal::Overloaded` (`smithy/core/overloaded.h`) builds one from lambdas.
+`opal::Overloaded` (`opal/core/overloaded.h`) builds one from lambdas.
 
 ## Serde (Phase 3)
 

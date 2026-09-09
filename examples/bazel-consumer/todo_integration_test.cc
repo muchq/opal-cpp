@@ -17,13 +17,13 @@
 #include "acme/todo/jsonrpc/client.h"
 #include "acme/todo/jsonrpc/server.h"
 #include "acme/todo/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/error.h"
-#include "smithy/http/forwarded.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/http/trace_context.h"
-#include "smithy/server/middleware.h"
+#include "opal/client/config.h"
+#include "opal/core/error.h"
+#include "opal/http/forwarded.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
+#include "opal/http/trace_context.h"
+#include "opal/server/middleware.h"
 
 namespace {
 

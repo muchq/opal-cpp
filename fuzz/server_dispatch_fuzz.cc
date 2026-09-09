@@ -8,7 +8,7 @@
 #include <string>
 
 #include "example/weather/server.h"
-#include "smithy/http/message.h"
+#include "opal/http/message.h"
 
 namespace {
 

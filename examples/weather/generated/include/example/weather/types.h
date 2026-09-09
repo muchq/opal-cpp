@@ -12,9 +12,9 @@
 #include <string>
 #include <vector>
 
-#include "smithy/core/hash.h"
-#include "smithy/core/print.h"
-#include "smithy/core/timestamp.h"
+#include "opal/core/hash.h"
+#include "opal/core/print.h"
+#include "opal/core/timestamp.h"
 
 namespace example::weather {
 

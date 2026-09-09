@@ -27,11 +27,11 @@
 
 #include "acme/todo/client.h"
 #include "acme/todo/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/forwarded.h"
-#include "smithy/server/access_log.h"
-#include "smithy/server/middleware.h"
+#include "opal/client/config.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/forwarded.h"
+#include "opal/server/access_log.h"
+#include "opal/server/middleware.h"
 
 namespace {
 

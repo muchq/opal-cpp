@@ -3,8 +3,8 @@
 #include <string>
 #include <utility>
 
+#include "opal/core/document_serde.h"
 #include "opal/protocoltests/simplerestjson/serde.h"
-#include "smithy/core/document_serde.h"
 
 namespace opal::protocoltests::simplerestjson {
 

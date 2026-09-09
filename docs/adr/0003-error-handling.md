@@ -28,7 +28,7 @@ exceptions and result types, and many large consumers build with `-fno-exception
 - **Exceptions are contained at every boundary that must not unwind.** Nothing in the runtime lets
   an exception cross an `Outcome`-returning entry point or escape a transport io thread. Wire-facing
   callbacks in the `-fno-exceptions`-clean runtime (request handlers, readiness probes, metrics
-  sinks) run inside `opal::internal::Contain` (`smithy/core/exception_guard.h`), which compiles to
+  sinks) run inside `opal::internal::Contain` (`opal/core/exception_guard.h`), which compiles to
   a direct call under `-fno-exceptions`. The Beast transport — which cannot build `-fno-exceptions`,
   so it always has exceptions — carries its own containment: each background `io_context::run()` is
   wrapped in a catch-and-re-enter backstop so a stray throw drains remaining work instead of

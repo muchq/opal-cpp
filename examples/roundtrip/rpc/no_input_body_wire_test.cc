@@ -11,8 +11,8 @@
 #include <string>
 
 #include "example/roundtrip/rpc/server.h"
-#include "smithy/http/transport.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/http/transport.h"
+#include "opal/testing/protocol_test.h"
 
 namespace example::roundtrip::rpc {
 namespace {

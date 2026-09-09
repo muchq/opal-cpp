@@ -1,4 +1,4 @@
-#include "smithy/server/access_log.h"
+#include "opal/server/access_log.h"
 
 #include <array>
 #include <cstddef>
@@ -6,9 +6,9 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/core/fatal.h"
-#include "smithy/http/forwarded.h"
-#include "smithy/http/trace_context.h"
+#include "opal/core/fatal.h"
+#include "opal/http/forwarded.h"
+#include "opal/http/trace_context.h"
 
 namespace opal::server {
 

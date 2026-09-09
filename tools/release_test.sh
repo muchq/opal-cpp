@@ -70,11 +70,11 @@ fi
 release_abs="$PWD/$RELEASE"
 work="${TEST_TMPDIR:-$(mktemp -d)}/bump"
 mkdir -p "$work/runtime/src/core" "$work/runtime/tests/core" \
-  "$work/runtime/include/smithy/client" "$work/codegen" "$work/docs"
+  "$work/runtime/include/opal/client" "$work/codegen" "$work/docs"
 cp CHANGELOG.md "$work/"
 cp runtime/src/core/version.cc "$work/runtime/src/core/"
 cp runtime/tests/core/version_test.cc "$work/runtime/tests/core/"
-cp runtime/include/smithy/client/config.h "$work/runtime/include/smithy/client/"
+cp runtime/include/opal/client/config.h "$work/runtime/include/opal/client/"
 cp codegen/gradle.properties "$work/codegen/"
 cp docs/versioning.md "$work/docs/"
 cd "$work"
@@ -94,7 +94,7 @@ else
     fail "bump: version.cc not rewritten"
   grep -q 'EXPECT_EQ(Version(), "9.9.9-dev");' runtime/tests/core/version_test.cc ||
     fail "bump: version_test.cc not rewritten"
-  grep -q 'smithy-cpp/9.9.9-dev' runtime/include/smithy/client/config.h ||
+  grep -q 'smithy-cpp/9.9.9-dev' runtime/include/opal/client/config.h ||
     fail "bump: config.h not rewritten"
   grep -qx 'version=9.9.9-dev' codegen/gradle.properties ||
     fail "bump: gradle.properties not rewritten"

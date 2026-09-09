@@ -17,7 +17,7 @@ Three postures were considered: return a null/sentinel (hides bugs), debug-only 
 ## Decision
 
 Contract violations terminate the process with a one-line message carrying the available
-context, via `opal::internal::Fatal` (`smithy/core/fatal.h`):
+context, via `opal::internal::Fatal` (`opal/core/fatal.h`):
 
 - `Outcome`: value-access on an error dies with the error's code and message;
   `value_or_die("context")` adds caller context; `error()` on a value dies naming the misuse.

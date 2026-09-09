@@ -1,5 +1,5 @@
-#ifndef SMITHY_EXAMPLES_CHAT_HUB_HANDLER_H_
-#define SMITHY_EXAMPLES_CHAT_HUB_HANDLER_H_
+#ifndef OPAL_EXAMPLES_CHAT_HUB_HANDLER_H_
+#define OPAL_EXAMPLES_CHAT_HUB_HANDLER_H_
 
 // The multi-client hub (issue #112): the consumer pattern the Go-style
 // WebSocket hub hand-rolls, built on the two runtime primitives that make
@@ -30,8 +30,8 @@
 #include <vector>
 
 #include "example/chat/server.h"
-#include "smithy/core/outcome.h"
-#include "smithy/server/session_registry.h"
+#include "opal/core/outcome.h"
+#include "opal/server/session_registry.h"
 
 namespace example::chat {
 
@@ -159,4 +159,4 @@ class HubHandler final : public ChatHandler {
 
 }  // namespace example::chat
 
-#endif  // SMITHY_EXAMPLES_CHAT_HUB_HANDLER_H_
+#endif  // OPAL_EXAMPLES_CHAT_HUB_HANDLER_H_

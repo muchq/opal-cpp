@@ -5,7 +5,7 @@
 // unblocking blocked calls from another thread — plus the bounded receive
 // (Error::Timeout on a deadline that expires, on a session that survives it).
 
-#include "smithy/http/websocket_pair.h"
+#include "opal/http/websocket_pair.h"
 
 #include <gtest/gtest.h>
 
@@ -18,8 +18,8 @@
 #include <string>
 #include <thread>
 
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/websocket.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/websocket.h"
 
 namespace opal::http {
 namespace {

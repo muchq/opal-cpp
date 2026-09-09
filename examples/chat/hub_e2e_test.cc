@@ -19,11 +19,11 @@
 #include "example/chat/client.h"
 #include "example/chat/server.h"
 #include "hub_handler.h"
-#include "smithy/client/config.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 #include "stream_test_fixture.h"
 
 namespace example::chat {

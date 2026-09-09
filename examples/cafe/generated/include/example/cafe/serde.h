@@ -4,8 +4,8 @@
 #define EXAMPLE_CAFE_SERDE_H_
 
 #include "example/cafe/types.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 
 namespace example::cafe {
 

@@ -11,8 +11,8 @@
 #include <ostream>
 #include <string>
 
-#include "smithy/core/hash.h"
-#include "smithy/core/print.h"
+#include "opal/core/hash.h"
+#include "opal/core/print.h"
 
 namespace example::bookstore {
 

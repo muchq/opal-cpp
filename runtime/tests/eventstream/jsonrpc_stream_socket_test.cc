@@ -8,7 +8,7 @@
 // mis-framed inbound traffic, and the server end answers the reserved-code
 // terminal for the opening id before its close.
 
-#include "smithy/eventstream/jsonrpc_stream_socket.h"
+#include "opal/eventstream/jsonrpc_stream_socket.h"
 
 #include <gtest/gtest.h>
 
@@ -19,11 +19,11 @@
 #include <string>
 #include <utility>
 
-#include "smithy/core/document.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/websocket_pair.h"
-#include "smithy/testing/websocket_contract_test.h"
+#include "opal/core/document.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/websocket_pair.h"
+#include "opal/testing/websocket_contract_test.h"
 
 namespace opal::eventstream {
 namespace {

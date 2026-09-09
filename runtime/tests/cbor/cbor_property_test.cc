@@ -6,7 +6,7 @@
 
 #include <random>
 
-#include "smithy/cbor/cbor.h"
+#include "opal/cbor/cbor.h"
 #include "tests/testing/random_document.h"
 
 namespace opal::cbor {

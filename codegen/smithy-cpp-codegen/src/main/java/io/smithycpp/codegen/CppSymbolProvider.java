@@ -38,7 +38,7 @@ import software.amazon.smithy.model.traits.SparseTrait;
  *
  * <p>Each returned {@link Symbol}'s name is the full C++ type text; the headers it needs are
  * carried in the {@code headers} property (angle form {@code <vector>} or quote form {@code
- * "smithy/core/blob.h"}).
+ * "opal/core/blob.h"}).
  */
 final class CppSymbolProvider implements SymbolProvider {
 
@@ -101,7 +101,7 @@ final class CppSymbolProvider implements SymbolProvider {
     boolean plain = MemberDefaults.plain(model, member);
     if (recursion.isBoxed(member)) {
       name = "opal::Boxed<" + name + ">";
-      headers.add("\"smithy/core/boxed.h\"");
+      headers.add("\"opal/core/boxed.h\"");
     } else if (plain) {
       return target;
     }
@@ -247,7 +247,7 @@ final class CppSymbolProvider implements SymbolProvider {
 
     @Override
     public Symbol blobShape(BlobShape shape) {
-      return builder("opal::Blob", Set.of("\"smithy/core/blob.h\"")).build();
+      return builder("opal::Blob", Set.of("\"opal/core/blob.h\"")).build();
     }
 
     @Override
@@ -312,12 +312,12 @@ final class CppSymbolProvider implements SymbolProvider {
 
     @Override
     public Symbol timestampShape(TimestampShape shape) {
-      return builder("opal::Timestamp", Set.of("\"smithy/core/timestamp.h\"")).build();
+      return builder("opal::Timestamp", Set.of("\"opal/core/timestamp.h\"")).build();
     }
 
     @Override
     public Symbol documentShape(DocumentShape shape) {
-      return builder("opal::Document", Set.of("\"smithy/core/document.h\"")).build();
+      return builder("opal::Document", Set.of("\"opal/core/document.h\"")).build();
     }
 
     @Override
@@ -340,7 +340,7 @@ final class CppSymbolProvider implements SymbolProvider {
     @Override
     public Symbol structureShape(StructureShape shape) {
       if (shape.getId().toString().equals("smithy.api#Unit")) {
-        return builder("opal::Unit", Set.of("\"smithy/core/outcome.h\"")).build();
+        return builder("opal::Unit", Set.of("\"opal/core/outcome.h\"")).build();
       }
       return declared(shape);
     }

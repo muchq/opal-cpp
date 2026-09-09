@@ -14,7 +14,7 @@
 // only the bounded post-detach tail, Remove cancels a pending expiry, and
 // Drain/destructor expire ghosts immediately.
 
-#include "smithy/server/session_registry.h"
+#include "opal/server/session_registry.h"
 
 #include <gtest/gtest.h>
 
@@ -30,11 +30,11 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/eventstream/async_event_stream.h"
-#include "smithy/eventstream/event_stream.h"
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/eventstream/async_event_stream.h"
+#include "opal/eventstream/event_stream.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 
 namespace opal::server {
 namespace {

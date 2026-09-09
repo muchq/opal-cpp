@@ -15,16 +15,16 @@
 
 #include "example/roundtrip/rest/serde.h"
 #include "example/roundtrip/rest/server.h"
-#include "smithy/compression/gzip.h"
-#include "smithy/core/base64.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/document_serde.h"
-#include "smithy/core/regex.h"
-#include "smithy/core/text.h"
-#include "smithy/http/headers.h"
-#include "smithy/json/json.h"
-#include "smithy/server/router.h"
+#include "opal/compression/gzip.h"
+#include "opal/core/base64.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/document_serde.h"
+#include "opal/core/regex.h"
+#include "opal/core/text.h"
+#include "opal/http/headers.h"
+#include "opal/json/json.h"
+#include "opal/server/router.h"
 
 namespace example::roundtrip::rest {
 

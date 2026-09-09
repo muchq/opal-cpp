@@ -12,12 +12,12 @@
 
 #include "example/roundtrip/rpc/client.h"
 #include "example/roundtrip/rpc/server.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/client/config.h"
-#include "smithy/core/blob.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/cbor/cbor.h"
+#include "opal/client/config.h"
+#include "opal/core/blob.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
+#include "opal/testing/protocol_test.h"
 
 namespace example::roundtrip::rpc {
 

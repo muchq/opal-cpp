@@ -19,12 +19,12 @@
 
 #include "compile/unions/cbor/client.h"
 #include "compile/unions/cbor/server.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/client/config.h"
-#include "smithy/core/document.h"
-#include "smithy/core/timestamp.h"
-#include "smithy/http/loopback.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/cbor/cbor.h"
+#include "opal/client/config.h"
+#include "opal/core/document.h"
+#include "opal/core/timestamp.h"
+#include "opal/http/loopback.h"
+#include "opal/testing/protocol_test.h"
 
 namespace compile::unions::cbor {
 namespace {

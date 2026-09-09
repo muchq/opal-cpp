@@ -22,11 +22,11 @@
 
 #include "example/chat/client.h"
 #include "example/chat/server.h"
+#include "opal/client/config.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/websocket.h"
+#include "opal/testing/tls_test_identity.h"
 #include "room_handler.h"
-#include "smithy/client/config.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/websocket.h"
-#include "smithy/testing/tls_test_identity.h"
 
 namespace example::chat {
 namespace {

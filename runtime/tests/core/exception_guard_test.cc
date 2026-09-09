@@ -1,4 +1,4 @@
-#include "smithy/core/exception_guard.h"
+#include "opal/core/exception_guard.h"
 
 #include <stdexcept>
 #include <string>

@@ -28,7 +28,7 @@ final class JsonRpc2StreamCodeGen {
    * the opening-envelope parse with the unary endpoint's exact refusal strings.
    */
   static void writeSharedServerHelpers(CppWriter w) {
-    w.addInclude("\"smithy/eventstream/jsonrpc_stream_socket.h\"");
+    w.addInclude("\"opal/eventstream/jsonrpc_stream_socket.h\"");
     w.write("// One JSON-RPC envelope as the raw-text message the stream wire carries");
     w.write("// (ADR-0023): the unary emitters build the envelope, streams reuse their");
     w.write("// bodies verbatim — one error identity, one spelling.");
@@ -327,7 +327,7 @@ final class JsonRpc2StreamCodeGen {
       ServiceShape service,
       ProtocolGenerator protocol,
       OperationShape operation) {
-    w.addInclude("\"smithy/eventstream/jsonrpc_stream_socket.h\"");
+    w.addInclude("\"opal/eventstream/jsonrpc_stream_socket.h\"");
     StructureShape input = ProtocolSupport.inputShape(context, operation);
     String op = EventStreamCodeGen.opName(operation);
     w.write("opal::http::WebSocketDialRequest request;");

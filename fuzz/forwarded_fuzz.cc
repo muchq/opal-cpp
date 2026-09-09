@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/http/forwarded.h"
+#include "opal/http/forwarded.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   if (size == 0) {

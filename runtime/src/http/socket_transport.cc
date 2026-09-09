@@ -1,4 +1,4 @@
-#include "smithy/http/socket_transport.h"
+#include "opal/http/socket_transport.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -11,10 +11,10 @@
 #include <string_view>
 #include <utility>
 
-#include "smithy/core/exception_guard.h"
-#include "smithy/http/headers.h"
-#include "smithy/http/http1.h"
-#include "smithy/http/server_dispatch.h"
+#include "opal/core/exception_guard.h"
+#include "opal/http/headers.h"
+#include "opal/http/http1.h"
+#include "opal/http/server_dispatch.h"
 
 namespace opal::http {
 namespace {
@@ -171,7 +171,7 @@ Outcome<Unit> SocketHttpServer::Start(RequestHandler handler) {
   // BeastServerTransport, but a deployment that reached for this class anyway
   // deserves the operator-visible trace, not a silent one-request-at-a-time
   // service (the server_dispatch clog convention).
-  std::clog << "smithy: SocketHttpServer is a test-only transport (one connection at a time, "
+  std::clog << "opal: SocketHttpServer is a test-only transport (one connection at a time, "
                "loopback only); production serving is BeastServerTransport\n";
   accept_thread_ = std::thread([this] { AcceptLoop(); });
   return Unit{};

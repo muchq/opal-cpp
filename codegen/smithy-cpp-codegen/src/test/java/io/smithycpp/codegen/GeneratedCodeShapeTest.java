@@ -48,7 +48,7 @@ class GeneratedCodeShapeTest {
     String types =
         PluginTestHarness.generate(UNION_MODEL, "test.shape#Svc", "test::shape")
             .expectFileString("/include/test/shape/types.h");
-    assertTrue(types.contains("#include \"smithy/core/fatal.h\""), types);
+    assertTrue(types.contains("#include \"opal/core/fatal.h\""), types);
     assertTrue(types.contains("require_is(1, \"pending\");"), types);
     assertTrue(
         types.contains(
@@ -172,7 +172,7 @@ class GeneratedCodeShapeTest {
     // namespace closes, in definition order (nested hashes before outer ones).
     var manifest = PluginTestHarness.generate(ORDERING_MODEL, "test.shape#Svc", "test::shape");
     String types = manifest.expectFileString("/include/test/shape/types.h");
-    assertTrue(types.contains("#include \"smithy/core/hash.h\""), types);
+    assertTrue(types.contains("#include \"opal/core/hash.h\""), types);
     // Structs hash member-wise through opal::HashValue (containers and
     // optionals have no std::hash of their own).
     assertTrue(types.contains("struct std::hash<test::shape::Pending> {"), types);
@@ -211,7 +211,7 @@ class GeneratedCodeShapeTest {
     // unconditionally.
     var manifest = PluginTestHarness.generate(ORDERING_MODEL, "test.shape#Svc", "test::shape");
     String types = manifest.expectFileString("/include/test/shape/types.h");
-    assertTrue(types.contains("#include \"smithy/core/print.h\""), types);
+    assertTrue(types.contains("#include \"opal/core/print.h\""), types);
     assertTrue(types.contains("#include <ostream>"), types);
     assertTrue(types.contains("void AppendDebugTo(std::string& out) const {"), types);
     assertTrue(types.contains("out += \"Pending{\";"), types);
@@ -511,7 +511,7 @@ class GeneratedCodeShapeTest {
     String client =
         PluginTestHarness.generate(model, "test.shape#Svc", "test::shape")
             .expectFileString("/include/test/shape/client.h");
-    assertTrue(client.contains("#include \"smithy/client/pagination.h\""), client);
+    assertTrue(client.contains("#include \"opal/client/pagination.h\""), client);
     assertTrue(client.contains("using Page = ListThingsOutput;"), client);
     assertTrue(
         client.contains(

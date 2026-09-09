@@ -1,4 +1,4 @@
-#include "smithy/client/observability.h"
+#include "opal/client/observability.h"
 
 #include <gtest/gtest.h>
 
@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "smithy/core/error.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/message.h"
-#include "smithy/http/trace_context.h"
+#include "opal/core/error.h"
+#include "opal/core/outcome.h"
+#include "opal/http/message.h"
+#include "opal/http/trace_context.h"
 
 namespace {
 

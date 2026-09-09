@@ -4,10 +4,10 @@
 #include <memory>
 #include <utility>
 
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
 #include "opal/protocoltests/jsonrpc2/client.h"
 #include "opal/protocoltests/jsonrpc2/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/loopback.h"
 
 namespace opal::protocoltests::jsonrpc2 {
 

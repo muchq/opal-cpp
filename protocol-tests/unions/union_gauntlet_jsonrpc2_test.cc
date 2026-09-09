@@ -15,12 +15,12 @@
 
 #include "compile/unions/jsonrpc/client.h"
 #include "compile/unions/jsonrpc/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/document.h"
-#include "smithy/core/timestamp.h"
-#include "smithy/http/loopback.h"
-#include "smithy/json/json.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/client/config.h"
+#include "opal/core/document.h"
+#include "opal/core/timestamp.h"
+#include "opal/http/loopback.h"
+#include "opal/json/json.h"
+#include "opal/testing/protocol_test.h"
 
 namespace compile::unions::jsonrpc {
 namespace {

@@ -1,11 +1,11 @@
-#include "smithy/server/websocket_router.h"
+#include "opal/server/websocket_router.h"
 
 #include <algorithm>
 #include <iostream>
 #include <memory>
 #include <utility>
 
-#include "smithy/http/uri.h"
+#include "opal/http/uri.h"
 
 namespace opal::server {
 
@@ -122,7 +122,7 @@ std::function<void(const http::HttpRequest&, http::WebSocket&)> WebSocketRouter:
   // looking — an async-handler server mounted on on_websocket otherwise
   // fails one silent upgrade at a time (the per-upgrade line below).
   if (seam_ == Seam::kShared) {
-    std::clog << "smithy: router: every route here serves the shared seam (an async-handler "
+    std::clog << "opal: router: every route here serves the shared seam (an async-handler "
                  "server); mount options.on_websocket_session = ServeSession(), not Serve()\n";
   }
   return [this](const http::HttpRequest& request, http::WebSocket& socket) {
@@ -136,7 +136,7 @@ std::function<void(const http::HttpRequest&, http::WebSocket&)> WebSocketRouter:
       // The wrong dispatcher for this router's seam: an AddSession route
       // cannot be served borrowed. Never bad_function_call on a transport
       // thread — say what to mount, close, carry on.
-      std::clog << "smithy: router: route '" << best->operation
+      std::clog << "opal: router: route '" << best->operation
                 << "' serves the shared seam; mount ServeSession(), not Serve()\n";
       socket.Close();
       return;
@@ -148,7 +148,7 @@ std::function<void(const http::HttpRequest&, http::WebSocket&)> WebSocketRouter:
 std::function<void(const http::HttpRequest&, std::shared_ptr<http::WebSocket>)>
 WebSocketRouter::ServeSession() const {
   if (seam_ == Seam::kBorrowed) {
-    std::clog << "smithy: router: every route here serves the borrowed seam (a blocking-handler "
+    std::clog << "opal: router: every route here serves the borrowed seam (a blocking-handler "
                  "server); mount options.on_websocket = Serve(), not ServeSession()\n";
   }
   return [this](const http::HttpRequest& request, std::shared_ptr<http::WebSocket> socket) {
@@ -159,7 +159,7 @@ WebSocketRouter::ServeSession() const {
       return;
     }
     if (!best->serve_session) {
-      std::clog << "smithy: router: route '" << best->operation
+      std::clog << "opal: router: route '" << best->operation
                 << "' serves the borrowed seam; mount Serve(), not ServeSession()\n";
       socket->Close();
       return;

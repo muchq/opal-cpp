@@ -13,16 +13,16 @@
 #include <utility>
 #include <vector>
 
+#include "opal/core/base64.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/document_serde.h"
+#include "opal/core/text.h"
+#include "opal/http/headers.h"
+#include "opal/json/json.h"
 #include "opal/protocoltests/simplerestjson/serde.h"
 #include "opal/protocoltests/simplerestjson/server.h"
-#include "smithy/core/base64.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/document_serde.h"
-#include "smithy/core/text.h"
-#include "smithy/http/headers.h"
-#include "smithy/json/json.h"
-#include "smithy/server/router.h"
+#include "opal/server/router.h"
 
 namespace opal::protocoltests::simplerestjson {
 

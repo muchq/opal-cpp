@@ -13,12 +13,12 @@
 #include <variant>
 
 #include "example/bookstore/types.h"
-#include "smithy/client/config.h"
-#include "smithy/core/fatal.h"
-#include "smithy/core/hash.h"
-#include "smithy/core/outcome.h"
-#include "smithy/core/print.h"
-#include "smithy/http/transport.h"
+#include "opal/client/config.h"
+#include "opal/core/fatal.h"
+#include "opal/core/hash.h"
+#include "opal/core/outcome.h"
+#include "opal/core/print.h"
+#include "opal/http/transport.h"
 
 namespace example::bookstore {
 

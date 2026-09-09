@@ -34,7 +34,7 @@ The slicing question is where to start. Three candidates:
 **Wire-format-first.** Phase 8 lands in slices, each independently
 shippable and tested in the house pattern:
 
-1. **This slice: the framing codec** — `smithy/eventstream/frame.h`, a
+1. **This slice: the framing codec** — `opal/eventstream/frame.h`, a
    hand-rolled encoder/decoder for the event-stream message format, in
    the same mold as the CBOR codec and the extracted HTTP/1 parser:
    pure functions over buffers, no I/O, hostile-input test bank, libFuzzer

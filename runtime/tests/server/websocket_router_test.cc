@@ -7,7 +7,7 @@
 // seam-agnostic Gate, the one-seam mixing refusals, and the wrong-seam
 // dispatcher degrading to a close instead of a throw.
 
-#include "smithy/server/websocket_router.h"
+#include "opal/server/websocket_router.h"
 
 #include <gtest/gtest.h>
 
@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/http/websocket_pair.h"
+#include "opal/http/websocket_pair.h"
 
 namespace opal::server {
 namespace {

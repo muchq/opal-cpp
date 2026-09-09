@@ -93,5 +93,5 @@ and the goldens regenerate from them.
 - Wire-visible strings (metric names, log-line keys, headers) never carry
   the IDL's name; the audit that produced this ADR checked them and the
   metrics fix in #199 was the only instance.
-- `docs/versioning.md`'s compatibility surface #3 reads
-  `runtime/include/smithy/**` until the include-root PR moves it.
+- `docs/versioning.md`'s compatibility surface #3 read
+  `runtime/include/smithy/**` until the include-root PR moved it.

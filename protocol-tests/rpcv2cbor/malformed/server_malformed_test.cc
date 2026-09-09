@@ -10,9 +10,9 @@
 #include <memory>
 #include <string>
 
+#include "opal/cbor/cbor.h"
 #include "opal/protocoltests/rpcv2cbor/server.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/testing/protocol_test.h"
 
 namespace opal::protocoltests::rpcv2cbor {
 namespace {

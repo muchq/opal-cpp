@@ -1,4 +1,4 @@
-#include "smithy/http/server_dispatch.h"
+#include "opal/http/server_dispatch.h"
 
 #include <netdb.h>
 
@@ -6,8 +6,8 @@
 #include <iostream>
 #include <string>
 
-#include "smithy/core/exception_guard.h"
-#include "smithy/http/trace_context.h"
+#include "opal/core/exception_guard.h"
+#include "opal/http/trace_context.h"
 
 namespace opal::http {
 namespace {
@@ -39,7 +39,7 @@ HttpResponse InternalError(const HttpRequest& request, const std::string& what) 
   // The built-in default sink. A structured-logging seam can replace this, but
   // an unhandled handler exception must never be silent — this line is often
   // the only server-side trace of a 500.
-  std::clog << "smithy: handler threw; correlation-id=" << correlation_id << " request=\""
+  std::clog << "opal: handler threw; correlation-id=" << correlation_id << " request=\""
             << request.method << ' ' << request.target << "\" what=\"" << what << "\"\n";
   HttpResponse response;
   response.status = 500;

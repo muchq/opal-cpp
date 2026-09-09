@@ -6,7 +6,7 @@
 #include <random>
 #include <string>
 
-#include "smithy/http/uri.h"
+#include "opal/http/uri.h"
 
 namespace opal::http {
 namespace {

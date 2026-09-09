@@ -247,7 +247,7 @@ final class ProtocolSupport {
     if (!gzipCompressed(operation)) {
       return;
     }
-    w.addInclude("\"smithy/compression/gzip.h\"");
+    w.addInclude("\"opal/compression/gzip.h\"");
     w.addInclude("<cstddef>");
     w.write("// @requestCompression(gzip): applied last, appended to Content-Encoding.");
     w.openBlock(
@@ -281,7 +281,7 @@ final class ProtocolSupport {
    */
   static void writeGzipRequestDecode(
       CppWriter w, String errorFn, String status, String errorCode, String extraArgs) {
-    w.addInclude("\"smithy/compression/gzip.h\"");
+    w.addInclude("\"opal/compression/gzip.h\"");
     w.write("// @requestCompression(gzip): decode before parsing.");
     w.openBlock(
         "if (const auto request_encoding = request.headers.Get(\"content-encoding\"); "
@@ -604,7 +604,7 @@ final class ProtocolSupport {
     return List.of(
         "\"" + context.settings().includePrefix() + "/server.h\"",
         "\"" + context.settings().includePrefix() + "/serde.h\"",
-        "\"smithy/server/router.h\"",
+        "\"opal/server/router.h\"",
         "<memory>",
         "<utility>",
         "<vector>",
@@ -796,11 +796,11 @@ final class ProtocolSupport {
     return List.of(
         "\"" + context.settings().includePrefix() + "/client.h\"",
         "\"" + context.settings().includePrefix() + "/serde.h\"",
-        "\"smithy/core/blob.h\"",
-        "\"smithy/core/document_serde.h\"",
-        "\"smithy/core/uuid.h\"",
-        "\"smithy/http/socket_transport.h\"",
-        "\"smithy/http/uri.h\"",
+        "\"opal/core/blob.h\"",
+        "\"opal/core/document_serde.h\"",
+        "\"opal/core/uuid.h\"",
+        "\"opal/http/socket_transport.h\"",
+        "\"opal/http/uri.h\"",
         "<string>",
         "<string_view>",
         "<utility>");
