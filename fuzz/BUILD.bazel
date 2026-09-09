@@ -7,6 +7,10 @@ load("//bazel:copts.bzl", "SMITHY_COPTS")
 # keeps the binaries out of plain //... builds, which have no fuzzer runtime).
 
 FUZZ_TARGETS = {
+    "access_log": [
+        "//runtime:server",
+        "@nlohmann_json//:json",
+    ],
     "json_decode": ["//runtime:json"],
     "cbor_decode": [
         "//runtime:cbor",

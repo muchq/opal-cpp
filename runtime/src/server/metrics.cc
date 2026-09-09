@@ -67,11 +67,8 @@ constexpr std::string_view kServiceLabel = "service_name";
 constexpr std::string_view kMethodLabel = "http_method";
 constexpr std::string_view kRouteLabel = "route";
 
-// A request that reached no operation. Never the empty string: prom_proxy
-// subtracts `route!="/health"` from every serving number, and that matcher
-// matches the empty string too — unrouted traffic would silently join the
-// serving figures instead of being visible as its own thing.
-constexpr std::string_view kUnmatchedRoute = "unmatched";
+// The unrouted sentinel is kUnmatchedRoute (middleware.h), shared with the
+// access log so the two cannot drift apart by edit.
 // A method outside the nine RFC 9110 verbs, and one the transport rejected
 // before a method token existed at all (a 431 can fire mid-headers). Kept
 // distinct because "never parsed" and "client invented a verb" are different
