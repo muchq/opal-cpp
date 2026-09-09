@@ -1337,5 +1337,158 @@ TEST(MetricsRegistryDeathTest, AnUnusableHistogramLadderAborts) {
   EXPECT_DEATH({ MetricsRegistry(Enabled()).NewHistogram("d_bytes", "D.", infinite); }, "");
 }
 
+// ---------------------------------------------------------------------------
+// Value formatting: every rendered number is exact, and the historical
+// spellings are stable. "%.6f" is the identity of every existing series
+// (le="2500000" that became le="2.5e+06" would be a different series), but it
+// is lossy outside its range — it cannot say anything smaller than 1e-6, and
+// for huge values it used to read past its own buffer. The rule now: the
+// fixed spelling only when it parses back to exactly the value it claims.
+// ---------------------------------------------------------------------------
+
+TEST(ValueFormattingTest, HugeValuesRenderExactlyInsteadOfReadingPastTheBuffer) {
+  // 1e60 needs 67 characters as "%.6f" — more than the formatting buffer.
+  // The old code built a string from snprintf's would-have-written length,
+  // an out-of-bounds read on every scrape (the ASan job is what makes this
+  // test a proof rather than a hope).
+  MetricsRegistry registry(Enabled());
+  auto gauge = registry.NewGauge("big_gauge", "Big.");
+  gauge.Set(1e60);
+  EXPECT_TRUE(HasLine(registry.Expose(), "big_gauge 1e+60")) << registry.Expose();
+}
+
+TEST(ValueFormattingTest, TinyBucketBoundsStayDistinctInsteadOfCollapsingToZero) {
+  // {1e-8, 1e-7} passes the strictly-ascending check, and under plain "%.6f"
+  // both rendered "0" — two identical le labels, a duplicate series, and a
+  // scrape Prometheus rejects whole.
+  MetricsRegistry registry(Enabled());
+  auto tiny = registry.NewHistogram("tiny_seconds", "Tiny.", {1e-8, 1e-7});
+  tiny.Observe(5e-8);
+
+  const std::string exposition = registry.Expose();
+  EXPECT_TRUE(HasLine(exposition, R"(tiny_seconds_bucket{le="1e-08"} 0)")) << exposition;
+  EXPECT_TRUE(HasLine(exposition, R"(tiny_seconds_bucket{le="1e-07"} 1)")) << exposition;
+  EXPECT_TRUE(HasLine(exposition, "tiny_seconds_sum 5e-08")) << exposition;
+}
+
+TEST(ValueFormattingTest, ValuesDifferingPastSixDecimalsStayDistinct) {
+  // 1.1e-6 and 1.2e-6 both rendered "0.000001" under "%.6f" — same duplicate
+  // trap, one decimal place further in. The fixed form is kept only when it
+  // round-trips, so these fall through to the shortest exact spelling.
+  MetricsRegistry registry(Enabled());
+  auto close_buckets = registry.NewHistogram("close_seconds", "Close.", {1.1e-6, 1.2e-6});
+  close_buckets.Declare();
+
+  const std::string exposition = registry.Expose();
+  EXPECT_TRUE(HasLine(exposition, R"(close_seconds_bucket{le="1.1e-06"} 0)")) << exposition;
+  EXPECT_TRUE(HasLine(exposition, R"(close_seconds_bucket{le="1.2e-06"} 0)")) << exposition;
+}
+
+TEST(ValueFormattingTest, TheHistoricalSpellingsAreUntouched) {
+  // The stability half of the bargain: everything "%.6f" rendered exactly
+  // keeps its bytes, because those strings are series identity to whatever
+  // already scraped them. (The built-in microsecond ladder is pinned by the
+  // contract tests above; this pins the fractional and integral app cases.)
+  MetricsRegistry registry(Enabled());
+  auto gauge = registry.NewGauge("plain_gauge", "Plain.");
+  gauge.Set(0.005);
+  EXPECT_TRUE(HasLine(registry.Expose(), "plain_gauge 0.005")) << registry.Expose();
+  gauge.Set(2500000);
+  EXPECT_TRUE(HasLine(registry.Expose(), "plain_gauge 2500000")) << registry.Expose();
+  gauge.Set(-0.25);
+  EXPECT_TRUE(HasLine(registry.Expose(), "plain_gauge -0.25")) << registry.Expose();
+}
+
+// ---------------------------------------------------------------------------
+// The fail-fast gaps: misuses that render a scrape Prometheus rejects whole
+// used to pass silently here while aborting everywhere else (ADR-0009).
+// ---------------------------------------------------------------------------
+
+TEST(MetricsRegistryDeathTest, DuplicateLabelNamesAbortInsteadOfRenderingTwice) {
+  // {a="1",a="2"} is a parse error that fails the entire scrape, hours later,
+  // on a dashboard nobody is watching — the exact class the invalid-name
+  // abort next to it exists for.
+  EXPECT_DEATH(
+      {
+        MetricsRegistry registry(Enabled());
+        auto counter = registry.NewCounter("dup_total", "Dup.");
+        counter.Increment({{"a", "1"}, {"a", "2"}});
+      },
+      "duplicate label name");
+  // Equal values are no excuse: the rendered line is just as unparseable.
+  EXPECT_DEATH(
+      {
+        MetricsRegistry registry(Enabled());
+        auto counter = registry.NewCounter("dup_total", "Dup.");
+        counter.Declare({{"a", "1"}, {"a", "1"}});
+      },
+      "duplicate label name");
+}
+
+TEST(MetricsRegistryDeathTest, TheHistogramsOwnLeLabelIsReserved) {
+  // The exposition appends le to every bucket line itself; a user copy would
+  // put it there twice.
+  EXPECT_DEATH(
+      {
+        MetricsRegistry registry(Enabled());
+        auto histogram = registry.NewHistogram("h_seconds", "H.", {1.0});
+        histogram.Observe({{"le", "oops"}}, 0.5);
+      },
+      "reserved");
+}
+
+TEST(MetricsRegistryTest, LeIsOnlyReservedWhereTheExpositionUsesIt) {
+  // On a counter or gauge, a label named le is legal Prometheus — odd, but
+  // not ours to forbid. The reservation is scoped to where it collides.
+  MetricsRegistry registry(Enabled());
+  auto counter = registry.NewCounter("odd_total", "Odd.");
+  counter.Increment({{"le", "fine"}});
+  EXPECT_TRUE(HasLine(registry.Expose(), R"(odd_total{le="fine"} 1)")) << registry.Expose();
+}
+
+TEST(MetricsRegistryDeathTest, ReRegisteringAHistogramWithADifferentLadderAborts) {
+  // The mismatch abort next to this promised "a mismatch is the case that
+  // would corrupt the scrape" — but compared only kind and help, so a second
+  // caller's observations landed silently in the first caller's bins.
+  EXPECT_DEATH(
+      {
+        MetricsRegistry registry(Enabled());
+        registry.NewHistogram("ladder_seconds", "L.", {1.0, 2.0});
+        registry.NewHistogram("ladder_seconds", "L.", {1000.0, 2000.0});
+      },
+      "bucket ladder");
+}
+
+TEST(MetricsRegistryTest, ReRegisteringAHistogramWithTheSameLadderIsIdempotent) {
+  MetricsRegistry registry(Enabled());
+  auto first = registry.NewHistogram("same_seconds", "S.", {1.0, 2.0});
+  auto second = registry.NewHistogram("same_seconds", "S.", {1.0, 2.0});
+  first.Observe(0.5);
+  second.Observe(0.5);
+  EXPECT_TRUE(HasLine(registry.Expose(), "same_seconds_count 2")) << registry.Expose();
+}
+
+TEST(MetricsRegistryDeathTest, ANegativeCounterIncrementAborts) {
+  // A decreasing counter reads to rate() as a reset, which extrapolates from
+  // zero and inflates exactly the panel someone is staring at, with no error
+  // anywhere. client_golang panics here for the same reason.
+  EXPECT_DEATH(
+      {
+        MetricsRegistry registry(Enabled());
+        auto counter = registry.NewCounter("down_total", "Down.");
+        counter.Increment(-5.0);
+      },
+      "negative");
+  // And on a disabled registry too: enabling metrics in production must
+  // never be the first time the check runs.
+  EXPECT_DEATH(
+      {
+        MetricsRegistry registry;
+        auto counter = registry.NewCounter("down_total", "Down.");
+        counter.Increment(-5.0);
+      },
+      "negative");
+}
+
 }  // namespace
 }  // namespace smithy::server
