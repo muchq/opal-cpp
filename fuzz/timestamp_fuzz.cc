@@ -13,7 +13,7 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/core/timestamp.h"
+#include "opal/core/timestamp.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const std::string_view text(reinterpret_cast<const char*>(data), size);

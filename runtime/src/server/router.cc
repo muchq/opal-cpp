@@ -1,9 +1,9 @@
-#include "smithy/server/router.h"
+#include "opal/server/router.h"
 
 #include <algorithm>
 #include <utility>
 
-#include "smithy/http/uri.h"
+#include "opal/http/uri.h"
 
 namespace opal::server {
 

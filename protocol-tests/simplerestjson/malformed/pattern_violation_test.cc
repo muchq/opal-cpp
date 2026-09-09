@@ -11,7 +11,7 @@
 #include <string>
 
 #include "example/roundtrip/rest/server.h"
-#include "smithy/json/json.h"
+#include "opal/json/json.h"
 
 namespace example::roundtrip::rest {
 namespace {

@@ -99,8 +99,8 @@ final class SerdeGenerator {
   }
 
   private void writeHeader(CppWriter w, List<Shape> shapes) {
-    w.addInclude("\"smithy/core/document.h\"");
-    w.addInclude("\"smithy/core/outcome.h\"");
+    w.addInclude("\"opal/core/document.h\"");
+    w.addInclude("\"opal/core/outcome.h\"");
     w.addInclude("\"" + context.settings().includePrefix() + "/types.h\"");
     w.write("// Document-pivot serde for every aggregate shape in the model closure.");
     w.write("// Serializers never fail; deserializers return opal::Error on wire");
@@ -118,7 +118,7 @@ final class SerdeGenerator {
 
   private void writeSource(CppWriter w, List<Shape> shapes) {
     w.addInclude("\"" + context.settings().includePrefix() + "/serde.h\"");
-    w.addInclude("\"smithy/core/document_serde.h\"");
+    w.addInclude("\"opal/core/document_serde.h\"");
     w.addInclude("<string>");
     w.addInclude("<utility>");
     for (Shape shape : shapes) {

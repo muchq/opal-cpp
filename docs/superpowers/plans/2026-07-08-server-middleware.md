@@ -4,7 +4,7 @@
 
 **Goal:** Close the three middleware gaps blocking the portrait pilot — generic admission control (`Guard` + `TooManyRequests`), a static liveness endpoint (`HealthEndpoint`), and an `on_start` callback on `Observe` for in-flight gauges — per `docs/superpowers/specs/2026-07-08-server-middleware-design.md`.
 
-**Architecture:** All three are additions to the existing dependency-free middleware module (`runtime/include/smithy/server/middleware.h` + `runtime/src/server/middleware.cc`), composed via the existing `Chain`. No new Bazel targets; no new dependencies (explicitly: no opentelemetry-cpp). One breaking signature change: `Observe` gains `on_start` as its second parameter, so `Observe(cb, now)` call sites become `Observe(cb, nullptr, now)`.
+**Architecture:** All three are additions to the existing dependency-free middleware module (`runtime/include/opal/server/middleware.h` + `runtime/src/server/middleware.cc`), composed via the existing `Chain`. No new Bazel targets; no new dependencies (explicitly: no opentelemetry-cpp). One breaking signature change: `Observe` gains `on_start` as its second parameter, so `Observe(cb, now)` call sites become `Observe(cb, nullptr, now)`.
 
 **Tech Stack:** C++20, GoogleTest, Bazel. Repo: `/Users/andy/src/smithy-cpp`, branch `server-middleware` (already checked out).
 
@@ -15,7 +15,7 @@
 ### Task 1: `Guard` middleware + `TooManyRequests` reject factory
 
 **Files:**
-- Modify: `runtime/include/smithy/server/middleware.h`
+- Modify: `runtime/include/opal/server/middleware.h`
 - Modify: `runtime/src/server/middleware.cc`
 - Test: `runtime/tests/server/middleware_test.cc`
 
@@ -96,7 +96,7 @@ Expected: FAIL to compile — `error: use of undeclared identifier 'Guard'` (and
 
 - [ ] **Step 3: Declare in the header**
 
-In `runtime/include/smithy/server/middleware.h`: add `#include <optional>` to the includes (keep the include list sorted: `<chrono>`, `<functional>`, `<optional>`, `<string>`, `<vector>`), then add after the `Chain` declaration (line 25, before `RequestObservation`):
+In `runtime/include/opal/server/middleware.h`: add `#include <optional>` to the includes (keep the include list sorted: `<chrono>`, `<functional>`, `<optional>`, `<string>`, `<vector>`), then add after the `Chain` declaration (line 25, before `RequestObservation`):
 
 ```cpp
 // Admission control outside the router: admit(request) true passes the
@@ -157,7 +157,7 @@ Expected: PASS (all existing tests plus the 5 new ones).
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andy/src/smithy-cpp && git add runtime/include/smithy/server/middleware.h runtime/src/server/middleware.cc runtime/tests/server/middleware_test.cc && git commit -m "feat(runtime): Guard admission middleware with TooManyRequests factory"
+cd /Users/andy/src/smithy-cpp && git add runtime/include/opal/server/middleware.h runtime/src/server/middleware.cc runtime/tests/server/middleware_test.cc && git commit -m "feat(runtime): Guard admission middleware with TooManyRequests factory"
 ```
 
 ---
@@ -165,7 +165,7 @@ cd /Users/andy/src/smithy-cpp && git add runtime/include/smithy/server/middlewar
 ### Task 2: `HealthEndpoint` middleware
 
 **Files:**
-- Modify: `runtime/include/smithy/server/middleware.h`
+- Modify: `runtime/include/opal/server/middleware.h`
 - Modify: `runtime/src/server/middleware.cc`
 - Test: `runtime/tests/server/middleware_test.cc`
 
@@ -236,7 +236,7 @@ Expected: FAIL to compile — `error: use of undeclared identifier 'HealthEndpoi
 
 - [ ] **Step 3: Declare in the header**
 
-In `runtime/include/smithy/server/middleware.h`, after the `TooManyRequests` declaration:
+In `runtime/include/opal/server/middleware.h`, after the `TooManyRequests` declaration:
 
 ```cpp
 // Static liveness endpoint: answers GET <path> (query string ignored) with
@@ -279,7 +279,7 @@ Expected: PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andy/src/smithy-cpp && git add runtime/include/smithy/server/middleware.h runtime/src/server/middleware.cc runtime/tests/server/middleware_test.cc && git commit -m "feat(runtime): HealthEndpoint liveness middleware"
+cd /Users/andy/src/smithy-cpp && git add runtime/include/opal/server/middleware.h runtime/src/server/middleware.cc runtime/tests/server/middleware_test.cc && git commit -m "feat(runtime): HealthEndpoint liveness middleware"
 ```
 
 ---
@@ -287,7 +287,7 @@ cd /Users/andy/src/smithy-cpp && git add runtime/include/smithy/server/middlewar
 ### Task 3: `Observe` gains `on_start` and pairs completions when dispatch throws
 
 **Files:**
-- Modify: `runtime/include/smithy/server/middleware.h`
+- Modify: `runtime/include/opal/server/middleware.h`
 - Modify: `runtime/src/server/middleware.cc`
 - Test: `runtime/tests/server/middleware_test.cc` (new tests + one existing call site updated)
 
@@ -366,7 +366,7 @@ Expected: FAIL to compile — `RequestStart` undeclared, and no 3-argument `Obse
 
 - [ ] **Step 3: Update the header**
 
-In `runtime/include/smithy/server/middleware.h`, add before the `Observe` declaration:
+In `runtime/include/opal/server/middleware.h`, add before the `Observe` declaration:
 
 ```cpp
 // What on_start sees, before the router runs. The Smithy operation is not
@@ -411,9 +411,9 @@ void CallContained(const Callback& callback, const Observation& observation, con
   try {
     callback(observation);
   } catch (const std::exception& e) {
-    std::clog << "smithy: " << which << " callback threw: " << e.what() << "\n";
+    std::clog << "opal: " << which << " callback threw: " << e.what() << "\n";
   } catch (...) {
-    std::clog << "smithy: " << which << " callback threw a non-std exception\n";
+    std::clog << "opal: " << which << " callback threw a non-std exception\n";
   }
 }
 
@@ -489,7 +489,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-cd /Users/andy/src/smithy-cpp && git add runtime/include/smithy/server/middleware.h runtime/src/server/middleware.cc runtime/tests/server/middleware_test.cc && git commit -m "feat(runtime): Observe on_start callback with paired completions on throw"
+cd /Users/andy/src/smithy-cpp && git add runtime/include/opal/server/middleware.h runtime/src/server/middleware.cc runtime/tests/server/middleware_test.cc && git commit -m "feat(runtime): Observe on_start callback with paired completions on throw"
 ```
 
 ---
@@ -518,10 +518,10 @@ In `examples/bazel-consumer/todo_integration_test.cc`, make the include block (c
 #include "acme/todo/jsonrpc/client.h"
 #include "acme/todo/jsonrpc/server.h"
 #include "acme/todo/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/server/middleware.h"
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
+#include "opal/server/middleware.h"
 ```
 
 Then append this test at the end of the anonymous namespace (after `TodoJsonRpcTest`, before the closing `}  // namespace`):
@@ -734,4 +734,4 @@ Expected: PASS.
 cd /Users/andy/src/smithy-cpp && git log --oneline main..HEAD && git diff main --stat
 ```
 
-Expected: the spec/plan docs plus five implementation commits touching exactly: `runtime/include/smithy/server/middleware.h`, `runtime/src/server/middleware.cc`, `runtime/tests/server/middleware_test.cc`, `examples/bazel-consumer/todo_integration_test.cc`, `examples/bazel-consumer/BUILD.bazel`, `docs/production-guide.md`, `CHANGELOG.md`.
+Expected: the spec/plan docs plus five implementation commits touching exactly: `runtime/include/opal/server/middleware.h`, `runtime/src/server/middleware.cc`, `runtime/tests/server/middleware_test.cc`, `examples/bazel-consumer/todo_integration_test.cc`, `examples/bazel-consumer/BUILD.bazel`, `docs/production-guide.md`, `CHANGELOG.md`.

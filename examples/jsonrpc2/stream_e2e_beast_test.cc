@@ -18,11 +18,11 @@
 #include "accumulate_handler.h"
 #include "example/calculator/client.h"
 #include "example/calculator/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/error.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/websocket.h"
-#include "smithy/testing/tls_test_identity.h"
+#include "opal/client/config.h"
+#include "opal/core/error.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/websocket.h"
+#include "opal/testing/tls_test_identity.h"
 
 namespace example::calculator {
 namespace {

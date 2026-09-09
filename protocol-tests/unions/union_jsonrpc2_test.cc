@@ -13,10 +13,10 @@
 
 #include "example/roundtrip/jsonrpc/client.h"
 #include "example/roundtrip/jsonrpc/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/document.h"
-#include "smithy/json/json.h"
-#include "smithy/testing/protocol_test.h"
+#include "opal/client/config.h"
+#include "opal/core/document.h"
+#include "opal/json/json.h"
+#include "opal/testing/protocol_test.h"
 
 namespace example::roundtrip::jsonrpc {
 namespace {

@@ -83,7 +83,7 @@ final class JsonRpc2Protocol implements ProtocolGenerator {
 
   @Override
   public List<String> clientIncludes() {
-    return List.of("\"smithy/json/json.h\"", "\"smithy/core/document.h\"");
+    return List.of("\"opal/json/json.h\"", "\"opal/core/document.h\"");
   }
 
   @Override
@@ -253,8 +253,7 @@ final class JsonRpc2Protocol implements ProtocolGenerator {
 
   @Override
   public List<String> serverIncludes() {
-    return List.of(
-        "\"smithy/json/json.h\"", "\"smithy/core/document.h\"", "\"smithy/http/headers.h\"");
+    return List.of("\"opal/json/json.h\"", "\"opal/core/document.h\"", "\"opal/http/headers.h\"");
   }
 
   @Override

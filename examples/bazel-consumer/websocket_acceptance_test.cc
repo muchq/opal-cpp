@@ -12,9 +12,9 @@
 #include <optional>
 #include <string>
 
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/websocket.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/websocket.h"
 
 namespace {
 

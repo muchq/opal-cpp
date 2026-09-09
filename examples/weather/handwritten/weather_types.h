@@ -2,15 +2,15 @@
 // examples/weather/model/weather.smithy. This code is the design prototype
 // the generated output must reproduce (PLAN Phase 1); keep it boring.
 
-#ifndef SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_TYPES_H_
-#define SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_TYPES_H_
+#ifndef OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_TYPES_H_
+#define OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_TYPES_H_
 
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 
 namespace example::weather::handwritten {
 
@@ -86,4 +86,4 @@ inline constexpr char kNoSuchResourceCode[] = "NoSuchResource";
 
 }  // namespace example::weather::handwritten
 
-#endif  // SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_TYPES_H_
+#endif  // OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_TYPES_H_

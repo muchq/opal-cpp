@@ -1,4 +1,4 @@
-#include "smithy/http/beast_transport.h"
+#include "opal/http/beast_transport.h"
 
 #include <openssl/ssl.h>
 
@@ -35,12 +35,12 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/client/config.h"
-#include "smithy/core/exception_guard.h"
-#include "smithy/eventstream/json_frame.h"
-#include "smithy/http/headers.h"
-#include "smithy/http/server_dispatch.h"
-#include "smithy/http/uri.h"
+#include "opal/client/config.h"
+#include "opal/core/exception_guard.h"
+#include "opal/eventstream/json_frame.h"
+#include "opal/http/headers.h"
+#include "opal/http/server_dispatch.h"
+#include "opal/http/uri.h"
 
 namespace opal::http {
 namespace {
@@ -66,10 +66,10 @@ void RunIoThread(asio::io_context& io, const char* which) {
       io.run();
       return;  // clean drain: no more work, thread exits
     } catch (const std::exception& e) {
-      std::clog << "smithy: " << which << " io thread caught: " << e.what()
+      std::clog << "opal: " << which << " io thread caught: " << e.what()
                 << "; re-entering run()\n";
     } catch (...) {
-      std::clog << "smithy: " << which
+      std::clog << "opal: " << which
                 << " io thread caught a non-std exception; re-entering run()\n";
     }
   }
@@ -85,9 +85,9 @@ void InvokeCompletion(const char* which, Fn&& fn, Args&&... args) {
   try {
     std::forward<Fn>(fn)(std::forward<Args>(args)...);
   } catch (const std::exception& e) {
-    std::clog << "smithy: " << which << " callback threw: " << e.what() << "\n";
+    std::clog << "opal: " << which << " callback threw: " << e.what() << "\n";
   } catch (...) {
-    std::clog << "smithy: " << which << " callback threw a non-std exception\n";
+    std::clog << "opal: " << which << " callback threw a non-std exception\n";
   }
 }
 
@@ -993,9 +993,9 @@ std::optional<HttpResponse> InvokeGateGuarded(
   try {
     return gate(request);
   } catch (const std::exception& e) {
-    std::clog << "smithy: websocket_gate threw: " << e.what() << "\n";
+    std::clog << "opal: websocket_gate threw: " << e.what() << "\n";
   } catch (...) {
-    std::clog << "smithy: websocket_gate threw a non-std exception\n";
+    std::clog << "opal: websocket_gate threw a non-std exception\n";
   }
   HttpResponse refusal;
   refusal.status = 500;
@@ -1007,9 +1007,9 @@ void InvokeServeGuarded(const std::function<void(const HttpRequest&, WebSocket&)
   try {
     serve(request, socket);
   } catch (const std::exception& e) {
-    std::clog << "smithy: on_websocket threw: " << e.what() << "\n";
+    std::clog << "opal: on_websocket threw: " << e.what() << "\n";
   } catch (...) {
-    std::clog << "smithy: on_websocket threw a non-std exception\n";
+    std::clog << "opal: on_websocket threw a non-std exception\n";
   }
 }
 
@@ -1019,9 +1019,9 @@ void InvokeServeSessionGuarded(
   try {
     serve(request, std::move(socket));
   } catch (const std::exception& e) {
-    std::clog << "smithy: on_websocket_session threw: " << e.what() << "\n";
+    std::clog << "opal: on_websocket_session threw: " << e.what() << "\n";
   } catch (...) {
-    std::clog << "smithy: on_websocket_session threw a non-std exception\n";
+    std::clog << "opal: on_websocket_session threw a non-std exception\n";
   }
 }
 
@@ -1251,9 +1251,9 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
     try {
       opts.on_rejected(rejected);
     } catch (const std::exception& e) {
-      std::clog << "smithy: on_rejected observer threw: " << e.what() << "\n";
+      std::clog << "opal: on_rejected observer threw: " << e.what() << "\n";
     } catch (...) {
-      std::clog << "smithy: on_rejected observer threw a non-std exception\n";
+      std::clog << "opal: on_rejected observer threw a non-std exception\n";
     }
   }
 
@@ -1290,9 +1290,9 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
     try {
       opts.on_connection_event(event);
     } catch (const std::exception& e) {
-      std::clog << "smithy: on_connection_event observer threw: " << e.what() << "\n";
+      std::clog << "opal: on_connection_event observer threw: " << e.what() << "\n";
     } catch (...) {
-      std::clog << "smithy: on_connection_event observer threw a non-std exception\n";
+      std::clog << "opal: on_connection_event observer threw a non-std exception\n";
     }
   }
 
@@ -1911,7 +1911,7 @@ void BeastServerTransport::Shutdown() noexcept {
     } else {
       // An unhandled wedge must never be silent (the server_dispatch
       // convention): this line is the operator's only trace of the leak.
-      std::clog << "smithy: Stop() grace expired with a handler still running; "
+      std::clog << "opal: Stop() grace expired with a handler still running; "
                    "abandoning teardown (state deliberately leaks; it is "
                    "reclaimed if the handler ever returns)\n"
                 << std::flush;

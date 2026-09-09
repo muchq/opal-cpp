@@ -39,7 +39,7 @@ Placement options considered:
 
 ## Decision
 
-`smithy/http/forwarded.h` ships two pieces, both pure and SDK-free:
+`opal/http/forwarded.h` ships two pieces, both pure and SDK-free:
 
 - **`TrustedProxies`** — the deployment's trust boundary as a CIDR set
   (`{"10.0.0.0/8", "2600:1f00::/24"}`; a bare address is a host route).

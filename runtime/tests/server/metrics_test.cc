@@ -7,7 +7,7 @@
 // scrape Prometheus silently rejects, hours later, on a dashboard nobody is
 // watching yet.
 
-#include "smithy/server/metrics.h"
+#include "opal/server/metrics.h"
 
 #include <gtest/gtest.h>
 
@@ -21,7 +21,7 @@
 #include <thread>
 #include <vector>
 
-#include "smithy/server/middleware.h"
+#include "opal/server/middleware.h"
 
 namespace opal::server {
 namespace {

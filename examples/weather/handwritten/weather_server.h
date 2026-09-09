@@ -1,11 +1,11 @@
-#ifndef SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_SERVER_H_
-#define SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_SERVER_H_
+#ifndef OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_SERVER_H_
+#define OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_SERVER_H_
 
 #include <memory>
 
 #include "examples/weather/handwritten/weather_types.h"
-#include "smithy/http/transport.h"
-#include "smithy/server/router.h"
+#include "opal/http/transport.h"
+#include "opal/server/router.h"
 
 namespace example::weather::handwritten {
 
@@ -37,4 +37,4 @@ class WeatherService {
 
 }  // namespace example::weather::handwritten
 
-#endif  // SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_SERVER_H_
+#endif  // OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_SERVER_H_

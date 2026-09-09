@@ -4,14 +4,14 @@
 // malformed or unlisted is a 403 — including "null" unless literally
 // allowlisted.
 
-#include "smithy/server/origin_gate.h"
+#include "opal/server/origin_gate.h"
 
 #include <gtest/gtest.h>
 
 #include <optional>
 #include <string>
 
-#include "smithy/http/message.h"
+#include "opal/http/message.h"
 
 namespace opal::server {
 namespace {

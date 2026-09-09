@@ -11,7 +11,7 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/core/timestamp.h"
+#include "opal/core/timestamp.h"
 
 namespace opal {
 namespace {

@@ -8,8 +8,8 @@
 
 #include "example/weather/client.h"
 #include "examples/weather/handwritten/weather_server.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
 
 namespace example::weather {
 namespace {

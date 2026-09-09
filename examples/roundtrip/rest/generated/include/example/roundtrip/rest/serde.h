@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "example/roundtrip/rest/types.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 
 namespace example::roundtrip::rest {
 

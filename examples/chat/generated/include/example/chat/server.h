@@ -6,12 +6,12 @@
 #include <memory>
 
 #include "example/chat/types.h"
-#include "smithy/core/outcome.h"
-#include "smithy/eventstream/async_event_stream.h"
-#include "smithy/eventstream/event_stream.h"
-#include "smithy/http/transport.h"
-#include "smithy/server/router.h"
-#include "smithy/server/websocket_router.h"
+#include "opal/core/outcome.h"
+#include "opal/eventstream/async_event_stream.h"
+#include "opal/eventstream/event_stream.h"
+#include "opal/http/transport.h"
+#include "opal/server/router.h"
+#include "opal/server/websocket_router.h"
 
 namespace example::chat {
 

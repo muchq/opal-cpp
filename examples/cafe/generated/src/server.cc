@@ -9,12 +9,12 @@
 
 #include "example/cafe/serde.h"
 #include "example/cafe/server.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/compression/gzip.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/text.h"
-#include "smithy/server/router.h"
+#include "opal/cbor/cbor.h"
+#include "opal/compression/gzip.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/text.h"
+#include "opal/server/router.h"
 
 namespace example::cafe {
 

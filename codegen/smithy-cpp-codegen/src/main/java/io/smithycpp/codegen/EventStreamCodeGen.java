@@ -24,7 +24,7 @@ import software.amazon.smithy.model.traits.EventPayloadTrait;
  * Event-stream detection, validation, and emission shared by the client and server generators
  * (ADR-0016): an operation is streaming when its input or output carries an event-stream union
  * (@streaming blobs stay unmodeled — {@link EventStreamIndex} only indexes unions). The runtime
- * owns the envelope (smithy/eventstream/envelope.h); this class emits only the member-name dispatch
+ * owns the envelope (opal/eventstream/envelope.h); this class emits only the member-name dispatch
  * and serde calls around it — one {@code Encode<Op>Event}/{@code Decode<Op>Event} pair per
  * streaming operation per wire end, with the protocol supplying the payload codec expressions.
  */
@@ -360,9 +360,9 @@ final class EventStreamCodeGen {
       ProtocolGenerator protocol,
       List<OperationShape> streamingOperations,
       String clientName) {
-    w.addInclude("\"smithy/eventstream/envelope.h\"");
-    w.addInclude("\"smithy/eventstream/event_stream.h\"");
-    w.addInclude("\"smithy/http/websocket.h\"");
+    w.addInclude("\"opal/eventstream/envelope.h\"");
+    w.addInclude("\"opal/eventstream/event_stream.h\"");
+    w.addInclude("\"opal/http/websocket.h\"");
     w.addInclude("<memory>");
     w.write("// Dials the WebSocket a streaming operation rides (ADR-0016): host, port, and");
     w.write("// TLS come from the same endpoint the unary transport uses (nothing is");
@@ -412,9 +412,9 @@ final class EventStreamCodeGen {
       ServiceShape service,
       ProtocolGenerator protocol,
       List<OperationShape> streamingOperations) {
-    w.addInclude("\"smithy/eventstream/envelope.h\"");
-    w.addInclude("\"smithy/http/websocket.h\"");
-    w.addInclude("\"smithy/eventstream/async_event_stream.h\"");
+    w.addInclude("\"opal/eventstream/envelope.h\"");
+    w.addInclude("\"opal/http/websocket.h\"");
+    w.addInclude("\"opal/eventstream/async_event_stream.h\"");
     w.addInclude("<utility>");
     if (protocol.streamsRideJsonRpcEnvelopes()) {
       // The JSON-RPC-native wire (ADR-0023): the codec pairs are the shared

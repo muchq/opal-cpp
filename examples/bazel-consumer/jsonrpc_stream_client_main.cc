@@ -21,8 +21,8 @@
 #include <utility>
 
 #include "acme/tally/client.h"
-#include "smithy/client/config.h"
-#include "smithy/core/outcome.h"
+#include "opal/client/config.h"
+#include "opal/core/outcome.h"
 
 namespace {
 

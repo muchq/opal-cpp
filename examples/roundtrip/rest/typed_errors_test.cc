@@ -13,8 +13,8 @@
 #include <variant>
 
 #include "example/roundtrip/rest/client.h"
-#include "smithy/core/error.h"
-#include "smithy/core/overloaded.h"
+#include "opal/core/error.h"
+#include "opal/core/overloaded.h"
 
 namespace example::roundtrip::rest {
 namespace {

@@ -1,4 +1,4 @@
-#include "smithy/http/trace_context.h"
+#include "opal/http/trace_context.h"
 
 #include <gtest/gtest.h>
 

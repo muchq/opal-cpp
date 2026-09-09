@@ -1,4 +1,4 @@
-#include "smithy/http/uri.h"
+#include "opal/http/uri.h"
 
 #include <algorithm>
 #include <cstdint>

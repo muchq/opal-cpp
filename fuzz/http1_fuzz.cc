@@ -14,7 +14,7 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/http/http1.h"
+#include "opal/http/http1.h"
 
 namespace {
 

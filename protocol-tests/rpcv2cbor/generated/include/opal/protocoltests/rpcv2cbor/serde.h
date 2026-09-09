@@ -9,11 +9,11 @@
 #include <string>
 #include <vector>
 
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
+#include "opal/core/timestamp.h"
 #include "opal/protocoltests/rpcv2cbor/types.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
-#include "smithy/core/timestamp.h"
 
 namespace opal::protocoltests::rpcv2cbor {
 

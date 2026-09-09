@@ -11,9 +11,9 @@
 
 #include "example/cafe/client.h"
 #include "example/cafe/serde.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/compression/gzip.h"
-#include "smithy/http/transport.h"
+#include "opal/cbor/cbor.h"
+#include "opal/compression/gzip.h"
+#include "opal/http/transport.h"
 
 namespace example::cafe {
 namespace {

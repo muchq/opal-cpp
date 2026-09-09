@@ -14,13 +14,13 @@
 #include <variant>
 
 #include "example/weather/types.h"
-#include "smithy/client/config.h"
-#include "smithy/client/pagination.h"
-#include "smithy/core/fatal.h"
-#include "smithy/core/hash.h"
-#include "smithy/core/outcome.h"
-#include "smithy/core/print.h"
-#include "smithy/http/transport.h"
+#include "opal/client/config.h"
+#include "opal/client/pagination.h"
+#include "opal/core/fatal.h"
+#include "opal/core/hash.h"
+#include "opal/core/outcome.h"
+#include "opal/core/print.h"
+#include "opal/http/transport.h"
 
 namespace example::weather {
 
@@ -66,7 +66,7 @@ class ListCitiesPaginator {
     opal::Outcome<std::optional<ListCitiesOutput>> Next();
 
     using Page = ListCitiesOutput;
-    /// Single-pass range over pages — contract in smithy/client/pagination.h.
+    /// Single-pass range over pages — contract in opal/client/pagination.h.
     opal::PageIterator<ListCitiesPaginator> begin() { return opal::PageIterator<ListCitiesPaginator>(this); }
     opal::PageIterator<ListCitiesPaginator> end() { return {}; }
 

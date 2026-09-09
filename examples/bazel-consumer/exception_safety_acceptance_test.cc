@@ -15,10 +15,10 @@
 #include <stdexcept>
 #include <string>
 
-#include "smithy/client/config.h"
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/websocket.h"
+#include "opal/client/config.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/websocket.h"
 
 namespace {
 

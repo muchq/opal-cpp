@@ -224,7 +224,7 @@ final class TypeGenerators {
    * named {@code out} can't shadow the sink parameter.
    */
   private void writeStructPrinting(StructureShape shape, String name) {
-    writer.addInclude("<ostream>").addInclude("<string>").addInclude("\"smithy/core/print.h\"");
+    writer.addInclude("<ostream>").addInclude("<string>").addInclude("\"opal/core/print.h\"");
     writer.write("/// Debug rendering for logs and tests — for humans, never parse it.");
     writer.openBlock("void AppendDebugTo(std::string& out) const {");
     if (shape.hasTrait(SensitiveTrait.class)) {
@@ -279,7 +279,7 @@ final class TypeGenerators {
    * so ordered- and unordered-container keyability never diverge.
    */
   private static CppWriter hashEpilogue(CppWriter writer) {
-    writer.addInclude("<cstddef>").addInclude("<functional>").addInclude("\"smithy/core/hash.h\"");
+    writer.addInclude("<cstddef>").addInclude("<functional>").addInclude("\"opal/core/hash.h\"");
     boolean first = !writer.hasEpilogue();
     CppWriter epilogue = writer.epilogue();
     if (first) {
@@ -512,8 +512,8 @@ final class TypeGenerators {
       String caseNameDoc,
       Runnable extraPublic) {
     writer.addInclude("<cstddef>").addInclude("<utility>").addInclude("<variant>");
-    writer.addInclude("<ostream>").addInclude("<string>").addInclude("\"smithy/core/print.h\"");
-    writer.addInclude("\"smithy/core/fatal.h\"");
+    writer.addInclude("<ostream>").addInclude("<string>").addInclude("\"opal/core/print.h\"");
+    writer.addInclude("\"opal/core/fatal.h\"");
 
     writer.openBlock("class $L {", name);
     writer.write("public:").indent();

@@ -1,4 +1,4 @@
-#include "smithy/core/text.h"
+#include "opal/core/text.h"
 
 namespace opal {
 

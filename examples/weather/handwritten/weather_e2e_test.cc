@@ -9,10 +9,10 @@
 
 #include "examples/weather/handwritten/weather_client.h"
 #include "examples/weather/handwritten/weather_server.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
-#ifdef SMITHY_E2E_HAVE_BEAST
-#include "smithy/http/beast_transport.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
+#ifdef OPAL_E2E_HAVE_BEAST
+#include "opal/http/beast_transport.h"
 #endif
 
 namespace example::weather::handwritten {
@@ -73,7 +73,7 @@ class WeatherEndToEndTest : public testing::TestWithParam<Transport> {
       ASSERT_TRUE(socket_server_->Start(service_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
     } else {
-#ifdef SMITHY_E2E_HAVE_BEAST
+#ifdef OPAL_E2E_HAVE_BEAST
       beast_server_ = std::make_unique<opal::http::BeastServerTransport>();
       ASSERT_TRUE(beast_server_->Start(service_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(beast_server_->port());
@@ -88,7 +88,7 @@ class WeatherEndToEndTest : public testing::TestWithParam<Transport> {
 
   void TearDown() override {
     if (socket_server_ != nullptr) socket_server_->Stop();
-#ifdef SMITHY_E2E_HAVE_BEAST
+#ifdef OPAL_E2E_HAVE_BEAST
     if (beast_server_ != nullptr) beast_server_->Stop();
 #endif
   }
@@ -96,7 +96,7 @@ class WeatherEndToEndTest : public testing::TestWithParam<Transport> {
   std::unique_ptr<WeatherService> service_;
   std::shared_ptr<opal::http::HttpClient> transport_holder_;
   std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
-#ifdef SMITHY_E2E_HAVE_BEAST
+#ifdef OPAL_E2E_HAVE_BEAST
   std::unique_ptr<opal::http::BeastServerTransport> beast_server_;
 #endif
   std::unique_ptr<WeatherClient> client_;
@@ -147,7 +147,7 @@ TEST_P(WeatherEndToEndTest, GetCurrentTimeRoundTripsTimestamp) {
   EXPECT_EQ(time->time.epoch_milliseconds(), 1398796238500);
 }
 
-#ifdef SMITHY_E2E_HAVE_BEAST
+#ifdef OPAL_E2E_HAVE_BEAST
 INSTANTIATE_TEST_SUITE_P(Transports, WeatherEndToEndTest,
                          testing::Values(Transport::kLoopback, Transport::kSocket,
                                          Transport::kBeast),

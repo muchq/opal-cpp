@@ -82,12 +82,12 @@ smithy-cpp/
 │   ├── smithy-cpp-codegen-server/    # server-specific generation
 │   └── smithy-cpp-codegen-tests/     # golden tests, protocol-test generation
 ├── runtime/                  # C++ runtime the generated code links against — Phase 1
-│   ├── include/smithy/core/          # types: Blob, Timestamp, Document, Outcome, Error
-│   ├── include/smithy/json/          # JSON serde primitives (restJson1)
-│   ├── include/smithy/cbor/          # CBOR serde primitives (rpcv2Cbor)
-│   ├── include/smithy/http/          # HttpRequest/Response, HttpClient/HttpServer interfaces
-│   ├── include/smithy/client/        # client base: config, endpoint, retry, interceptors
-│   ├── include/smithy/server/        # server base: router, handler dispatch, validation
+│   ├── include/opal/core/          # types: Blob, Timestamp, Document, Outcome, Error
+│   ├── include/opal/json/          # JSON serde primitives (restJson1)
+│   ├── include/opal/cbor/          # CBOR serde primitives (rpcv2Cbor)
+│   ├── include/opal/http/          # HttpRequest/Response, HttpClient/HttpServer interfaces
+│   ├── include/opal/client/        # client base: config, endpoint, retry, interceptors
+│   ├── include/opal/server/        # server base: router, handler dispatch, validation
 │   └── src/…                         # implementations: curl transport, beast server, …
 ├── bazel/                    # Bazel rules: smithy_cpp_*_library, toolchains — Phase 6
 ├── MODULE.bazel              # bzlmod module root (Bazel 9, bzlmod-only)
@@ -124,7 +124,7 @@ before designing each subsystem, mapping its structure onto ours:
 | `codegen-client` + `ClientProtocolTestGenerator` | `smithy-cpp-codegen-client` + client protocol-test generation | Phase 3 |
 | `codegen-server` (routing, constraint traits, `ValidationException`, `ServerProtocolTestGenerator`) | `smithy-cpp-codegen-server` | Phase 4 |
 | `codegen-client-test` / `codegen-server-test` (Gradle projects that generate code from a corpus of test models, then compile and `cargo test` it) | our generate→compile→run test harness over the fixture corpus | Phases 2–5 |
-| `rust-runtime/` crates: `aws-smithy-types`, `aws-smithy-http`, `aws-smithy-runtime`, `aws-smithy-http-server` | `runtime/` modules: `smithy/core`, `smithy/http`, `smithy/client`, `smithy/server` | Phase 1 |
+| `rust-runtime/` crates: `aws-smithy-types`, `aws-smithy-http`, `aws-smithy-runtime`, `aws-smithy-http-server` | `runtime/` modules: `opal/core`, `opal/http`, `opal/client`, `opal/server` | Phase 1 |
 
 Concretely: its shared-core/client/server module split, its "generate real projects from test
 models and run their tests in CI" strategy, its server constraint-validation design
@@ -234,19 +234,19 @@ timestamp/document edge cases, `aws-smithy-http-server` for router and rejection
 module is an ordinary `cc_library` Bazel target (ADR-0004).
 
 **Tasks**
-- **Core types** (`smithy/core`):
+- **Core types** (`opal/core`):
   - `Blob`, `Timestamp` (epoch-seconds / date-time / http-date parsing+formatting), `Document`
     (JSON-like dynamic value), `BigDecimal`/`BigInteger` placeholders.
   - `Outcome<T, E>` (expected-like), `Error` hierarchy: `ModeledError` base, transport errors,
     deserialization errors; error code + message + retryability metadata.
 - **Serde** behind a format-agnostic reader/writer interface (both protocols' generated serde
   code targets the same interface shapes):
-  - **JSON** (`smithy/json`): thin wrappers over the JSON backend with Smithy-specific behaviors
+  - **JSON** (`opal/json`): thin wrappers over the JSON backend with Smithy-specific behaviors
     (timestamps, blobs as base64, sparse vs dense collections, unknown member skipping for
     forward compatibility).
-  - **CBOR** (`smithy/cbor`): deterministic encoder + tolerant decoder per the rpcv2Cbor spec
+  - **CBOR** (`opal/cbor`): deterministic encoder + tolerant decoder per the rpcv2Cbor spec
     (definite/indefinite lengths, tagged timestamps, unknown member skipping).
-- **HTTP layer** (`smithy/http`):
+- **HTTP layer** (`opal/http`):
   - Value types: `HttpRequest`, `HttpResponse`, `Headers` (case-insensitive), `Uri` with
     escaping rules matching Smithy httpLabel/httpQuery requirements.
   - Interfaces: `HttpClient` (async-capable: `send(request) -> future<Response>` plus sync
@@ -257,9 +257,9 @@ module is an ordinary `cc_library` Bazel target (ADR-0004).
   - Implementations: **libcurl** `HttpClient`; **Boost.Beast/asio** `HttpServerTransport`; plus
     an **in-memory loopback transport** that connects an `HttpClient` directly to a server request
     handler with no sockets — the backbone of fast integration tests later.
-- **Client base** (`smithy/client`): `ClientConfig` (endpoint, timeouts, user-agent), interceptor
+- **Client base** (`opal/client`): `ClientConfig` (endpoint, timeouts, user-agent), interceptor
   hook points (before-send/after-receive), simple retry policy (off by default until Phase 7).
-- **Server base** (`smithy/server`): `Router` (method + URI-pattern matching with literal >
+- **Server base** (`opal/server`): `Router` (method + URI-pattern matching with literal >
   label precedence per Smithy spec), `RequestContext`, error→HTTP response mapping, and a
   `ValidationFailure` type for Phase 4's constraint checks.
 

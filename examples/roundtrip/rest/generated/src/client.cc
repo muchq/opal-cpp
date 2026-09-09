@@ -13,15 +13,15 @@
 
 #include "example/roundtrip/rest/client.h"
 #include "example/roundtrip/rest/serde.h"
-#include "smithy/compression/gzip.h"
-#include "smithy/core/base64.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document_serde.h"
-#include "smithy/core/uuid.h"
-#include "smithy/http/headers.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/http/uri.h"
-#include "smithy/json/json.h"
+#include "opal/compression/gzip.h"
+#include "opal/core/base64.h"
+#include "opal/core/blob.h"
+#include "opal/core/document_serde.h"
+#include "opal/core/uuid.h"
+#include "opal/http/headers.h"
+#include "opal/http/socket_transport.h"
+#include "opal/http/uri.h"
+#include "opal/json/json.h"
 
 namespace example::roundtrip::rest {
 

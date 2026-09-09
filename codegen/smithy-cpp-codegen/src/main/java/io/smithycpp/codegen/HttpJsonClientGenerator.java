@@ -40,9 +40,9 @@ final class HttpJsonClientGenerator {
 
   List<String> includes() {
     return List.of(
-        "\"smithy/json/json.h\"",
-        "\"smithy/core/base64.h\"",
-        "\"smithy/http/headers.h\"",
+        "\"opal/json/json.h\"",
+        "\"opal/core/base64.h\"",
+        "\"opal/http/headers.h\"",
         "<cstdint>",
         "<cstdlib>",
         "<limits>");

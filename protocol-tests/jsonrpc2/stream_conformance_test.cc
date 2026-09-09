@@ -25,16 +25,16 @@
 #include <utility>
 #include <vector>
 
+#include "opal/client/config.h"
+#include "opal/core/error.h"
+#include "opal/core/outcome.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 #include "opal/protocoltests/jsonrpc2/client.h"
 #include "opal/protocoltests/jsonrpc2/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/error.h"
-#include "smithy/core/outcome.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
 
 namespace opal::protocoltests::jsonrpc2 {
 namespace {

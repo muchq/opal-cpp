@@ -1,4 +1,4 @@
-#include "smithy/core/document_serde.h"
+#include "opal/core/document_serde.h"
 
 #include <gtest/gtest.h>
 
@@ -7,7 +7,7 @@
 #include <limits>
 #include <string>
 
-#include "smithy/core/uuid.h"
+#include "opal/core/uuid.h"
 
 namespace opal {
 namespace {

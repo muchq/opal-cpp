@@ -1,4 +1,4 @@
-#include "smithy/http/websocket_pair.h"
+#include "opal/http/websocket_pair.h"
 
 #include <algorithm>
 #include <array>
@@ -12,7 +12,7 @@
 #include <thread>
 #include <utility>
 
-#include "smithy/eventstream/frame.h"
+#include "opal/eventstream/frame.h"
 
 namespace opal::http {
 namespace {

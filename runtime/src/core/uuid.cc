@@ -1,4 +1,4 @@
-#include "smithy/core/uuid.h"
+#include "opal/core/uuid.h"
 
 #include <array>
 #include <cstdint>

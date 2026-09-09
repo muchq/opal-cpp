@@ -71,8 +71,7 @@ class CppSymbolProviderTest {
     MemberShape data =
         m.expectShape(ShapeId.from("test.smithy#Sample$data")).asMemberShape().orElseThrow();
     assertTrue(
-        CppSymbolProvider.headersOf(symbols.toMemberSymbol(data))
-            .contains("\"smithy/core/blob.h\""));
+        CppSymbolProvider.headersOf(symbols.toMemberSymbol(data)).contains("\"opal/core/blob.h\""));
   }
 
   @Test

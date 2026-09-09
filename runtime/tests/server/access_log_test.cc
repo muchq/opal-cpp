@@ -7,7 +7,7 @@
 // collector is a strict parser: a line the formatter *thinks* is JSON but a
 // parser rejects is a log entry that silently never arrives.
 
-#include "smithy/server/access_log.h"
+#include "opal/server/access_log.h"
 
 #include <gtest/gtest.h>
 
@@ -17,10 +17,10 @@
 #include <vector>
 
 #include "nlohmann/json.hpp"
-#include "smithy/http/forwarded.h"
-#include "smithy/http/message.h"
-#include "smithy/server/metrics.h"
-#include "smithy/server/middleware.h"
+#include "opal/http/forwarded.h"
+#include "opal/http/message.h"
+#include "opal/server/metrics.h"
+#include "opal/server/middleware.h"
 
 namespace opal::server {
 namespace {

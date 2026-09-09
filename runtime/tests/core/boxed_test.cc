@@ -2,7 +2,7 @@
 // members — deep copy, deep equality, and compilability with the mutually
 // recursive struct shapes the generator emits.
 
-#include "smithy/core/boxed.h"
+#include "opal/core/boxed.h"
 
 #include <gtest/gtest.h>
 

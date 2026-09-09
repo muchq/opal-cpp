@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "smithy/json/json.h"
+#include "opal/json/json.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
 namespace opal::json {

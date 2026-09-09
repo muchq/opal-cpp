@@ -17,10 +17,10 @@
 
 #include "example/roundtrip/rest/client.h"
 #include "example/roundtrip/rest/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/testing/tls_test_identity.h"
+#include "opal/client/config.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/socket_transport.h"
+#include "opal/testing/tls_test_identity.h"
 
 namespace {
 
@@ -105,9 +105,9 @@ void BM_BeastRoundTrip(benchmark::State& state) {
     return;
   }
   const std::string origin = "http://127.0.0.1:" + std::to_string(transport.port());
-  auto client = MakeClient(origin, std::make_shared<opal::http::BeastHttpClient>(
-                                       opal::http::BeastHttpClient::Options{
-                                           .host = "127.0.0.1", .port = transport.port()}));
+  auto client = MakeClient(
+      origin, std::make_shared<opal::http::BeastHttpClient>(opal::http::BeastHttpClient::Options{
+                  .host = "127.0.0.1", .port = transport.port()}));
   RunLoop(state, client);
   transport.Stop();
 }
@@ -116,20 +116,20 @@ BENCHMARK(BM_BeastRoundTrip);
 void BM_BeastTlsRoundTrip(benchmark::State& state) {
   example::roundtrip::rest::RoundTripRestServer server(std::make_shared<EchoHandler>());
   opal::http::BeastServerTransport transport({.port = 0,
-                                                .threads = 2,
-                                                .tls_certificate_chain_pem = kTestCertificatePem,
-                                                .tls_private_key_pem = kTestPrivateKeyPem});
+                                              .threads = 2,
+                                              .tls_certificate_chain_pem = kTestCertificatePem,
+                                              .tls_private_key_pem = kTestPrivateKeyPem});
   if (!transport.Start(server.Handler()).ok()) {
     state.SkipWithError("beast tls server failed to start");
     return;
   }
   const std::string origin = "https://127.0.0.1:" + std::to_string(transport.port());
-  auto client = MakeClient(origin, std::make_shared<opal::http::BeastHttpClient>(
-                                       opal::http::BeastHttpClient::Options{
-                                           .host = "127.0.0.1",
-                                           .port = transport.port(),
-                                           .tls = true,
-                                           .tls_options = {.ca_pem = kTestCertificatePem}}));
+  auto client = MakeClient(
+      origin, std::make_shared<opal::http::BeastHttpClient>(opal::http::BeastHttpClient::Options{
+                  .host = "127.0.0.1",
+                  .port = transport.port(),
+                  .tls = true,
+                  .tls_options = {.ca_pem = kTestCertificatePem}}));
   RunLoop(state, client);
   transport.Stop();
 }

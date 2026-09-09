@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-#include "smithy/http/http1.h"
+#include "opal/http/http1.h"
 
 namespace opal::http {
 namespace {

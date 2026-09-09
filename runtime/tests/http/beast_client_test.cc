@@ -26,14 +26,14 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/client/config.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/message.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/http/trace_context.h"
-#include "smithy/http/transport.h"
-#include "smithy/testing/connection_event_recorder.h"
-#include "smithy/testing/tls_test_identity.h"
+#include "opal/client/config.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/message.h"
+#include "opal/http/socket_transport.h"
+#include "opal/http/trace_context.h"
+#include "opal/http/transport.h"
+#include "opal/testing/connection_event_recorder.h"
+#include "opal/testing/tls_test_identity.h"
 
 namespace opal::http {
 namespace {

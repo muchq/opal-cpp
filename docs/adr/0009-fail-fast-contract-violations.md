@@ -17,7 +17,7 @@ Three postures were considered: return a null/sentinel (hides bugs), debug-only 
 ## Decision
 
 Contract violations terminate the process with a one-line message carrying the available
-context, via `opal::internal::Fatal` (`smithy/core/fatal.h`):
+context, via `opal::internal::Fatal` (`opal/core/fatal.h`):
 
 - `Outcome`: value-access on an error dies with the error's code and message;
   `value_or_die("context")` adds caller context; `error()` on a value dies naming the misuse.
@@ -36,7 +36,7 @@ has declared unrecoverable.
 
 ## Consequences
 
-- Crash lines carry the diagnosis (`smithy: OrderStatus::as_ready(): engaged member is
+- Crash lines carry the diagnosis (`opal: OrderStatus::as_ready(): engaged member is
   pending`), and death tests pin the exact formats.
 - **Server posture shift:** before, a handler's wrong-side deref threw and the dispatch
   guard contained it into a 500 response; now the same bug kills the process. This is

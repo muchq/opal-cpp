@@ -15,14 +15,14 @@
 
 #include "example/weather/serde.h"
 #include "example/weather/server.h"
-#include "smithy/core/base64.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/document_serde.h"
-#include "smithy/core/regex.h"
-#include "smithy/http/headers.h"
-#include "smithy/json/json.h"
-#include "smithy/server/router.h"
+#include "opal/core/base64.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/document_serde.h"
+#include "opal/core/regex.h"
+#include "opal/http/headers.h"
+#include "opal/json/json.h"
+#include "opal/server/router.h"
 
 namespace example::weather {
 

@@ -1,11 +1,11 @@
-#include "smithy/http/http1.h"
+#include "opal/http/http1.h"
 
 #include <array>
 #include <cstdlib>
 #include <string>
 #include <string_view>
 
-#include "smithy/core/error.h"
+#include "opal/core/error.h"
 
 namespace opal::http {
 namespace {

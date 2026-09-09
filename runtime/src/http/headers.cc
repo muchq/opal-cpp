@@ -1,4 +1,4 @@
-#include "smithy/http/headers.h"
+#include "opal/http/headers.h"
 
 #include <algorithm>
 #include <cctype>

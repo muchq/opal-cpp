@@ -34,7 +34,7 @@ Shape 1. Every generated handler method is
 - `RequestContext` (the type route lambdas already thread) gains
   `const http::HttpRequest* request`, set by `Router::Route` for the handler call's
   lifetime. Through it a handler reads unmodeled headers, the inbound `traceparent`
-  (parse with `smithy/http/trace_context.h`), and the peer address.
+  (parse with `opal/http/trace_context.h`), and the peer address.
 - `HttpRequest` gains `peer_address` — an "ip:port" server-side annotation (the
   `HttpResponse::operation` precedent) stamped by both server transports; empty on the
   in-memory Loopback unless a test stamps its own.

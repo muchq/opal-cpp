@@ -1,9 +1,9 @@
-#include "smithy/eventstream/envelope.h"
+#include "opal/eventstream/envelope.h"
 
 #include <utility>
 #include <variant>
 
-#include "smithy/core/error.h"
+#include "opal/core/error.h"
 
 namespace opal::eventstream {
 namespace {

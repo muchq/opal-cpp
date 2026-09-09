@@ -29,14 +29,14 @@
 #include <thread>
 #include <vector>
 
-#include "smithy/eventstream/async_event_stream.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/eventstream/json_frame.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/websocket.h"
-#include "smithy/testing/connection_event_recorder.h"
-#include "smithy/testing/tls_test_identity.h"
-#include "smithy/testing/websocket_contract_test.h"
+#include "opal/eventstream/async_event_stream.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/eventstream/json_frame.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/websocket.h"
+#include "opal/testing/connection_event_recorder.h"
+#include "opal/testing/tls_test_identity.h"
+#include "opal/testing/websocket_contract_test.h"
 
 namespace opal::http {
 namespace {

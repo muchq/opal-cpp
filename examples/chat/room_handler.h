@@ -1,5 +1,5 @@
-#ifndef SMITHY_EXAMPLES_CHAT_ROOM_HANDLER_H_
-#define SMITHY_EXAMPLES_CHAT_ROOM_HANDLER_H_
+#ifndef OPAL_EXAMPLES_CHAT_ROOM_HANDLER_H_
+#define OPAL_EXAMPLES_CHAT_ROOM_HANDLER_H_
 
 // The reference ChatHandler both e2e suites drive — chat_e2e_test.cc through
 // the in-memory pair and chat_e2e_beast_test.cc over real WebSockets, one
@@ -10,7 +10,7 @@
 #include <string>
 
 #include "example/chat/server.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/outcome.h"
 
 namespace example::chat {
 
@@ -71,4 +71,4 @@ class RoomHandler final : public ChatHandler {
 
 }  // namespace example::chat
 
-#endif  // SMITHY_EXAMPLES_CHAT_ROOM_HANDLER_H_
+#endif  // OPAL_EXAMPLES_CHAT_ROOM_HANDLER_H_

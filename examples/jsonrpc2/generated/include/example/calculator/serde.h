@@ -4,8 +4,8 @@
 #define EXAMPLE_CALCULATOR_SERDE_H_
 
 #include "example/calculator/types.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 
 namespace example::calculator {
 

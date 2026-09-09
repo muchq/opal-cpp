@@ -1,4 +1,4 @@
-#include "smithy/server/origin_gate.h"
+#include "opal/server/origin_gate.h"
 
 #include <cctype>
 #include <optional>
@@ -7,9 +7,9 @@
 #include <string_view>
 #include <utility>
 
-#include "smithy/core/fatal.h"
-#include "smithy/http/uri.h"
-#include "smithy/server/router.h"
+#include "opal/core/fatal.h"
+#include "opal/http/uri.h"
+#include "opal/server/router.h"
 
 namespace opal::server {
 namespace {

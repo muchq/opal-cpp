@@ -36,11 +36,11 @@ class MyHandler final : public example::weather::WeatherHandler {
   address (`context.request->peer_address`, `"ip:port"`, empty on the in-memory Loopback),
   or the request's `traceparent` — always present and parseable behind a transport, since
   the ingress mints a root context when the client sent none (ADR-0011); parse it with
-  `opal::http::ParseTraceparent` and `GenerateSpanId` (`smithy/http/trace_context.h`) to
+  `opal::http::ParseTraceparent` and `GenerateSpanId` (`opal/http/trace_context.h`) to
   open child spans. `context.labels`
   and `context.query_params` hold the decoded routing captures. Handlers that need none of
   it leave the parameter unnamed. Behind a reverse proxy, derive the real client with
-  `opal::http::ClientAddress` over a `TrustedProxies` set (`smithy/http/forwarded.h`,
+  `opal::http::ClientAddress` over a `TrustedProxies` set (`opal/http/forwarded.h`,
   ADR-0012) instead of reading `x-forwarded-for` yourself — the raw header is
   client-authored.
 
@@ -152,7 +152,7 @@ the binding protocols, on the shared `/` endpoint for jsonRpc2 (ADR-0023), whose
 envelope carries the routing instead.
 
 Application admission policy (auth, rate limits) composes by wrapping `Gate()`: run your
-refusal first, then defer to the router's (`smithy/server/websocket_router.h` shows the
+refusal first, then defer to the router's (`opal/server/websocket_router.h` shows the
 pattern). Constraint validation also guards streaming inputs, with one wrinkle: the labels,
 query, and headers arrive on the upgrade request, which the transport accepts *before* the
 route parses them — so a validation failure surfaces as a successful dial whose first
@@ -509,7 +509,7 @@ responds with the standard 400 `ValidationException` wire shape (`message` summa
 the exact message formats the official validation conformance suite pins. `@internal` enum
 members stay accepted on the wire but are omitted from the advertised value set.
 
-`@pattern` evaluates on a linear-time NFA engine (`smithy/core/regex.h`), so no pattern/input
+`@pattern` evaluates on a linear-time NFA engine (`opal/core/regex.h`), so no pattern/input
 combination can backtrack catastrophically — the classic ReDoS pattern `^([0-9]+)+$` validates
 request-sized inputs in microseconds instead of hanging the dispatch thread. The engine covers
 the ECMA-262 subset Smithy patterns use; backreferences and lookaround (inherently

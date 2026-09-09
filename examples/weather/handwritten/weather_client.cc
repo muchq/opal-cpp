@@ -2,8 +2,8 @@
 
 #include <utility>
 
-#include "smithy/http/socket_transport.h"
-#include "smithy/json/json.h"
+#include "opal/http/socket_transport.h"
+#include "opal/json/json.h"
 
 namespace example::weather::handwritten {
 namespace {

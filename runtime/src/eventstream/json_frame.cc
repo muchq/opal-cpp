@@ -1,14 +1,14 @@
-#include "smithy/eventstream/json_frame.h"
+#include "opal/eventstream/json_frame.h"
 
 #include <cctype>
 #include <cstddef>
 #include <string>
 #include <utility>
 
-#include "smithy/core/document.h"
-#include "smithy/core/error.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/json/json.h"
+#include "opal/core/document.h"
+#include "opal/core/error.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/json/json.h"
 
 namespace opal::eventstream {
 namespace {

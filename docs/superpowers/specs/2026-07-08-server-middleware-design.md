@@ -5,7 +5,7 @@
 **Motivation:** First production pilot (migrating MoonBase's `portrait` service off
 meerkat) needs three capabilities meerkat provides today: rate limiting, a health
 endpoint, and request metrics including an in-flight gauge. This spec closes those
-gaps in `smithy/server/middleware.h` without adding any dependency to the runtime —
+gaps in `opal/server/middleware.h` without adding any dependency to the runtime —
 in particular, no opentelemetry-cpp (its protobuf/gRPC tree violates the runtime's
 dep-light rule; see production-guide.md "Observability").
 

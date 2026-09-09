@@ -34,7 +34,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
 
   @Override
   public List<String> clientIncludes() {
-    return List.of("\"smithy/cbor/cbor.h\"", "\"smithy/core/blob.h\"");
+    return List.of("\"opal/cbor/cbor.h\"", "\"opal/core/blob.h\"");
   }
 
   @Override
@@ -54,7 +54,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
 
   @Override
   public List<String> serverIncludes() {
-    return List.of("\"smithy/cbor/cbor.h\"", "\"smithy/core/blob.h\"");
+    return List.of("\"opal/cbor/cbor.h\"", "\"opal/core/blob.h\"");
   }
 
   @Override

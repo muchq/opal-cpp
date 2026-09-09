@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "smithy/json/json.h"
+#include "opal/json/json.h"
 #include "tests/testing/random_document.h"
 
 namespace opal::json {

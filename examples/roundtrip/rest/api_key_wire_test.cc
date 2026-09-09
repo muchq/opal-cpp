@@ -10,8 +10,8 @@
 #include <utility>
 
 #include "example/roundtrip/rest/client.h"
-#include "smithy/client/config.h"
-#include "smithy/http/transport.h"
+#include "opal/client/config.h"
+#include "opal/http/transport.h"
 
 namespace example::roundtrip::rest {
 namespace {

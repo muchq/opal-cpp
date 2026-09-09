@@ -1,4 +1,4 @@
-#include "smithy/client/retry.h"
+#include "opal/client/retry.h"
 
 #include <algorithm>
 #include <random>

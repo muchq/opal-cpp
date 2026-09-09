@@ -16,8 +16,8 @@
 #include "accumulate_handler.h"
 #include "example/calculator/client.h"
 #include "example/calculator/server.h"
-#include "smithy/core/error.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/core/error.h"
+#include "opal/http/websocket_pair.h"
 #include "stream_test_fixture.h"
 
 namespace example::calculator {

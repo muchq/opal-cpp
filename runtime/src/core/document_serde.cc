@@ -1,4 +1,4 @@
-#include "smithy/core/document_serde.h"
+#include "opal/core/document_serde.h"
 
 #include <array>
 #include <charconv>
@@ -7,7 +7,7 @@
 #include <string>
 #include <system_error>
 
-#include "smithy/core/base64.h"
+#include "opal/core/base64.h"
 
 namespace opal {
 

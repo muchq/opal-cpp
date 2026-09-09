@@ -1,11 +1,11 @@
-#include "smithy/json/json.h"
+#include "opal/json/json.h"
 
 #include <cmath>
 #include <cstdint>
 #include <limits>
 #include <nlohmann/json.hpp>
 
-#include "smithy/core/base64.h"
+#include "opal/core/base64.h"
 
 namespace opal::json {
 namespace {

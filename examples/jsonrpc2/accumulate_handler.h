@@ -1,5 +1,5 @@
-#ifndef SMITHY_EXAMPLES_JSONRPC2_ACCUMULATE_HANDLER_H_
-#define SMITHY_EXAMPLES_JSONRPC2_ACCUMULATE_HANDLER_H_
+#ifndef OPAL_EXAMPLES_JSONRPC2_ACCUMULATE_HANDLER_H_
+#define OPAL_EXAMPLES_JSONRPC2_ACCUMULATE_HANDLER_H_
 
 // The reference Calculator handlers every stream suite drives — the
 // in-memory pair e2e and the Beast e2e, blocking and async — one place so
@@ -12,7 +12,7 @@
 #include <string>
 
 #include "example/calculator/server.h"
-#include "smithy/core/outcome.h"
+#include "opal/core/outcome.h"
 
 namespace example::calculator {
 
@@ -93,4 +93,4 @@ class AsyncAccumulatingCalculator final : public CalculatorAsyncHandler {
 
 }  // namespace example::calculator
 
-#endif  // SMITHY_EXAMPLES_JSONRPC2_ACCUMULATE_HANDLER_H_
+#endif  // OPAL_EXAMPLES_JSONRPC2_ACCUMULATE_HANDLER_H_

@@ -12,10 +12,10 @@
 
 #include "example/calculator/client.h"
 #include "example/calculator/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/document.h"
-#include "smithy/http/transport.h"
-#include "smithy/json/json.h"
+#include "opal/client/config.h"
+#include "opal/core/document.h"
+#include "opal/http/transport.h"
+#include "opal/json/json.h"
 
 namespace example::calculator {
 namespace {

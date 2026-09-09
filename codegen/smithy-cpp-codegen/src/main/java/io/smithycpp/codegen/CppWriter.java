@@ -65,7 +65,7 @@ public final class CppWriter extends SymbolWriter<CppWriter, CppWriter.IncludeCo
     }
   }
 
-  /** Records an include in angle ({@code <vector>}) or quote ({@code "smithy/x.h"}) form. */
+  /** Records an include in angle ({@code <vector>}) or quote ({@code "opal/x.h"}) form. */
   public CppWriter addInclude(String include) {
     getImportContainer().add(include);
     return this;

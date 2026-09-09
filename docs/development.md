@@ -111,8 +111,8 @@ cd codegen && gradle spotlessApply
 
 ## Repository conventions
 
-- Runtime headers live under `runtime/include/smithy/<module>/…` and are included as
-  `#include "smithy/<module>/….h"`.
+- Runtime headers live under `runtime/include/opal/<module>/…` and are included as
+  `#include "opal/<module>/….h"`.
 - Every `cc_*` target loads rules from `@rules_cc//cc:defs.bzl` explicitly; the
   `--incompatible_autoload_externally` setting in `.bazelrc` exists only for third-party
   dependencies whose BUILD files predate Bazel 9's removal of the native C++ rules.

@@ -118,7 +118,7 @@ class EventStreamGeneratorTest {
   @Test
   void clientSignaturesCarryTheTypedSessionPerDirection() {
     String client = rest().expectFileString("/include/test/stream/client.h");
-    assertTrue(client.contains("#include \"smithy/eventstream/event_stream.h\""), client);
+    assertTrue(client.contains("#include \"opal/eventstream/event_stream.h\""), client);
     // One named alias per streaming operation; the signatures use it, so
     // consumers never respell the two-parameter template.
     assertTrue(

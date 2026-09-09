@@ -11,8 +11,8 @@
 #include <memory>
 #include <string>
 
+#include "opal/json/json.h"
 #include "opal/protocoltests/simplerestjson/server.h"
-#include "smithy/json/json.h"
 
 namespace opal::protocoltests::simplerestjson {
 namespace {

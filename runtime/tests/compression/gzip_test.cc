@@ -1,11 +1,11 @@
-#include "smithy/compression/gzip.h"
+#include "opal/compression/gzip.h"
 
 #include <gtest/gtest.h>
 
 #include <cstddef>
 #include <string>
 
-#include "smithy/compression/gzip_test_peer.h"
+#include "opal/compression/gzip_test_peer.h"
 
 namespace opal {
 namespace {

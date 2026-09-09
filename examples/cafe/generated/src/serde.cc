@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "example/cafe/serde.h"
-#include "smithy/core/document_serde.h"
+#include "opal/core/document_serde.h"
 
 namespace example::cafe {
 

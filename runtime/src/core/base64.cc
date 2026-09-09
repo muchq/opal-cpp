@@ -1,4 +1,4 @@
-#include "smithy/core/base64.h"
+#include "opal/core/base64.h"
 
 #include <array>
 #include <cstdint>

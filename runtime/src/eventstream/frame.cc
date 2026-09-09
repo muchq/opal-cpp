@@ -1,9 +1,9 @@
-#include "smithy/eventstream/frame.h"
+#include "opal/eventstream/frame.h"
 
 #include <algorithm>
 
-#include "smithy/core/error.h"
-#include "smithy/core/overloaded.h"
+#include "opal/core/error.h"
+#include "opal/core/overloaded.h"
 
 namespace opal::eventstream {
 namespace {

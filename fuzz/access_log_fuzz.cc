@@ -11,8 +11,8 @@
 #include <string>
 
 #include "nlohmann/json.hpp"
-#include "smithy/server/access_log.h"
-#include "smithy/server/middleware.h"
+#include "opal/server/access_log.h"
+#include "opal/server/middleware.h"
 
 namespace {
 

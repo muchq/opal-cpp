@@ -435,7 +435,7 @@ final class ProtocolTestGenerator {
     w.addInclude("<string>");
     w.addInclude("<utility>");
     w.addInclude("\"" + context.settings().includePrefix() + "/client.h\"");
-    w.addInclude("\"smithy/testing/protocol_test.h\"");
+    w.addInclude("\"opal/testing/protocol_test.h\"");
   }
 
   private void writeExcludedComment(CppWriter w) {

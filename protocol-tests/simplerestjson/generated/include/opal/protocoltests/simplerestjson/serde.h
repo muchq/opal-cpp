@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
 #include "opal/protocoltests/simplerestjson/types.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
 
 namespace opal::protocoltests::simplerestjson {
 

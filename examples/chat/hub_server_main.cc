@@ -16,8 +16,8 @@
 
 #include "example/chat/server.h"
 #include "hub_handler.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/beast_transport.h"
+#include "opal/core/outcome.h"
+#include "opal/http/beast_transport.h"
 
 int main(int argc, char** argv) {
   sigset_t shutdown_signals;

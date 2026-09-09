@@ -1,4 +1,4 @@
-#include "smithy/server/middleware.h"
+#include "opal/server/middleware.h"
 
 #include <cctype>
 #include <cstddef>
@@ -9,8 +9,8 @@
 #include <string_view>
 #include <utility>
 
-#include "smithy/core/exception_guard.h"
-#include "smithy/core/fatal.h"
+#include "opal/core/exception_guard.h"
+#include "opal/core/fatal.h"
 
 namespace opal::server {
 
@@ -72,15 +72,15 @@ namespace {
 // -fno-exceptions, where the sink cannot throw.
 template <typename Callback, typename Observation>
 void CallContained(const Callback& callback, const Observation& observation, const char* which) {
-  opal::internal::Contain(
-      [&] { callback(observation); },
-      [&](const char* what) {
-        if (what != nullptr) {
-          std::clog << "smithy: " << which << " callback threw: " << what << "\n";
-        } else {
-          std::clog << "smithy: " << which << " callback threw a non-std exception\n";
-        }
-      });
+  opal::internal::Contain([&] { callback(observation); },
+                          [&](const char* what) {
+                            if (what != nullptr) {
+                              std::clog << "opal: " << which << " callback threw: " << what << "\n";
+                            } else {
+                              std::clog << "opal: " << which
+                                        << " callback threw a non-std exception\n";
+                            }
+                          });
 }
 
 // Same containment policy for readiness probes: a throw is a failing
@@ -92,9 +92,9 @@ bool ProbeContained(const ReadinessCheck& check) {
       [&] { return check.probe(); },
       [&](const char* what) -> bool {
         if (what != nullptr) {
-          std::clog << "smithy: readiness probe '" << check.name << "' threw: " << what << "\n";
+          std::clog << "opal: readiness probe '" << check.name << "' threw: " << what << "\n";
         } else {
-          std::clog << "smithy: readiness probe '" << check.name << "' threw a non-std exception\n";
+          std::clog << "opal: readiness probe '" << check.name << "' threw a non-std exception\n";
         }
         return false;
       });

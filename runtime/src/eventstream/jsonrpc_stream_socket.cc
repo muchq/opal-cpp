@@ -1,4 +1,4 @@
-#include "smithy/eventstream/jsonrpc_stream_socket.h"
+#include "opal/eventstream/jsonrpc_stream_socket.h"
 
 #include <chrono>
 #include <optional>
@@ -6,9 +6,9 @@
 #include <string_view>
 #include <utility>
 
-#include "smithy/core/blob.h"
-#include "smithy/core/error.h"
-#include "smithy/eventstream/jsonrpc_frame.h"
+#include "opal/core/blob.h"
+#include "opal/core/error.h"
+#include "opal/eventstream/jsonrpc_frame.h"
 
 namespace opal::eventstream {
 namespace {

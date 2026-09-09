@@ -1,10 +1,10 @@
-#include "smithy/core/regex.h"
+#include "opal/core/regex.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "smithy/core/error.h"
+#include "opal/core/error.h"
 
 namespace opal {
 namespace {

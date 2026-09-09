@@ -1,4 +1,4 @@
-#include "smithy/http/socket_transport.h"
+#include "opal/http/socket_transport.h"
 
 #include <arpa/inet.h>
 #include <gtest/gtest.h>
@@ -14,7 +14,7 @@
 #include <thread>
 #include <utility>
 
-#include "smithy/http/trace_context.h"
+#include "opal/http/trace_context.h"
 
 namespace opal::http {
 namespace {

@@ -13,7 +13,7 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/eventstream/json_frame.h"
+#include "opal/eventstream/json_frame.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const std::string_view text(reinterpret_cast<const char*>(data), size);

@@ -1,9 +1,9 @@
-// smithy/core/hash.h: HashCombine's mixing, HashValue's container dispatch,
+// opal/core/hash.h: HashCombine's mixing, HashValue's container dispatch,
 // and the std::hash specializations for the runtime types generated members
 // use (Blob, Timestamp, Unit) — the plumbing that lets generated types key
 // std::unordered_map/std::unordered_set (issue #49).
 
-#include "smithy/core/hash.h"
+#include "opal/core/hash.h"
 
 #include <gtest/gtest.h>
 
@@ -16,10 +16,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "smithy/core/blob.h"
-#include "smithy/core/document.h"
-#include "smithy/core/outcome.h"
-#include "smithy/core/timestamp.h"
+#include "opal/core/blob.h"
+#include "opal/core/document.h"
+#include "opal/core/outcome.h"
+#include "opal/core/timestamp.h"
 
 namespace opal {
 namespace {

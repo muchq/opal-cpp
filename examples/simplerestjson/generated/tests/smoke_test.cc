@@ -6,8 +6,8 @@
 
 #include "example/bookstore/client.h"
 #include "example/bookstore/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/loopback.h"
+#include "opal/client/config.h"
+#include "opal/http/loopback.h"
 
 namespace example::bookstore {
 

@@ -32,7 +32,7 @@ clients, embedded/footprint-constrained targets). Concrete adoption steps are at
 ## What the transport layer promises today
 
 Generated code targets `HttpClient` / `HttpServerTransport` / `WebSocket` interfaces
-(`runtime/include/smithy/http/transport.h`, `websocket.h`); Boost.Beast provides the
+(`runtime/include/opal/http/transport.h`, `websocket.h`); Boost.Beast provides the
 production implementations in one TU (`runtime/src/http/beast_transport.cc`, ~2,250 lines,
 plus the WebSocket session), with TLS via asio-SSL compiled directly against BoringSSL
 (`beast_src.cc`, ADR-0007). The contracts an alternative transport must reproduce:

@@ -1,4 +1,4 @@
-#include "smithy/core/version.h"
+#include "opal/core/version.h"
 
 namespace opal {
 

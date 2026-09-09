@@ -17,7 +17,7 @@
 #include <string_view>
 #include <vector>
 
-#include "smithy/cbor/cbor.h"
+#include "opal/cbor/cbor.h"
 
 namespace opal::cbor {
 namespace {

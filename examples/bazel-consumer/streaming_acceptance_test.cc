@@ -17,10 +17,10 @@
 
 #include "acme/chat/client.h"
 #include "acme/chat/server.h"
-#include "smithy/client/config.h"
-#include "smithy/http/message.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/client/config.h"
+#include "opal/http/message.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 
 namespace {
 

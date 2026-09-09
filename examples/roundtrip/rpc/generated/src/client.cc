@@ -7,13 +7,13 @@
 
 #include "example/roundtrip/rpc/client.h"
 #include "example/roundtrip/rpc/serde.h"
-#include "smithy/cbor/cbor.h"
-#include "smithy/compression/gzip.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document_serde.h"
-#include "smithy/core/uuid.h"
-#include "smithy/http/socket_transport.h"
-#include "smithy/http/uri.h"
+#include "opal/cbor/cbor.h"
+#include "opal/compression/gzip.h"
+#include "opal/core/blob.h"
+#include "opal/core/document_serde.h"
+#include "opal/core/uuid.h"
+#include "opal/http/socket_transport.h"
+#include "opal/http/uri.h"
 
 namespace example::roundtrip::rpc {
 

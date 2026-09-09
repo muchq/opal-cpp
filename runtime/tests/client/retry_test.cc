@@ -1,4 +1,4 @@
-#include "smithy/client/retry.h"
+#include "opal/client/retry.h"
 
 #include <gtest/gtest.h>
 
@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/core/error.h"
+#include "opal/core/error.h"
 
 namespace opal {
 namespace {

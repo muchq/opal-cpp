@@ -24,9 +24,9 @@
 #include <thread>
 #include <utility>
 
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/websocket.h"
-#include "smithy/testing/websocket_contract_test.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/websocket.h"
+#include "opal/testing/websocket_contract_test.h"
 
 namespace {
 

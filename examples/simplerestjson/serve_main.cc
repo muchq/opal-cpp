@@ -17,8 +17,8 @@
 
 #include "example/bookstore/server.h"
 #include "example/bookstore/types.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/beast_transport.h"
+#include "opal/core/outcome.h"
+#include "opal/http/beast_transport.h"
 
 namespace {
 

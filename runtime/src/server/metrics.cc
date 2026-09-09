@@ -1,4 +1,4 @@
-#include "smithy/server/metrics.h"
+#include "opal/server/metrics.h"
 
 #include <algorithm>
 #include <array>
@@ -9,7 +9,7 @@
 #include <string_view>
 #include <utility>
 
-#include "smithy/core/fatal.h"
+#include "opal/core/fatal.h"
 
 namespace opal::server {
 namespace {

@@ -1,13 +1,13 @@
-#ifndef SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_CLIENT_H_
-#define SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_CLIENT_H_
+#ifndef OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_CLIENT_H_
+#define OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_CLIENT_H_
 
 #include <memory>
 #include <string>
 
 #include "examples/weather/handwritten/weather_types.h"
-#include "smithy/client/config.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/uri.h"
+#include "opal/client/config.h"
+#include "opal/core/outcome.h"
+#include "opal/http/uri.h"
 
 namespace example::weather::handwritten {
 
@@ -41,4 +41,4 @@ class WeatherClient {
 
 }  // namespace example::weather::handwritten
 
-#endif  // SMITHY_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_CLIENT_H_
+#endif  // OPAL_EXAMPLES_WEATHER_HANDWRITTEN_WEATHER_CLIENT_H_

@@ -14,15 +14,15 @@
 
 #include "example/chat/serde.h"
 #include "example/chat/server.h"
-#include "smithy/core/base64.h"
-#include "smithy/core/blob.h"
-#include "smithy/core/document_serde.h"
-#include "smithy/eventstream/async_event_stream.h"
-#include "smithy/eventstream/envelope.h"
-#include "smithy/http/headers.h"
-#include "smithy/http/websocket.h"
-#include "smithy/json/json.h"
-#include "smithy/server/router.h"
+#include "opal/core/base64.h"
+#include "opal/core/blob.h"
+#include "opal/core/document_serde.h"
+#include "opal/eventstream/async_event_stream.h"
+#include "opal/eventstream/envelope.h"
+#include "opal/http/headers.h"
+#include "opal/http/websocket.h"
+#include "opal/json/json.h"
+#include "opal/server/router.h"
 
 namespace example::chat {
 

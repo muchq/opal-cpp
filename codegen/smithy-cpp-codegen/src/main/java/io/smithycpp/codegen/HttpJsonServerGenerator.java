@@ -55,11 +55,11 @@ final class HttpJsonServerGenerator {
 
   List<String> includes() {
     return List.of(
-        "\"smithy/json/json.h\"",
-        "\"smithy/core/base64.h\"",
-        "\"smithy/core/document_serde.h\"",
-        "\"smithy/core/blob.h\"",
-        "\"smithy/http/headers.h\"",
+        "\"opal/json/json.h\"",
+        "\"opal/core/base64.h\"",
+        "\"opal/core/document_serde.h\"",
+        "\"opal/core/blob.h\"",
+        "\"opal/http/headers.h\"",
         "<cstdint>",
         "<cstdlib>",
         "<limits>");

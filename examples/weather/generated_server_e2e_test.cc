@@ -16,12 +16,12 @@
 #include "example/weather/client.h"
 #include "example/weather/server.h"
 #include "examples/weather/handwritten/weather_client.h"
-#include "smithy/client/interceptor.h"
-#include "smithy/client/observability.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/trace_context.h"
-#include "smithy/server/middleware.h"
+#include "opal/client/interceptor.h"
+#include "opal/client/observability.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/trace_context.h"
+#include "opal/server/middleware.h"
 
 namespace example::weather {
 namespace {

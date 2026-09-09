@@ -16,11 +16,11 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/eventstream/async_event_stream.h"
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/http/websocket.h"
-#include "smithy/server/session_registry.h"
+#include "opal/eventstream/async_event_stream.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/beast_transport.h"
+#include "opal/http/websocket.h"
+#include "opal/server/session_registry.h"
 
 namespace {
 

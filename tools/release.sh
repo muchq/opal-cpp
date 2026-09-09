@@ -14,7 +14,7 @@ set -euo pipefail
 
 VERSION_CC=runtime/src/core/version.cc
 VERSION_TEST=runtime/tests/core/version_test.cc
-CONFIG_H=runtime/include/smithy/client/config.h
+CONFIG_H=runtime/include/opal/client/config.h
 GRADLE_PROPERTIES=codegen/gradle.properties
 CHANGELOG=CHANGELOG.md
 VERSIONING_DOC=docs/versioning.md

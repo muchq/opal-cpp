@@ -1,4 +1,4 @@
-#include "smithy/core/regex.h"
+#include "opal/core/regex.h"
 
 #include <gtest/gtest.h>
 

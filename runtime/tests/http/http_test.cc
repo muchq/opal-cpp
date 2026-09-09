@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "smithy/http/headers.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/message.h"
-#include "smithy/http/uri.h"
+#include "opal/http/headers.h"
+#include "opal/http/loopback.h"
+#include "opal/http/message.h"
+#include "opal/http/uri.h"
 
 namespace opal::http {
 namespace {

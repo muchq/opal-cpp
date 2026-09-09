@@ -14,9 +14,9 @@
 #include <variant>
 #include <vector>
 
-#include "smithy/core/fatal.h"
-#include "smithy/core/hash.h"
-#include "smithy/core/print.h"
+#include "opal/core/fatal.h"
+#include "opal/core/hash.h"
+#include "opal/core/print.h"
 
 namespace example::chat {
 

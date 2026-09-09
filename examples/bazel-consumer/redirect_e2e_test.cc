@@ -22,10 +22,10 @@
 
 #include "acme/redirect/client.h"
 #include "acme/redirect/server.h"
-#include "smithy/client/config.h"
-#include "smithy/core/error.h"
-#include "smithy/http/loopback.h"
-#include "smithy/http/socket_transport.h"
+#include "opal/client/config.h"
+#include "opal/core/error.h"
+#include "opal/http/loopback.h"
+#include "opal/http/socket_transport.h"
 
 namespace {
 

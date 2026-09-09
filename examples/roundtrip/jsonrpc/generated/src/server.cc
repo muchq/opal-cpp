@@ -9,11 +9,11 @@
 
 #include "example/roundtrip/jsonrpc/serde.h"
 #include "example/roundtrip/jsonrpc/server.h"
-#include "smithy/compression/gzip.h"
-#include "smithy/core/document.h"
-#include "smithy/http/headers.h"
-#include "smithy/json/json.h"
-#include "smithy/server/router.h"
+#include "opal/compression/gzip.h"
+#include "opal/core/document.h"
+#include "opal/http/headers.h"
+#include "opal/json/json.h"
+#include "opal/server/router.h"
 
 namespace example::roundtrip::jsonrpc {
 

@@ -8,7 +8,7 @@
 // stream is gone, and the stream's destructor waits out handle operations
 // in flight before the borrow dies.
 
-#include "smithy/eventstream/event_stream.h"
+#include "opal/eventstream/event_stream.h"
 
 #include <gtest/gtest.h>
 
@@ -20,9 +20,9 @@
 #include <thread>
 #include <utility>
 
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
 
 namespace opal::eventstream {
 namespace {

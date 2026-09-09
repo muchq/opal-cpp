@@ -5,10 +5,10 @@
 
 #include <memory>
 
+#include "opal/core/outcome.h"
+#include "opal/http/transport.h"
 #include "opal/protocoltests/simplerestjson/types.h"
-#include "smithy/core/outcome.h"
-#include "smithy/http/transport.h"
-#include "smithy/server/router.h"
+#include "opal/server/router.h"
 
 namespace opal::protocoltests::simplerestjson {
 

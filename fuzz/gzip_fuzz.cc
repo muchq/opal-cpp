@@ -10,8 +10,8 @@
 #include <string>
 #include <string_view>
 
-#include "smithy/compression/gzip.h"
-#include "smithy/compression/gzip_test_peer.h"
+#include "opal/compression/gzip.h"
+#include "opal/compression/gzip_test_peer.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   if (size == 0) {

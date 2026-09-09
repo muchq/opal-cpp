@@ -12,10 +12,10 @@
 #include <variant>
 #include <vector>
 
-#include "smithy/core/blob.h"
-#include "smithy/core/print.h"
-#include "smithy/core/timestamp.h"
-#include "smithy/eventstream/frame.h"
+#include "opal/core/blob.h"
+#include "opal/core/print.h"
+#include "opal/core/timestamp.h"
+#include "opal/eventstream/frame.h"
 
 namespace {
 

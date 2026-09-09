@@ -27,11 +27,11 @@
 
 #include "example/chat/client.h"
 #include "example/chat/server.h"
+#include "opal/client/config.h"
+#include "opal/eventstream/json_frame.h"
+#include "opal/http/beast_transport.h"
+#include "opal/server/origin_gate.h"
 #include "room_handler.h"
-#include "smithy/client/config.h"
-#include "smithy/eventstream/json_frame.h"
-#include "smithy/http/beast_transport.h"
-#include "smithy/server/origin_gate.h"
 
 namespace example::chat {
 namespace {

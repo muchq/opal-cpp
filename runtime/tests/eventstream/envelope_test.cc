@@ -5,14 +5,14 @@
 // malformed envelope shape must surface as Error::Serialization, never as a
 // wrong envelope.
 
-#include "smithy/eventstream/envelope.h"
+#include "opal/eventstream/envelope.h"
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <string>
 
-#include "smithy/eventstream/frame.h"
+#include "opal/eventstream/frame.h"
 
 namespace opal::eventstream {
 namespace {

@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <string_view>
 
-#include "smithy/cbor/cbor.h"
-#include "smithy/core/blob.h"
+#include "opal/cbor/cbor.h"
+#include "opal/core/blob.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const auto blob = opal::Blob::FromString(std::string(reinterpret_cast<const char*>(data), size));

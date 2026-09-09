@@ -6,7 +6,7 @@
 // beast_websocket_test.cc; the registry's async delivery in
 // session_registry_test.cc.
 
-#include "smithy/eventstream/async_event_stream.h"
+#include "opal/eventstream/async_event_stream.h"
 
 #include <gtest/gtest.h>
 
@@ -23,11 +23,11 @@
 #include <utility>
 #include <vector>
 
-#include "smithy/eventstream/event_stream.h"
-#include "smithy/eventstream/frame.h"
-#include "smithy/http/websocket.h"
-#include "smithy/http/websocket_pair.h"
-#include "smithy/testing/websocket_contract_test.h"
+#include "opal/eventstream/event_stream.h"
+#include "opal/eventstream/frame.h"
+#include "opal/http/websocket.h"
+#include "opal/http/websocket_pair.h"
+#include "opal/testing/websocket_contract_test.h"
 
 namespace opal::eventstream {
 namespace {

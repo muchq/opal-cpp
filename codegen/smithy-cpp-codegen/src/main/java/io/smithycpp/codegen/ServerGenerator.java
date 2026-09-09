@@ -94,14 +94,14 @@ final class ServerGenerator {
   private void writeHeader(CppWriter w) {
     w.addInclude("<memory>");
     w.addInclude("\"" + context.settings().includePrefix() + "/types.h\"");
-    w.addInclude("\"smithy/core/outcome.h\"");
-    w.addInclude("\"smithy/http/transport.h\"");
-    w.addInclude("\"smithy/server/router.h\"");
+    w.addInclude("\"opal/core/outcome.h\"");
+    w.addInclude("\"opal/http/transport.h\"");
+    w.addInclude("\"opal/server/router.h\"");
     boolean hasStreaming = !streamingOperations().isEmpty();
     if (hasStreaming) {
-      w.addInclude("\"smithy/eventstream/event_stream.h\"");
-      w.addInclude("\"smithy/eventstream/async_event_stream.h\"");
-      w.addInclude("\"smithy/server/websocket_router.h\"");
+      w.addInclude("\"opal/eventstream/event_stream.h\"");
+      w.addInclude("\"opal/eventstream/async_event_stream.h\"");
+      w.addInclude("\"opal/server/websocket_router.h\"");
     }
 
     String name = serviceName();
