@@ -162,7 +162,7 @@ Middleware HealthEndpoint(std::string path, std::vector<ReadinessCheck> checks) 
 Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
                    std::function<void(const RequestStart&)> on_start,
                    std::function<std::chrono::steady_clock::time_point()> now,
-                   http::TrustedProxies trusted) {
+                   std::optional<http::TrustedProxies> trusted) {
   if (on_complete == nullptr) {
     smithy::internal::Fatal("smithy::server::Observe: on_complete may not be null");
   }
@@ -181,10 +181,14 @@ Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
       observation.target = request.target;
       observation.trace_parent = request.headers.Get("traceparent").value_or("");
       observation.request_bytes = request.body.size();
-      // Derived once here rather than per sink: the walk parses
-      // x-forwarded-for, and two sinks deriving it independently could
-      // disagree if they were handed different trust boundaries.
-      observation.client = http::DeriveClient(request, trusted);
+      // Derived once here rather than per sink — two sinks deriving
+      // independently could disagree if handed different boundaries — and
+      // only when a boundary was supplied at all: the parse and the string
+      // building are per-request costs, and a chain whose sinks never read
+      // client (RecordMetrics) should not pay them.
+      if (trusted.has_value()) {
+        observation.client = http::DeriveClient(request, *trusted);
+      }
       const auto start = now();
       http::HttpResponse response;
 #if defined(__cpp_exceptions)

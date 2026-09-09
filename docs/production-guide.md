@@ -364,11 +364,15 @@ and `client` — the ADR-0012 derived client (address plus provenance), **not**
 the raw `x-forwarded-for`, which a direct client can forge. That is the
 identity `PerClientRateLimit` keys on, so it is the one that answers "whose
 bucket did that 429 come from"; pass `Observe` the same `TrustedProxies` you
-give the limiter or the two will disagree. Unset means
-`TrustedProxies::None()` — the deliberate direct-connect statement, under
-which the peer is the client and the header is ignored wholly. Watch the
-distribution of `client.source`: every request reporting `kDirectPeer` with
-one address means you are behind a proxy and did not say so.
+give the limiter or the two will disagree. With no boundary supplied the
+derivation is skipped entirely — `client` stays empty with
+`Source::kUnknown`, and the request pays for no header walk — so a chain
+whose sinks never read it (a metrics-only composition) costs nothing here.
+A deployment with no proxy tier says so explicitly with
+`TrustedProxies::None()`, under which the peer is the client and the header
+is ignored wholly. Watch the distribution of `client.source`: every request
+reporting `kDirectPeer` with one address means you are behind a proxy and
+did not say so.
 
 `handler_threw` separates "we crashed" from "the handler deliberately
 answered 500" — both report status 500 with no operation, and an access log
@@ -563,11 +567,15 @@ your domain numbers behind another. Mint a family once and keep the handle:
 
 ```cpp
 auto orders = metrics->NewCounter("orders_processed_total", "Orders processed.");
-auto latency = metrics->NewHistogram("order_pipeline_seconds", "Pipeline time.");
+// Buckets are required — there is no default, because inheriting a latency
+// ladder for a histogram of bytes or queue depth yields meaningless bins.
+// For a request-shaped duration, the shared ladder is the right one.
+auto latency = metrics->NewHistogram("order_pipeline_duration_microseconds", "Pipeline time.",
+                                     smithy::server::HttpLatencyBuckets());
 auto depth = metrics->NewGauge("queue_depth", "Pending jobs.");
 
 orders.Increment({{"region", "us-east"}});
-latency.Observe(elapsed.count());
+latency.Observe(elapsed_micros.count());
 depth.Set(pending);
 ```
 

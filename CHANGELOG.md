@@ -10,9 +10,8 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 - **A dependency-free Prometheus `/metrics` endpoint** (#91, first work
   item). `smithy::server::MetricsRegistry` aggregates the existing `Observe`
-  hooks into three families —
-  the five `http_server_*` families labeled by `service_name`, `http_method`
-  and `route` — and `MetricsEndpoint` serves them in the
+  hooks into the five `http_server_*` families labeled by `service_name`,
+  `http_method` and `route`, and `MetricsEndpoint` serves them in the
   text exposition format, which needs no client library and so costs zero new
   dependencies. `RecordMetrics` is `Observe` wired to a registry, so request
   timing keeps one implementation and the scraped numbers cannot drift from
@@ -23,7 +22,15 @@ policy in [docs/versioning.md](docs/versioning.md).
   `http_method` outside the nine RFC 9110 verbs collapses to `CUSTOM`, and a
   series cap backstops
   anything unforeseen while counting what it refused in
-  `metrics_observations_dropped_total`. Application metrics join the
+  `metrics_observations_dropped_total`. Rendered values are exact: the
+  fixed six-decimal spelling is kept only where it parses back to the value
+  it claims (so every historical series string is stable), with a shortest
+  round-trip form for values it cannot represent — two distinct tiny bucket
+  bounds can no longer collapse into one `le` and fail the scrape. Misuse
+  that would corrupt a scrape aborts (ADR-0009): duplicate label names, a
+  user label named `le` on a histogram, re-registering a histogram under a
+  different bucket ladder, and incrementing a counter by a negative amount
+  (which `rate()` would read as a reset and inflate). Application metrics join the
   same scrape through `NewCounter` / `NewGauge` / `NewHistogram`, so one
   Prometheus target covers the service; the registry keeps owning escaping,
   label ordering, and the per-family cap. `Declare` exports a known series at
@@ -73,8 +80,10 @@ policy in [docs/versioning.md](docs/versioning.md).
   unanswerable. The observation now adds `request_bytes`, `response_bytes`,
   `handler_threw`, and `client` — the derived client with its provenance,
   never the forgeable header. `Observe` takes the trust boundary as a fourth
-  defaulted parameter (`TrustedProxies::None()`, the direct-connect
-  statement); pass it the same one given to the limiter. `handler_threw`
+  optional parameter; pass it the same one given to the limiter. Left unset,
+  the derivation is skipped entirely and `client` stays at `Source::kUnknown`
+  — a metrics-only chain pays nothing for a field it never reads — while
+  `TrustedProxies::None()` remains the explicit direct-connect statement. `handler_threw`
   separates a contained crash from a deliberate 500, which report identically
   otherwise.
 
