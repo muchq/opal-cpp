@@ -4,7 +4,7 @@ Two build trees live in this repository (see PLAN §3.1):
 
 | Tree | Language | Build | What it is |
 |---|---|---|---|
-| `runtime/` (+ future generated code, examples, integration tests) | C++20 | Bazel 9 | The `smithy-cpp-runtime` library that generated code links against |
+| `runtime/` (+ future generated code, examples, integration tests) | C++20 | Bazel 9 | The `opal-cpp-runtime` library that generated code links against |
 | `codegen/` | Java 17 | Gradle | The Smithy → C++ generator (smithy-build plugin) |
 
 ## Prerequisites

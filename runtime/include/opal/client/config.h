@@ -27,7 +27,7 @@ struct ClientConfig {
   int request_timeout_ms = 30000;
   // Mirrors opal::Version() (runtime/src/core/version.cc), the single source
   // of truth for the product version.
-  std::string user_agent = "smithy-cpp/0.3.0-dev";
+  std::string user_agent = "opal-cpp/0.3.0-dev";
 
   // TLS knobs for transports constructed from this config (issue #49):
   // BeastHttpClient::FromConfig honors them; the built-in socket transport is

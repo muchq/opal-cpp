@@ -1,4 +1,4 @@
-# smithy-cpp runtime overview
+# opal-cpp runtime overview
 
 The runtime (`//runtime`, headers under `opal/...`) is the hand-written
 library that generated clients and servers link against. Generated code stays

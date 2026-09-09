@@ -1,4 +1,4 @@
-# C++20 (the smithy-cpp runtime baseline) and the Java 17 toolchain the
+# C++20 (the opal-cpp runtime baseline) and the Java 17 toolchain the
 # generator action runs on. Copy these lines into your own .bazelrc.
 common --enable_platform_specific_config
 
@@ -17,7 +17,7 @@ test --test_output=errors
 # exponential backoff, so a sustained outage still fails the fetch.
 common --experimental_repository_downloader_retries=5
 
-# Warnings are errors for this module's own code (smithy-cpp issue #65): the
+# Warnings are errors for this module's own code (opal-cpp issue #65): the
 # ^// label filter covers the hand-written mains/tests and the generated
 # acme/* libraries (already compiled at -Wall -Wextra by the smithy_cpp_*
 # macros), while @opal_cpp and every other external module keep their own

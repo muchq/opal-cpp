@@ -45,7 +45,8 @@ The distinction the audit applies: a name that refers to the **model**
 keeps `smithy`; a name that refers to a **runtime thing that would exist
 identically had the service been hand-written** does not. So these stay:
 
-- The repository, `smithy-cpp`. It is a Smithy tool.
+- The repository, `smithy-cpp`. It is a Smithy tool. (Superseded the same
+  day: see the addendum below.)
 - The codegen plugin, `codegen/`, `io.smithycpp.codegen`, and the
   `software.amazon.smithy` dependency.
 - The Bazel rules `smithy_cpp_{types,client,server}_library`. They take a
@@ -95,3 +96,17 @@ and the goldens regenerate from them.
   metrics fix in #199 was the only instance.
 - `docs/versioning.md`'s compatibility surface #3 read
   `runtime/include/smithy/**` until the include-root PR moved it.
+
+## Addendum (2026-09-09): the repository is `opal-cpp`
+
+Once the third surface landed, the repository was renamed from `smithy-cpp`
+to `opal-cpp`, outside #201's stated scope, so the project's name and the
+runtime's agree: the tool is named for what it produces, not for what it
+reads. Everything that named the repository follows — the README, the
+CHANGELOG's release links, the quickstart's `git_override` remote, the
+issue templates — and so does the client's default `User-Agent`,
+`opal-cpp/<version>`, which names the project that sent the request and
+was the one wire-visible string the original audit missed. GitHub
+redirects the old URL. The codegen plugin's directory,
+`codegen/smithy-cpp-codegen`, keeps its name: it is the Smithy plugin, the
+one thing here that really is named for the IDL.

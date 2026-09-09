@@ -82,7 +82,7 @@ compatibility contract: changes to it are breaking for consumers of generated co
 - **Docs**: `@documentation` becomes `///` comments.
 - **Files**: per module, `include/<namespace path>/types.h`, `serde.h` + `src/serde.cc`,
   `client.h` + `src/client.cc`, and a generated `BUILD.bazel` exposing `cc_library ":types"`
-  and `":client"` targets that depend on the smithy-cpp runtime (`runtimeTarget` /
+  and `":client"` targets that depend on the opal-cpp runtime (`runtimeTarget` /
   `runtimePackage` settings).
 
 ## Enums

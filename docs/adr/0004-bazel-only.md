@@ -15,7 +15,7 @@ parity is a permanent maintenance tax, and the target audience builds with Bazel
 - Consumers use the `opal_cpp` bzlmod module (published to the Bazel Central Registry from
   Phase 6) and the `smithy_cpp_*_library` rules, which run the generator hermetically inside the
   build graph.
-- No CMake files are provided or accepted. The `smithy-cpp` CLI (Phase 6) can emit plain C++
+- No CMake files are provided or accepted. The `opal-cpp` CLI (Phase 6) can emit plain C++
   sources plus a file manifest for vendoring into other build systems, as an explicitly
   unsupported escape hatch.
 - The codegen JVM subproject builds with Gradle (standard for Smithy plugins) — that is an

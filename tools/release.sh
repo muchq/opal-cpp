@@ -59,8 +59,8 @@ check() {
     die "$VERSION_TEST pins '$test_expectation', expected '$version'"
 
   user_agent=$(read_user_agent)
-  [[ $user_agent == "smithy-cpp/$version" ]] ||
-    die "$CONFIG_H has user_agent '$user_agent', expected 'smithy-cpp/$version'"
+  [[ $user_agent == "opal-cpp/$version" ]] ||
+    die "$CONFIG_H has user_agent '$user_agent', expected 'opal-cpp/$version'"
 
   gradle_version=$(read_gradle_version)
   [[ $gradle_version == "$version" ]] ||
@@ -179,7 +179,7 @@ bump() {
   rewrite "$VERSION_TEST" \
     "s|^  EXPECT_EQ(Version(), \"[^\"]*\");$|  EXPECT_EQ(Version(), \"$target\");|"
   rewrite "$CONFIG_H" \
-    "s|^  std::string user_agent = \"smithy-cpp/[^\"]*\";$|  std::string user_agent = \"smithy-cpp/$target\";|"
+    "s|^  std::string user_agent = \"opal-cpp/[^\"]*\";$|  std::string user_agent = \"opal-cpp/$target\";|"
   rewrite "$GRADLE_PROPERTIES" "s|^version=.*$|version=$target|"
 
   # A fresh [Unreleased] above the section just released; the released one and

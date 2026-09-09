@@ -6,7 +6,7 @@ labels: enhancement
 
 ## Problem
 
-<!-- What are you trying to do that smithy-cpp doesn't support today? -->
+<!-- What are you trying to do that opal-cpp doesn't support today? -->
 
 ## Proposal
 
