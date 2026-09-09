@@ -127,7 +127,7 @@ target types are fine.
 
 Calling `as_x()` while a different member (or none) is engaged is a contract violation: it
 terminates the process with the union, requested, and engaged member named (e.g.
-`smithy: MilkOption::as_dairy(): engaged member is oat`) — never a context-free
+`opal: MilkOption::as_dairy(): engaged member is oat`) — never a context-free
 `std::bad_variant_access`. For access that can't die, branch on `is_x()`, use
 `as_x_or_null()` (`if (const auto* dairy = milk.as_dairy_or_null()) …`), or `visit()` with a
 visitor that covers every member plus `std::monostate` for the empty state —

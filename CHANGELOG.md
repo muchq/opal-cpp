@@ -12,8 +12,8 @@ policy in [docs/versioning.md](docs/versioning.md).
   the second of three surfaces). `#include "smithy/http/transport.h"` is now
   `#include "opal/http/transport.h"`, for every runtime header and for the
   test helpers under `opal/testing/`. The include guards
-  (`OPAL_HTTP_TRANSPORT_H_`), the `SMITHY_*` macro prefix
-  (`OPAL_E2E_HAVE_BEAST`) and the `opal:` prefix on the runtime's own
+  (`OPAL_HTTP_TRANSPORT_H_`), the `OPAL_*` macro prefix, formerly `SMITHY_*`
+  (`OPAL_E2E_HAVE_BEAST`), and the `opal:` prefix on the runtime's own
   stderr/clog lines follow it, and generated code includes the new paths.
   Migration: `#include "smithy/` → `#include "opal/` over your tree. A
   header path derived from your own model's Smithy namespace
@@ -43,8 +43,8 @@ policy in [docs/versioning.md](docs/versioning.md).
   `smithy::protocoltests::`, and the top-level runtime types such as
   `smithy::Outcome`. Smithy namespaces in `.smithy` files and the
   `smithy_cpp_*_library` rules name the model and are unchanged. The
-  include root (`smithy/http/transport.h`) and the Bazel module
-  (`@smithy_cpp`) are unchanged here and move in the two PRs that follow.
+  include root moved in the entry above; the Bazel module (`@smithy_cpp`)
+  moves in the PR that follows.
 
 ### Added
 

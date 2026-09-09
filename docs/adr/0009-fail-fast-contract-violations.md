@@ -36,7 +36,7 @@ has declared unrecoverable.
 
 ## Consequences
 
-- Crash lines carry the diagnosis (`smithy: OrderStatus::as_ready(): engaged member is
+- Crash lines carry the diagnosis (`opal: OrderStatus::as_ready(): engaged member is
   pending`), and death tests pin the exact formats.
 - **Server posture shift:** before, a handler's wrong-side deref threw and the dispatch
   guard contained it into a 500 response; now the same bug kills the process. This is
