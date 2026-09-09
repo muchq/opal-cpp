@@ -7,7 +7,7 @@
 
 #include "smithy/http/websocket.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // In-memory WebSocket session: two connected WebSocket ends sharing bounded
 // queues, with no sockets or io threads — the Loopback analog for event
@@ -46,6 +46,6 @@ class InMemoryWebSocketPair {
   static std::pair<std::shared_ptr<WebSocket>, std::shared_ptr<WebSocket>> Create();
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_WEBSOCKET_PAIR_H_

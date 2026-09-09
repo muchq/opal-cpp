@@ -13,7 +13,7 @@
 // std::chrono::parse for chrono types are not available across gcc 11 / clang 14
 // / MSVC 19.30.
 
-namespace smithy {
+namespace opal {
 namespace {
 
 constexpr std::int64_t kMsPerSecond = 1000;
@@ -313,4 +313,4 @@ Outcome<Timestamp> Timestamp::Parse(std::string_view text, TimestampFormat forma
   return Error::Serialization("timestamp: unknown format");
 }
 
-}  // namespace smithy
+}  // namespace opal

@@ -27,16 +27,16 @@ namespace {
 // Echoes every note back with an "echo:" prefix until the client closes.
 class EchoHandler final : public acme::chat::ChatHandler {
  public:
-  smithy::Outcome<smithy::Unit> Exchange(
+  opal::Outcome<opal::Unit> Exchange(
       const acme::chat::ExchangeInput&,
-      smithy::eventstream::EventStream<acme::chat::Notes, acme::chat::Notes>& stream,
-      const smithy::server::RequestContext&) override {
+      opal::eventstream::EventStream<acme::chat::Notes, acme::chat::Notes>& stream,
+      const opal::server::RequestContext&) override {
     while (true) {
       auto event = stream.Receive();
-      if (!event.ok() || !event->has_value()) return smithy::Unit{};
+      if (!event.ok() || !event->has_value()) return opal::Unit{};
       acme::chat::Note reply;
       reply.text = "echo:" + (**event).as_note().text;
-      if (!stream.Send(acme::chat::Notes::FromNote(reply)).ok()) return smithy::Unit{};
+      if (!stream.Send(acme::chat::Notes::FromNote(reply)).ok()) return opal::Unit{};
     }
   }
 };
@@ -51,17 +51,17 @@ class StreamingAcceptanceTest : public testing::Test {
   }
 
   acme::chat::ChatServer server_{std::make_shared<EchoHandler>()};
-  std::shared_ptr<smithy::http::WebSocket> server_session_;
+  std::shared_ptr<opal::http::WebSocket> server_session_;
   std::thread serve_thread_;
 };
 
 TEST_F(StreamingAcceptanceTest, ABidiRoundTripCrossesTheModuleBoundary) {
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.endpoint = "http://localhost:8080";
-  config.websocket_dialer = [this](const smithy::http::WebSocketDialRequest& request)
-      -> smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> {
-    auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
-    smithy::http::HttpRequest upgrade;
+  config.websocket_dialer = [this](const opal::http::WebSocketDialRequest& request)
+      -> opal::Outcome<std::shared_ptr<opal::http::WebSocket>> {
+    auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
+    opal::http::HttpRequest upgrade;
     upgrade.method = "GET";
     upgrade.target = request.target;
     upgrade.headers = request.headers;
@@ -97,12 +97,12 @@ TEST_F(StreamingAcceptanceTest, ABoundedReceiveFailsInsteadOfHangingOnAMissingEv
   // answers what it is sent, so a suite expecting an unprompted event would
   // park in Receive() until the job's timeout killed it — no assertion, no
   // clue which expectation was wrong. Bounded, the same wait is a red test.
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.endpoint = "http://localhost:8080";
-  config.websocket_dialer = [this](const smithy::http::WebSocketDialRequest& request)
-      -> smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> {
-    auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
-    smithy::http::HttpRequest upgrade;
+  config.websocket_dialer = [this](const opal::http::WebSocketDialRequest& request)
+      -> opal::Outcome<std::shared_ptr<opal::http::WebSocket>> {
+    auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
+    opal::http::HttpRequest upgrade;
     upgrade.method = "GET";
     upgrade.target = request.target;
     upgrade.headers = request.headers;

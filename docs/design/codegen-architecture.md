@@ -14,7 +14,7 @@ smithy-rs's `codegen-core` structure (PLAN §3.2a).
 | `CppWriter` | `SymbolWriter` per generated file: collects includes while the body is written, renders header comment + `#pragma once` + sorted includes + namespace wrapper. Byte deterministic |
 | `DirectedCppCodegen` | Implements `DirectedCodegen`; handles structure/error/union/enum/intEnum directives, then (service directive) resolves the protocol and drives serde → client → BUILD generation |
 | `TypeGenerators` | The actual C++ emission for data shapes |
-| `SerdeGenerator` / `SerdeCodeGen` | `serde.h`/`src/serde.cc`: per-shape `Serialize*`/`Deserialize*` functions over the `smithy::Document` pivot, in topological order (`TopologicalIndex`) |
+| `SerdeGenerator` / `SerdeCodeGen` | `serde.h`/`src/serde.cc`: per-shape `Serialize*`/`Deserialize*` functions over the `opal::Document` pivot, in topological order (`TopologicalIndex`) |
 | `ProtocolGenerator` (interface) | Per-protocol request building + response/error handling emission; `resolveProtocol` picks the implementation from the service's protocol traits |
 | `HttpJsonBindingProtocol` | `alloy#simpleRestJson` (via the `simpleRestJson()` factory): HTTP bindings via `HttpBindingIndex` (labels incl. greedy, query, headers, status), JSON bodies, neutral `X-Error-Type` error identity. A thin `ProtocolGenerator` facade over `HttpJsonClientGenerator` (operation-method bodies), `HttpJsonServerGenerator` (parse/serialize functions, routes, content negotiation), and `HttpBindingCodeGen` (the header/payload/prefix-header read↔write emitters both halves share) |
 | `Rpcv2CborProtocol` | `smithy.protocols#rpcv2Cbor`: fixed `/service/{S}/operation/{O}` target, `smithy-protocol` header, CBOR bodies |

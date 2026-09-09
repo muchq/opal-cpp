@@ -11,78 +11,78 @@
 #include <memory>
 #include <string>
 
+#include "opal/protocoltests/simplerestjson/server.h"
 #include "smithy/json/json.h"
-#include "smithy/protocoltests/simplerestjson/server.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 namespace {
 
 // Counts invocations; a malformed request must be rejected before any
 // operation runs, so every test asserts calls stays 0.
 class RecordingHandler : public PizzaAdminServiceHandler {
  public:
-  smithy::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput&,
-                                                 const smithy::server::RequestContext&) override {
+  opal::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput&,
+                                               const opal::server::RequestContext&) override {
     ++calls;
     return AddMenuItemOutput{};
   }
-  smithy::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput&,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput&,
+                                             const opal::server::RequestContext&) override {
     ++calls;
     return CustomCodeOutput{};
   }
-  smithy::Outcome<GetEnumOutput> GetEnum(const GetEnumInput&,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetEnumOutput> GetEnum(const GetEnumInput&,
+                                       const opal::server::RequestContext&) override {
     ++calls;
     return GetEnumOutput{};
   }
-  smithy::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput&,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput&,
+                                             const opal::server::RequestContext&) override {
     ++calls;
     return GetIntEnumOutput{};
   }
-  smithy::Outcome<GetMenuOutput> GetMenu(const GetMenuInput&,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetMenuOutput> GetMenu(const GetMenuInput&,
+                                       const opal::server::RequestContext&) override {
     ++calls;
     return GetMenuOutput{};
   }
-  smithy::Outcome<HeaderEndpointOutput> HeaderEndpoint(
-      const HeaderEndpointInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput&,
+                                                     const opal::server::RequestContext&) override {
     ++calls;
     return HeaderEndpointOutput{};
   }
-  smithy::Outcome<HealthOutput> Health(const HealthInput&,
-                                       const smithy::server::RequestContext&) override {
+  opal::Outcome<HealthOutput> Health(const HealthInput&,
+                                     const opal::server::RequestContext&) override {
     ++calls;
     return HealthOutput{};
   }
-  smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(
-      const HttpPayloadRequiredWithDefaultInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(
+      const HttpPayloadRequiredWithDefaultInput&, const opal::server::RequestContext&) override {
     ++calls;
     return HttpPayloadRequiredWithDefaultOutput{};
   }
-  smithy::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(
-      const HttpPayloadWithDefaultInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(
+      const HttpPayloadWithDefaultInput&, const opal::server::RequestContext&) override {
     ++calls;
     return HttpPayloadWithDefaultOutput{};
   }
-  smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput&,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput&,
+                                             const opal::server::RequestContext&) override {
     ++calls;
     return OpenUnionsOutput{};
   }
-  smithy::Outcome<PreserveOrderOutput> PreserveOrder(
-      const PreserveOrderInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput&,
+                                                   const opal::server::RequestContext&) override {
     ++calls;
     return PreserveOrderOutput{};
   }
-  smithy::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput&,
-                                             const smithy::server::RequestContext&) override {
+  opal::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput&,
+                                           const opal::server::RequestContext&) override {
     ++calls;
     return RoundTripOutput{};
   }
-  smithy::Outcome<VersionOutput> Version(const VersionInput&,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<VersionOutput> Version(const VersionInput&,
+                                       const opal::server::RequestContext&) override {
     ++calls;
     return VersionOutput{};
   }
@@ -91,7 +91,7 @@ class RecordingHandler : public PizzaAdminServiceHandler {
 
 class SimpleRestJsonMalformedTest : public testing::Test {
  protected:
-  smithy::http::HttpResponse Send(smithy::http::HttpRequest request) {
+  opal::http::HttpResponse Send(opal::http::HttpRequest request) {
     return server_.Handler()(request);
   }
 
@@ -100,7 +100,7 @@ class SimpleRestJsonMalformedTest : public testing::Test {
 };
 
 TEST_F(SimpleRestJsonMalformedTest, UnknownRouteIs404) {
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/no-such-route";
   EXPECT_EQ(Send(request).status, 404);
@@ -108,7 +108,7 @@ TEST_F(SimpleRestJsonMalformedTest, UnknownRouteIs404) {
 }
 
 TEST_F(SimpleRestJsonMalformedTest, WrongMethodIs405) {
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/health";
   EXPECT_EQ(Send(request).status, 405);
@@ -116,7 +116,7 @@ TEST_F(SimpleRestJsonMalformedTest, WrongMethodIs405) {
 }
 
 TEST_F(SimpleRestJsonMalformedTest, UnparseableJsonBodyIsSerializationException) {
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/restaurant/r1/menu/item";
   request.headers.Set("content-type", "application/json");
@@ -128,7 +128,7 @@ TEST_F(SimpleRestJsonMalformedTest, UnparseableJsonBodyIsSerializationException)
 }
 
 TEST_F(SimpleRestJsonMalformedTest, WrongContentTypeIs415) {
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/restaurant/r1/menu/item";
   request.headers.Set("content-type", "text/plain");
@@ -141,7 +141,7 @@ TEST_F(SimpleRestJsonMalformedTest, WrongContentTypeIs415) {
 TEST_F(SimpleRestJsonMalformedTest, IntEnumLabelBeyondInt32IsRejectedBeforeTheHandler) {
   // The label parser bounds intEnum at int32 like Integer (issue #109's
   // serde-side fix pins the body path; this pins the text path).
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/get-int-enum/99999999999";
   const auto response = Send(request);
@@ -154,7 +154,7 @@ TEST_F(SimpleRestJsonMalformedTest, IntEnumLabelOutsideTheValueSetFailsValidatio
   // In-range but unknown values fail membership validation with the
   // string-enum suite message, ints spelled the way smithy-rs emits them
   // (issue #109).
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/get-int-enum/3";
   const auto response = Send(request);
@@ -162,9 +162,9 @@ TEST_F(SimpleRestJsonMalformedTest, IntEnumLabelOutsideTheValueSetFailsValidatio
   EXPECT_EQ(response.headers.Get("x-error-type").value_or("<missing>"), "ValidationException");
   EXPECT_EQ(handler_->calls, 0);
 
-  const auto body = smithy::json::Decode(response.body);
+  const auto body = opal::json::Decode(response.body);
   ASSERT_TRUE(body.ok()) << response.body;
-  const smithy::Document* field_list = body->Find("fieldList");
+  const opal::Document* field_list = body->Find("fieldList");
   ASSERT_NE(field_list, nullptr) << response.body;
   ASSERT_EQ(field_list->as_list().size(), 1u) << response.body;
   const auto& failure = field_list->as_list()[0];
@@ -175,7 +175,7 @@ TEST_F(SimpleRestJsonMalformedTest, IntEnumLabelOutsideTheValueSetFailsValidatio
 }
 
 TEST_F(SimpleRestJsonMalformedTest, EnumLabelViolationReportsTheSuiteExactMessage) {
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/get-enum/bogus";
   const auto response = Send(request);
@@ -183,9 +183,9 @@ TEST_F(SimpleRestJsonMalformedTest, EnumLabelViolationReportsTheSuiteExactMessag
   EXPECT_EQ(response.headers.Get("x-error-type").value_or("<missing>"), "ValidationException");
   EXPECT_EQ(handler_->calls, 0);
 
-  const auto body = smithy::json::Decode(response.body);
+  const auto body = opal::json::Decode(response.body);
   ASSERT_TRUE(body.ok()) << response.body;
-  const smithy::Document* field_list = body->Find("fieldList");
+  const opal::Document* field_list = body->Find("fieldList");
   ASSERT_NE(field_list, nullptr) << response.body;
   ASSERT_EQ(field_list->as_list().size(), 1u) << response.body;
   const auto& failure = field_list->as_list()[0];
@@ -196,4 +196,4 @@ TEST_F(SimpleRestJsonMalformedTest, EnumLabelViolationReportsTheSuiteExactMessag
 }
 
 }  // namespace
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

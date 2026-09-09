@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 char AsciiLower(char c) { return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c; }
@@ -168,4 +168,4 @@ std::vector<std::string> SplitHttpDateHeaderValues(std::string_view value) {
   return out;
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

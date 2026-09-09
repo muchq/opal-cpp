@@ -11,7 +11,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/core/text.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 TEST(OutcomeTest, HoldsValue) {
@@ -227,4 +227,4 @@ TEST(DocumentTest, ListAccess) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

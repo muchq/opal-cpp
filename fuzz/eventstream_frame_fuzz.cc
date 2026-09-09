@@ -13,12 +13,12 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const std::string_view text(reinterpret_cast<const char*>(data), size);
-  const auto decoded = smithy::eventstream::DecodeMessage(text);
+  const auto decoded = opal::eventstream::DecodeMessage(text);
   if (!decoded.ok() || !decoded->has_value()) {
     return 0;
   }
   const auto& frame = **decoded;
-  const auto reencoded = smithy::eventstream::EncodeMessage(frame.message);
+  const auto reencoded = opal::eventstream::EncodeMessage(frame.message);
   if (!reencoded.ok()) std::abort();  // decoded but not re-encodable: bounds asymmetry
   if (*reencoded != text.substr(0, frame.bytes_consumed)) std::abort();  // not byte-identical
   // Every strict prefix must ask for more bytes. Prefixes have only two
@@ -30,7 +30,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   // file alone. The exhaustive sweep lives in the unit suite.
   const std::size_t n = frame.bytes_consumed;  // always >= 16
   const auto expect_more = [&](std::size_t length) {
-    const auto prefix = smithy::eventstream::DecodeMessage(text.substr(0, length));
+    const auto prefix = opal::eventstream::DecodeMessage(text.substr(0, length));
     if (!prefix.ok() || prefix->has_value()) std::abort();  // prefix must ask for more
   };
   const std::size_t stride = n <= 4096 ? 1 : n / 64;

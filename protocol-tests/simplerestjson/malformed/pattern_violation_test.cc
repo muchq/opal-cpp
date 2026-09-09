@@ -18,18 +18,18 @@ namespace {
 
 class RecordingHandler : public RoundTripRestHandler {
  public:
-  smithy::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput&,
-                                                   const smithy::server::RequestContext&) override {
+  opal::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput&,
+                                                 const opal::server::RequestContext&) override {
     ++calls;
     return DescribeSinkOutput{};
   }
-  smithy::Outcome<PutSinkOutput> PutSink(const PutSinkInput&,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<PutSinkOutput> PutSink(const PutSinkInput&,
+                                       const opal::server::RequestContext&) override {
     ++calls;
     return PutSinkOutput{};
   }
-  smithy::Outcome<UploadAttachmentOutput> UploadAttachment(
-      const UploadAttachmentInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<UploadAttachmentOutput> UploadAttachment(
+      const UploadAttachmentInput&, const opal::server::RequestContext&) override {
     ++calls;
     return UploadAttachmentOutput{};
   }
@@ -39,17 +39,17 @@ class RecordingHandler : public RoundTripRestHandler {
 class PatternViolationTest : public testing::Test {
  protected:
   // Returns the single fieldList entry of a 400 ValidationException.
-  smithy::Document Reject(const std::string& target) {
-    smithy::http::HttpRequest request;
+  opal::Document Reject(const std::string& target) {
+    opal::http::HttpRequest request;
     request.method = "GET";
     request.target = target;
-    const smithy::http::HttpResponse response = server_.Handler()(request);
+    const opal::http::HttpResponse response = server_.Handler()(request);
     EXPECT_EQ(response.status, 400) << response.body;
     EXPECT_EQ(response.headers.Get("x-error-type").value_or("<missing>"), "ValidationException");
     EXPECT_EQ(handler_->calls, 0);
-    auto body = smithy::json::Decode(response.body);
+    auto body = opal::json::Decode(response.body);
     EXPECT_TRUE(body.ok()) << response.body;
-    const smithy::Document* field_list = body->Find("fieldList");
+    const opal::Document* field_list = body->Find("fieldList");
     EXPECT_NE(field_list, nullptr) << response.body;
     EXPECT_EQ(field_list->as_list().size(), 1u) << response.body;
     return field_list->as_list()[0];
@@ -60,7 +60,7 @@ class PatternViolationTest : public testing::Test {
 };
 
 TEST_F(PatternViolationTest, PatternViolationReportsTheExactMessage) {
-  const smithy::Document failure = Reject("/sinks/bad!id");
+  const opal::Document failure = Reject("/sinks/bad!id");
   EXPECT_EQ(failure.Find("path")->as_string(), "/sinkId");
   EXPECT_EQ(failure.Find("message")->as_string(),
             "Value at '/sinkId' failed to satisfy constraint: Member must satisfy regular "
@@ -68,7 +68,7 @@ TEST_F(PatternViolationTest, PatternViolationReportsTheExactMessage) {
 }
 
 TEST_F(PatternViolationTest, LengthViolationReportsTheExactMessage) {
-  const smithy::Document failure = Reject("/sinks/" + std::string(33, 'a'));
+  const opal::Document failure = Reject("/sinks/" + std::string(33, 'a'));
   EXPECT_EQ(failure.Find("path")->as_string(), "/sinkId");
   EXPECT_EQ(failure.Find("message")->as_string(),
             "Value with length 33 at '/sinkId' failed to satisfy constraint: Member must have "

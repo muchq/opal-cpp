@@ -9,7 +9,7 @@
 
 #include "smithy/core/uuid.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 TEST(DocumentSerdeTest, TimestampFromAllWireShapes) {
@@ -146,4 +146,4 @@ TEST(DocumentSerdeTest, FormatFloatingPoint) {
   EXPECT_EQ(FormatFloat(-std::numeric_limits<float>::infinity()), "-Infinity");
 }
 
-}  // namespace smithy
+}  // namespace opal

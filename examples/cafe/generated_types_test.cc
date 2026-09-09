@@ -46,9 +46,9 @@ TEST(GeneratedTypeOrderingTest, UnionsOrderByEngagedMemberThenValue) {
 }
 
 TEST(GeneratedTypeOrderingTest, UnionsWithUnitMembersStayOrdered) {
-  // MilkOption's `none` member is smithy::Unit; if Unit ever lost its <=>,
+  // MilkOption's `none` member is opal::Unit; if Unit ever lost its <=>,
   // this union's defaulted ordering would silently delete.
-  EXPECT_TRUE(MilkOption::FromNone(smithy::Unit{}) <
+  EXPECT_TRUE(MilkOption::FromNone(opal::Unit{}) <
               MilkOption::FromDairy(DairyMilk{.percentFat = 2.0f}));
 }
 
@@ -111,7 +111,7 @@ TEST(GeneratedTypeHashingTest, EnumsKeyUnorderedSetsIncludingUnknownText) {
 TEST(GeneratedTypeHashingTest, UnionsHashByEngagedMemberAndValue) {
   std::unordered_set<MilkOption> options;
   options.insert(MilkOption{});
-  options.insert(MilkOption::FromNone(smithy::Unit{}));  // engaged none != empty
+  options.insert(MilkOption::FromNone(opal::Unit{}));  // engaged none != empty
   options.insert(MilkOption::FromDairy(DairyMilk{.percentFat = 2.0F}));
   options.insert(MilkOption::FromDairy(DairyMilk{.percentFat = 2.0F}));
   EXPECT_EQ(options.size(), 3u);
@@ -147,7 +147,7 @@ TEST(GeneratedTypePrintingTest, EnumsPrintWireTextIncludingUnknownValues) {
 
 TEST(GeneratedTypePrintingTest, UnionsPrintEngagedMemberOrEmpty) {
   EXPECT_EQ(MilkOption{}.DebugString(), "MilkOption()");
-  EXPECT_EQ(MilkOption::FromNone(smithy::Unit{}).DebugString(), "MilkOption(none = Unit{})");
+  EXPECT_EQ(MilkOption::FromNone(opal::Unit{}).DebugString(), "MilkOption(none = Unit{})");
   EXPECT_EQ(OrderStatus::FromPending(PendingStatus{.position = 3}).DebugString(),
             "OrderStatus(pending = PendingStatus{.position = 3})");
 }
@@ -193,7 +193,7 @@ TEST(CafeGeneratedTypesTest, UnionFactoriesAndAccessors) {
   EXPECT_FALSE(dairy.is_alternative());
   EXPECT_FLOAT_EQ(dairy.as_dairy().percentFat, 2.0F);
 
-  const MilkOption none = MilkOption::FromNone(smithy::Unit{});
+  const MilkOption none = MilkOption::FromNone(opal::Unit{});
   EXPECT_TRUE(none.is_none());
 
   const MilkOption alt = MilkOption::FromAlternative(AlternativeMilk{.kind = "oat"});
@@ -204,7 +204,7 @@ TEST(CafeGeneratedTypesTest, UnionDefaultIsEmptyAndEqualityWorks) {
   const MilkOption unset;
   EXPECT_TRUE(unset.empty());
   EXPECT_EQ(unset, MilkOption{});
-  EXPECT_FALSE(unset == MilkOption::FromNone(smithy::Unit{}));
+  EXPECT_FALSE(unset == MilkOption::FromNone(opal::Unit{}));
   EXPECT_EQ(MilkOption::FromDairy(DairyMilk{.percentFat = 2.0F}),
             MilkOption::FromDairy(DairyMilk{.percentFat = 2.0F}));
 }
@@ -215,8 +215,8 @@ TEST(CafeGeneratedTypesTest, NestedUnionInsideStructs) {
                         .status = OrderStatus::FromPending(PendingStatus{.position = 3})};
   ASSERT_TRUE(output.status.is_pending());
   EXPECT_EQ(output.status.as_pending().position, 3);
-  output.status = OrderStatus::FromReady(
-      ReadyStatus{.readyAt = smithy::Timestamp::FromEpochMilliseconds(5000)});
+  output.status =
+      OrderStatus::FromReady(ReadyStatus{.readyAt = opal::Timestamp::FromEpochMilliseconds(5000)});
   EXPECT_TRUE(output.status.is_ready());
 }
 

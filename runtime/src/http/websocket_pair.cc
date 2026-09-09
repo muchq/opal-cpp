@@ -14,7 +14,7 @@
 
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // The Beast session's receive-side buffer bound (beast_transport.cc),
@@ -377,4 +377,4 @@ std::pair<std::shared_ptr<WebSocket>, std::shared_ptr<WebSocket>> InMemoryWebSoc
   return {std::make_shared<PairEnd>(state, 0), std::make_shared<PairEnd>(state, 1)};
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

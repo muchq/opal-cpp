@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-namespace smithy::internal {
+namespace opal::internal {
 
 // Terminates the process after printing `message` to stderr — the one abort
 // primitive behind every contract violation (ADR-0009): exceptions never
@@ -40,6 +40,6 @@ namespace smithy::internal {
   Fatal(text);
 }
 
-}  // namespace smithy::internal
+}  // namespace opal::internal
 
 #endif  // SMITHY_CORE_FATAL_H_

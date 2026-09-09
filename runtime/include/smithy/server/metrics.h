@@ -15,7 +15,7 @@
 #include "smithy/core/fatal.h"
 #include "smithy/server/middleware.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // A dependency-free Prometheus backend for the server hooks (issue #91).
 //
@@ -26,10 +26,10 @@ namespace smithy::server {
 // the same Observe hook everything else uses, and MetricsEndpoint serves what
 // the registry holds.
 //
-//   auto metrics = std::make_shared<smithy::server::MetricsRegistry>(
-//       smithy::server::MetricsOptions{.enabled = true,
+//   auto metrics = std::make_shared<opal::server::MetricsRegistry>(
+//       opal::server::MetricsOptions{.enabled = true,
 //                                      .service_name = "todo-service"});
-//   transport.Start(smithy::server::Chain({MetricsEndpoint(metrics),
+//   transport.Start(opal::server::Chain({MetricsEndpoint(metrics),
 //                                          RecordMetrics(metrics),
 //                                          HealthEndpoint()},
 //                                         server.Handler()));
@@ -152,8 +152,8 @@ class Counter {
     // and deliberately BEFORE the disabled-registry check: enabling metrics
     // in production must never be the first time this runs.
     if (amount < 0) {
-      smithy::internal::Fatal(
-          "smithy::server::Counter: a counter may not be incremented by a negative amount");
+      opal::internal::Fatal(
+          "opal::server::Counter: a counter may not be incremented by a negative amount");
     }
     // A handle from a disabled registry holds no family. The branch is what
     // makes an always-compiled call site free when metrics are off; the
@@ -452,14 +452,14 @@ Middleware RecordMetrics(std::shared_ptr<MetricsRegistry> registry);
 
 // A ready-made sink for `BeastServerTransport::Options::on_rejected`:
 //
-//   options.on_rejected = smithy::server::RecordRejections(metrics);
+//   options.on_rejected = opal::server::RecordRejections(metrics);
 //
 // Generic in the rejection type so this header — and `:server` with it —
 // keeps no dependency on the Beast transport that defines it. A null
 // registry aborts (ADR-0009).
 inline auto RecordRejections(std::shared_ptr<MetricsRegistry> registry) {
   if (registry == nullptr) {
-    smithy::internal::Fatal("smithy::server::RecordRejections: registry may not be null");
+    opal::internal::Fatal("opal::server::RecordRejections: registry may not be null");
   }
   return [registry = std::move(registry)](const auto& rejected) {
     registry->RecordRejection(rejected.method, rejected.status);
@@ -488,6 +488,6 @@ inline auto RecordRejections(std::shared_ptr<MetricsRegistry> registry) {
 Middleware MetricsEndpoint(std::shared_ptr<MetricsRegistry> registry,
                            std::string path = "/metrics");
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_METRICS_H_

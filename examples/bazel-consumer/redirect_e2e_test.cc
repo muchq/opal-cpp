@@ -61,15 +61,15 @@ class SlugHandler final : public RedirectorHandler {
     targets_["cached"] = "https://example.com/cached";
   }
 
-  smithy::Outcome<ResolveOutput> Resolve(const ResolveInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<ResolveOutput> Resolve(const ResolveInput& input,
+                                       const opal::server::RequestContext&) override {
     auto target = Lookup(input.slug);
     if (!target) return std::move(target).error();
     return ResolveOutput{.location = *target};
   }
 
-  smithy::Outcome<ResolveDynamicOutput> ResolveDynamic(
-      const ResolveDynamicInput& input, const smithy::server::RequestContext&) override {
+  opal::Outcome<ResolveDynamicOutput> ResolveDynamic(const ResolveDynamicInput& input,
+                                                     const opal::server::RequestContext&) override {
     auto target = Lookup(input.slug);
     if (!target) return std::move(target).error();
     int status = kFound;
@@ -85,32 +85,32 @@ class SlugHandler final : public RedirectorHandler {
   // is the ordinary way to write this. Whether that content reaches the wire
   // is the framework's job, not the handler's: RFC 9110 compliance must not
   // depend on every handler author remembering to clear the payload.
-  smithy::Outcome<FetchOutput> Fetch(const FetchInput& input,
-                                     const smithy::server::RequestContext&) override {
+  opal::Outcome<FetchOutput> Fetch(const FetchInput& input,
+                                   const opal::server::RequestContext&) override {
     auto target = Lookup(input.slug);
     if (!target) return std::move(target).error();
     const bool fresh = input.ifNoneMatch.has_value() && *input.ifNoneMatch == kEtag;
     return FetchOutput{.status = fresh ? kNotModified : kOk,
                        .etag = kEtag,
-                       .content = smithy::Blob::FromString(kContent)};
+                       .content = opal::Blob::FromString(kContent)};
   }
 
   // Not exercised here — HEAD framing is head_e2e_test.cc's subject. Answers
   // the same resource Fetch does, so the two files cannot drift on what /c
   // serves.
-  smithy::Outcome<ProbeOutput> Probe(const ProbeInput& input,
-                                     const smithy::server::RequestContext&) override {
+  opal::Outcome<ProbeOutput> Probe(const ProbeInput& input,
+                                   const opal::server::RequestContext&) override {
     auto target = Lookup(input.slug);
     if (!target) return std::move(target).error();
-    return ProbeOutput{.etag = kEtag, .content = smithy::Blob::FromString(kContent)};
+    return ProbeOutput{.etag = kEtag, .content = opal::Blob::FromString(kContent)};
   }
 
  private:
-  smithy::Outcome<std::string> Lookup(const std::string& slug) {
+  opal::Outcome<std::string> Lookup(const std::string& slug) {
     const std::lock_guard<std::mutex> lock(mu_);
     const auto it = targets_.find(slug);
     if (it == targets_.end()) {
-      smithy::Error error = smithy::Error::Modeled("NoSuchSlug", "no slug: " + slug);
+      opal::Error error = opal::Error::Modeled("NoSuchSlug", "no slug: " + slug);
       error.set_detail(NoSuchSlug{.message = "no slug: " + slug});
       return error;
     }
@@ -127,13 +127,13 @@ class RedirectE2ETest : public ::testing::TestWithParam<Transport> {
  protected:
   void SetUp() override {
     server_ = std::make_unique<RedirectorServer>(std::make_shared<SlugHandler>());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     if (GetParam() == Transport::kLoopback) {
-      auto loopback = std::make_shared<smithy::http::Loopback>();
+      auto loopback = std::make_shared<opal::http::Loopback>();
       ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
       config.http_client = loopback;
     } else {
-      socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+      socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
       ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
     }
@@ -147,7 +147,7 @@ class RedirectE2ETest : public ::testing::TestWithParam<Transport> {
   }
 
   std::unique_ptr<RedirectorServer> server_;
-  std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+  std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
   std::unique_ptr<RedirectorClient> client_;
 };
 
@@ -217,11 +217,11 @@ INSTANTIATE_TEST_SUITE_P(Transports, RedirectE2ETest,
 // generated server about a renamed header and prove nothing.
 TEST(RedirectWireTest, TheBytesABrowserSeesCarryStatusAndLocation) {
   RedirectorServer server(std::make_shared<SlugHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
-  smithy::http::SocketHttpClient client("127.0.0.1", transport.port());
+  opal::http::SocketHttpClient client("127.0.0.1", transport.port());
 
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/r/abc";
   const auto response = client.Send(request);
@@ -246,11 +246,11 @@ TEST(RedirectWireTest, TheBytesABrowserSeesCarryStatusAndLocation) {
 // fix — and it has to be raw, because the generated client never looks.
 TEST(RedirectWireTest, NotModifiedCarriesNoBodyAndNoContentType) {
   RedirectorServer server(std::make_shared<SlugHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
-  smithy::http::SocketHttpClient client("127.0.0.1", transport.port());
+  opal::http::SocketHttpClient client("127.0.0.1", transport.port());
 
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/d/cached";
   const auto response = client.Send(request);
@@ -264,7 +264,7 @@ TEST(RedirectWireTest, NotModifiedCarriesNoBodyAndNoContentType) {
   // The positive twin, sharing the fixture: the same operation on a status
   // that *does* allow a body still sends one. Without this, a server that had
   // simply stopped emitting bodies would pass the assertions above.
-  smithy::http::HttpRequest live;
+  opal::http::HttpRequest live;
   live.method = "GET";
   live.target = "/d/abc";
   const auto live_response = client.Send(live);
@@ -287,13 +287,13 @@ TEST(RedirectWireTest, NotModifiedCarriesNoBodyAndNoContentType) {
 // without the guard, because there would be nothing to suppress.
 TEST(RedirectWireTest, ANotModifiedFromAPayloadOperationSendsNoPayload) {
   RedirectorServer server(std::make_shared<SlugHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
-  smithy::http::SocketHttpClient client("127.0.0.1", transport.port());
+  opal::http::SocketHttpClient client("127.0.0.1", transport.port());
 
   // Unconditional: 200 with the payload, which is the control — it proves the
   // fixture serves content at all, so the empty 304 below means something.
-  smithy::http::HttpRequest cold;
+  opal::http::HttpRequest cold;
   cold.method = "GET";
   cold.target = "/c/abc";
   const auto cold_response = client.Send(cold);
@@ -303,7 +303,7 @@ TEST(RedirectWireTest, ANotModifiedFromAPayloadOperationSendsNoPayload) {
   EXPECT_EQ(cold_response->headers.Get("ETag").value_or("<missing>"), kEtag);
 
   // Conditional on the ETag the server just sent: 304, and not one byte of it.
-  smithy::http::HttpRequest conditional;
+  opal::http::HttpRequest conditional;
   conditional.method = "GET";
   conditional.target = "/c/abc";
   conditional.headers.Set("If-None-Match", kEtag);

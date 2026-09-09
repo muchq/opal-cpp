@@ -13,10 +13,10 @@
 namespace example::weather {
 
 /// Implement one method per operation. Return a modeled error as
-/// smithy::Error::Modeled("<ErrorShapeName>", message), optionally with the
+/// opal::Error::Modeled("<ErrorShapeName>", message), optionally with the
 /// typed error structure attached via set_detail() so it serializes fully.
 /// The context carries the raw request and routing captures — see
-/// smithy::server::RequestContext; leave the parameter unnamed when unused.
+/// opal::server::RequestContext; leave the parameter unnamed when unused.
 /// Implementations must be thread-safe: transports may invoke any mix of
 /// operations concurrently on the one handler instance.
 class WeatherHandler {
@@ -24,28 +24,28 @@ class WeatherHandler {
     virtual ~WeatherHandler() = default;
 
     /// Deletes a city: a 204 No Content operation (the response has no body).
-    virtual smithy::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const smithy::server::RequestContext& context) = 0;
-    virtual smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input, const smithy::server::RequestContext& context) = 0;
-    virtual smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input, const smithy::server::RequestContext& context) = 0;
-    virtual smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const opal::server::RequestContext& context) = 0;
+    virtual opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input, const opal::server::RequestContext& context) = 0;
+    virtual opal::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input, const opal::server::RequestContext& context) = 0;
+    virtual opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input, const opal::server::RequestContext& context) = 0;
     /// Fetches a rendered report by its slash-separated path. The greedy label
     /// keeps embedded slashes: GET /reports/2026/q3/summary routes here with
     /// reportPath = "2026/q3/summary".
-    virtual smithy::Outcome<GetReportOutput> GetReport(const GetReportInput& input, const smithy::server::RequestContext& context) = 0;
-    virtual smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<GetReportOutput> GetReport(const GetReportInput& input, const opal::server::RequestContext& context) = 0;
+    virtual opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input, const opal::server::RequestContext& context) = 0;
 };
 
 /// simpleRestJson server for example.weather#Weather: routing, deserialization, handler dispatch,
 /// response serialization, and modeled-error mapping. Pass Handler() to any
-/// smithy::http::HttpServerTransport.
+/// opal::http::HttpServerTransport.
 class WeatherServer {
   public:
     explicit WeatherServer(std::shared_ptr<WeatherHandler> handler);
 
-    smithy::http::RequestHandler Handler() const;
+    opal::http::RequestHandler Handler() const;
 
   private:
-    std::shared_ptr<smithy::server::Router> router_;
+    std::shared_ptr<opal::server::Router> router_;
 };
 
 }  // namespace example::weather

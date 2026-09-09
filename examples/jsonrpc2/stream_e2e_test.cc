@@ -25,9 +25,9 @@ namespace {
 
 // One raw wire frame: a headerless message whose payload is the envelope
 // text — exactly what a browser's WebSocket send() puts on a real wire.
-smithy::eventstream::Message RawText(std::string text) {
-  smithy::eventstream::Message message;
-  message.payload = smithy::Blob::FromString(std::move(text));
+opal::eventstream::Message RawText(std::string text) {
+  opal::eventstream::Message message;
+  message.payload = opal::Blob::FromString(std::move(text));
   return message;
 }
 
@@ -74,7 +74,7 @@ class AccumulateEndToEndTest : public StreamTestFixture {
     ASSERT_TRUE(stream->Send(Terms::FromAdd(Term{.value = 20})).ok());
     auto outcome = stream->Receive();
     ASSERT_FALSE(outcome.ok());
-    EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+    EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
     EXPECT_EQ(outcome.error().code(), "Overflow");
     const Overflow* detail = outcome.error().detail<Overflow>();
     ASSERT_NE(detail, nullptr);
@@ -118,7 +118,7 @@ TEST_F(AccumulateEndToEndTest, TheWireIsPlainJsonRpcTextEndToEnd) {
   // params, and observes a well-formed response for its call, then the
   // close. Byte-pinned: the runtime's JSON output is deterministic.
   StartWithAsync(std::make_shared<AsyncAccumulatingCalculator>());
-  auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
+  auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
   sessions_.push_back(near);
   sessions_.push_back(far);
   Serve("/", far);
@@ -155,7 +155,7 @@ TEST_F(AccumulateEndToEndTest, AUnaryMethodOnTheStreamEndpointIsUnknown) {
   // The stream endpoint dispatches streaming operations only; a unary
   // method name earns the reserved -32601 as a terminal error, then close.
   StartWithAsync(std::make_shared<AsyncAccumulatingCalculator>());
-  auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
+  auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
   sessions_.push_back(near);
   sessions_.push_back(far);
   Serve("/", far);

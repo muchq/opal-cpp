@@ -12,56 +12,56 @@
 namespace example::weather {
 
 // Document-pivot serde for every aggregate shape in the model closure.
-// Serializers never fail; deserializers return smithy::Error on wire
+// Serializers never fail; deserializers return opal::Error on wire
 // mismatches and enforce @required members.
 
-smithy::Document SerializeDeleteCityInput(const DeleteCityInput& value);
-smithy::Outcome<DeleteCityInput> DeserializeDeleteCityInput(const smithy::Document& doc);
+opal::Document SerializeDeleteCityInput(const DeleteCityInput& value);
+opal::Outcome<DeleteCityInput> DeserializeDeleteCityInput(const opal::Document& doc);
 
-smithy::Document SerializeDeleteCityOutput(const DeleteCityOutput& value);
-smithy::Outcome<DeleteCityOutput> DeserializeDeleteCityOutput(const smithy::Document& doc);
+opal::Document SerializeDeleteCityOutput(const DeleteCityOutput& value);
+opal::Outcome<DeleteCityOutput> DeserializeDeleteCityOutput(const opal::Document& doc);
 
-smithy::Document SerializeNoSuchResource(const NoSuchResource& value);
-smithy::Outcome<NoSuchResource> DeserializeNoSuchResource(const smithy::Document& doc);
+opal::Document SerializeNoSuchResource(const NoSuchResource& value);
+opal::Outcome<NoSuchResource> DeserializeNoSuchResource(const opal::Document& doc);
 
-smithy::Document SerializeGetForecastInput(const GetForecastInput& value);
-smithy::Outcome<GetForecastInput> DeserializeGetForecastInput(const smithy::Document& doc);
+opal::Document SerializeGetForecastInput(const GetForecastInput& value);
+opal::Outcome<GetForecastInput> DeserializeGetForecastInput(const opal::Document& doc);
 
-smithy::Document SerializeGetForecastOutput(const GetForecastOutput& value);
-smithy::Outcome<GetForecastOutput> DeserializeGetForecastOutput(const smithy::Document& doc);
+opal::Document SerializeGetForecastOutput(const GetForecastOutput& value);
+opal::Outcome<GetForecastOutput> DeserializeGetForecastOutput(const opal::Document& doc);
 
-smithy::Document SerializeGetCityInput(const GetCityInput& value);
-smithy::Outcome<GetCityInput> DeserializeGetCityInput(const smithy::Document& doc);
+opal::Document SerializeGetCityInput(const GetCityInput& value);
+opal::Outcome<GetCityInput> DeserializeGetCityInput(const opal::Document& doc);
 
-smithy::Document SerializeCityCoordinates(const CityCoordinates& value);
-smithy::Outcome<CityCoordinates> DeserializeCityCoordinates(const smithy::Document& doc);
+opal::Document SerializeCityCoordinates(const CityCoordinates& value);
+opal::Outcome<CityCoordinates> DeserializeCityCoordinates(const opal::Document& doc);
 
-smithy::Document SerializeGetCityOutput(const GetCityOutput& value);
-smithy::Outcome<GetCityOutput> DeserializeGetCityOutput(const smithy::Document& doc);
+opal::Document SerializeGetCityOutput(const GetCityOutput& value);
+opal::Outcome<GetCityOutput> DeserializeGetCityOutput(const opal::Document& doc);
 
-smithy::Document SerializeListCitiesInput(const ListCitiesInput& value);
-smithy::Outcome<ListCitiesInput> DeserializeListCitiesInput(const smithy::Document& doc);
+opal::Document SerializeListCitiesInput(const ListCitiesInput& value);
+opal::Outcome<ListCitiesInput> DeserializeListCitiesInput(const opal::Document& doc);
 
-smithy::Document SerializeCitySummary(const CitySummary& value);
-smithy::Outcome<CitySummary> DeserializeCitySummary(const smithy::Document& doc);
+opal::Document SerializeCitySummary(const CitySummary& value);
+opal::Outcome<CitySummary> DeserializeCitySummary(const opal::Document& doc);
 
-smithy::Document SerializeCitySummaries(const std::vector<CitySummary>& value);
-smithy::Outcome<std::vector<CitySummary>> DeserializeCitySummaries(const smithy::Document& doc);
+opal::Document SerializeCitySummaries(const std::vector<CitySummary>& value);
+opal::Outcome<std::vector<CitySummary>> DeserializeCitySummaries(const opal::Document& doc);
 
-smithy::Document SerializeListCitiesOutput(const ListCitiesOutput& value);
-smithy::Outcome<ListCitiesOutput> DeserializeListCitiesOutput(const smithy::Document& doc);
+opal::Document SerializeListCitiesOutput(const ListCitiesOutput& value);
+opal::Outcome<ListCitiesOutput> DeserializeListCitiesOutput(const opal::Document& doc);
 
-smithy::Document SerializeGetCurrentTimeInput(const GetCurrentTimeInput& value);
-smithy::Outcome<GetCurrentTimeInput> DeserializeGetCurrentTimeInput(const smithy::Document& doc);
+opal::Document SerializeGetCurrentTimeInput(const GetCurrentTimeInput& value);
+opal::Outcome<GetCurrentTimeInput> DeserializeGetCurrentTimeInput(const opal::Document& doc);
 
-smithy::Document SerializeGetCurrentTimeOutput(const GetCurrentTimeOutput& value);
-smithy::Outcome<GetCurrentTimeOutput> DeserializeGetCurrentTimeOutput(const smithy::Document& doc);
+opal::Document SerializeGetCurrentTimeOutput(const GetCurrentTimeOutput& value);
+opal::Outcome<GetCurrentTimeOutput> DeserializeGetCurrentTimeOutput(const opal::Document& doc);
 
-smithy::Document SerializeGetReportInput(const GetReportInput& value);
-smithy::Outcome<GetReportInput> DeserializeGetReportInput(const smithy::Document& doc);
+opal::Document SerializeGetReportInput(const GetReportInput& value);
+opal::Outcome<GetReportInput> DeserializeGetReportInput(const opal::Document& doc);
 
-smithy::Document SerializeGetReportOutput(const GetReportOutput& value);
-smithy::Outcome<GetReportOutput> DeserializeGetReportOutput(const smithy::Document& doc);
+opal::Document SerializeGetReportOutput(const GetReportOutput& value);
+opal::Outcome<GetReportOutput> DeserializeGetReportOutput(const opal::Document& doc);
 
 }  // namespace example::weather
 

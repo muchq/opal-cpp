@@ -140,12 +140,12 @@ struct Rng {
   if (rng.Coin()) v.big = static_cast<std::int64_t>(rng.Int(-4611686018427387904LL, 4611686018427387903LL));
   if (rng.Coin()) v.ratio = static_cast<float>(rng.Int(-8000000LL, 8000000LL)) / static_cast<float>(8);
   if (rng.Coin()) v.precise = static_cast<double>(rng.Int(-8000000LL, 8000000LL)) / static_cast<double>(8);
-  if (rng.Coin()) v.blob = smithy::Blob::FromString(rng.Text(1, 9));
+  if (rng.Coin()) v.blob = opal::Blob::FromString(rng.Text(1, 9));
   if (rng.Coin()) v.priority = Priority::FromString(std::array<const char*, 3>{"low", "medium", "high"}[rng.engine() % 3]);
   if (rng.Coin()) v.weight = static_cast<Weight>(std::array<int, 2>{1, 2}[rng.engine() % 2]);
-  if (rng.Coin()) v.dateTime = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
-  if (rng.Coin()) v.httpDate = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
-  if (rng.Coin()) v.epoch = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  if (rng.Coin()) v.dateTime = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  if (rng.Coin()) v.httpDate = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  if (rng.Coin()) v.epoch = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
   if (rng.Coin()) v.names = RandomStringList(rng);
   if (rng.Coin()) v.uniqueNames = RandomUniqueStringList(rng);
   if (rng.Coin()) v.sparseNumbers = RandomSparseIntegerList(rng);
@@ -174,10 +174,10 @@ struct Rng {
   if (rng.Coin()) v.tag = rng.Text(1, 9);
   v.limit = static_cast<std::int32_t>(rng.Int(1LL, 100LL));
   if (rng.Coin()) v.priority = Priority::FromString(std::array<const char*, 3>{"low", "medium", "high"}[rng.engine() % 3]);
-  v.created = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  v.created = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
   if (rng.Coin()) v.metadata = RandomStringMap(rng);
   if (rng.Coin()) v.sink = RandomKitchenSink(rng);
-  if (rng.Coin()) v.freeform = smithy::Document(smithy::DocumentMap{{"key", smithy::Document(rng.Int(0, 1000))}});
+  if (rng.Coin()) v.freeform = opal::Document(opal::DocumentMap{{"key", opal::Document(rng.Int(0, 1000))}});
   return v;
 }
 
@@ -215,7 +215,7 @@ struct Rng {
   UploadAttachmentInput v{};
   v.sinkId = std::string("0");
   if (rng.Coin()) v.name = rng.Text(1, 9);
-  if (rng.Coin()) v.data = smithy::Blob::FromString(rng.Text(1, 9));
+  if (rng.Coin()) v.data = opal::Blob::FromString(rng.Text(1, 9));
   return v;
 }
 
@@ -227,30 +227,30 @@ struct Rng {
 
 class ScriptedHandler final : public RoundTripRestHandler {
   public:
-    smithy::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput& input, const opal::server::RequestContext&) override {
       lastDescribeSink = input;
       if (nextDescribeSinkError.has_value()) return *nextDescribeSinkError;
       return nextDescribeSinkOutput;
     }
     std::optional<DescribeSinkInput> lastDescribeSink;
     DescribeSinkOutput nextDescribeSinkOutput{};
-    std::optional<smithy::Error> nextDescribeSinkError;
-    smithy::Outcome<PutSinkOutput> PutSink(const PutSinkInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextDescribeSinkError;
+    opal::Outcome<PutSinkOutput> PutSink(const PutSinkInput& input, const opal::server::RequestContext&) override {
       lastPutSink = input;
       if (nextPutSinkError.has_value()) return *nextPutSinkError;
       return nextPutSinkOutput;
     }
     std::optional<PutSinkInput> lastPutSink;
     PutSinkOutput nextPutSinkOutput{};
-    std::optional<smithy::Error> nextPutSinkError;
-    smithy::Outcome<UploadAttachmentOutput> UploadAttachment(const UploadAttachmentInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextPutSinkError;
+    opal::Outcome<UploadAttachmentOutput> UploadAttachment(const UploadAttachmentInput& input, const opal::server::RequestContext&) override {
       lastUploadAttachment = input;
       if (nextUploadAttachmentError.has_value()) return *nextUploadAttachmentError;
       return nextUploadAttachmentOutput;
     }
     std::optional<UploadAttachmentInput> lastUploadAttachment;
     UploadAttachmentOutput nextUploadAttachmentOutput{};
-    std::optional<smithy::Error> nextUploadAttachmentError;
+    std::optional<opal::Error> nextUploadAttachmentError;
 };
 
 enum class TransportKind { kLoopback, kSocket };
@@ -260,14 +260,14 @@ class RoundTripRestIntegrationTest : public ::testing::TestWithParam<TransportKi
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<RoundTripRestServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -280,7 +280,7 @@ class RoundTripRestIntegrationTest : public ::testing::TestWithParam<TransportKi
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<RoundTripRestServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<RoundTripRestClient> client_;
 };
 
@@ -365,13 +365,13 @@ TEST_P(RoundTripRestIntegrationTest, UploadAttachmentMaximalRoundTrips) {
 TEST_P(RoundTripRestIntegrationTest, DescribeSinkSinkNotFoundMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const SinkNotFound detail = RandomSinkNotFound(rng);
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", "integration");
+  opal::Error error = opal::Error::Modeled("SinkNotFound", "integration");
   error.set_detail(detail);
   handler_->nextDescribeSinkError = error;
   const DescribeSinkInput input = RandomDescribeSinkInput(rng);
   const auto outcome = client_->DescribeSink(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkNotFound");
   ASSERT_NE(outcome.error().detail<SinkNotFound>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<SinkNotFound>(), detail);
@@ -380,13 +380,13 @@ TEST_P(RoundTripRestIntegrationTest, DescribeSinkSinkNotFoundMapsAcrossTheWire) 
 TEST_P(RoundTripRestIntegrationTest, DescribeSinkDescribeSinkErrorMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const DescribeSinkError detail = RandomDescribeSinkError(rng);
-  smithy::Error error = smithy::Error::Modeled("DescribeSinkError", "integration");
+  opal::Error error = opal::Error::Modeled("DescribeSinkError", "integration");
   error.set_detail(detail);
   handler_->nextDescribeSinkError = error;
   const DescribeSinkInput input = RandomDescribeSinkInput(rng);
   const auto outcome = client_->DescribeSink(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "DescribeSinkError");
   ASSERT_NE(outcome.error().detail<DescribeSinkError>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<DescribeSinkError>(), detail);
@@ -395,13 +395,13 @@ TEST_P(RoundTripRestIntegrationTest, DescribeSinkDescribeSinkErrorMapsAcrossTheW
 TEST_P(RoundTripRestIntegrationTest, PutSinkSinkNotFoundMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const SinkNotFound detail = RandomSinkNotFound(rng);
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", "integration");
+  opal::Error error = opal::Error::Modeled("SinkNotFound", "integration");
   error.set_detail(detail);
   handler_->nextPutSinkError = error;
   const PutSinkInput input = RandomPutSinkInput(rng);
   const auto outcome = client_->PutSink(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkNotFound");
   ASSERT_NE(outcome.error().detail<SinkNotFound>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<SinkNotFound>(), detail);
@@ -410,13 +410,13 @@ TEST_P(RoundTripRestIntegrationTest, PutSinkSinkNotFoundMapsAcrossTheWire) {
 TEST_P(RoundTripRestIntegrationTest, PutSinkSinkQuotaExceededMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const SinkQuotaExceeded detail = RandomSinkQuotaExceeded(rng);
-  smithy::Error error = smithy::Error::Modeled("SinkQuotaExceeded", "integration");
+  opal::Error error = opal::Error::Modeled("SinkQuotaExceeded", "integration");
   error.set_detail(detail);
   handler_->nextPutSinkError = error;
   const PutSinkInput input = RandomPutSinkInput(rng);
   const auto outcome = client_->PutSink(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkQuotaExceeded");
   ASSERT_NE(outcome.error().detail<SinkQuotaExceeded>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<SinkQuotaExceeded>(), detail);
@@ -425,13 +425,13 @@ TEST_P(RoundTripRestIntegrationTest, PutSinkSinkQuotaExceededMapsAcrossTheWire) 
 TEST_P(RoundTripRestIntegrationTest, UploadAttachmentSinkNotFoundMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const SinkNotFound detail = RandomSinkNotFound(rng);
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", "integration");
+  opal::Error error = opal::Error::Modeled("SinkNotFound", "integration");
   error.set_detail(detail);
   handler_->nextUploadAttachmentError = error;
   const UploadAttachmentInput input = RandomUploadAttachmentInput(rng);
   const auto outcome = client_->UploadAttachment(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkNotFound");
   ASSERT_NE(outcome.error().detail<SinkNotFound>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<SinkNotFound>(), detail);
@@ -440,17 +440,17 @@ TEST_P(RoundTripRestIntegrationTest, UploadAttachmentSinkNotFoundMapsAcrossTheWi
 TEST(RoundTripRestIntegrationUnknownMembers, DescribeSinkToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   RoundTripRestServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *RoundTripRestClient::Create(std::move(config));
@@ -466,17 +466,17 @@ TEST(RoundTripRestIntegrationUnknownMembers, DescribeSinkToleratesUnknownRespons
 TEST(RoundTripRestIntegrationUnknownMembers, PutSinkToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   RoundTripRestServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *RoundTripRestClient::Create(std::move(config));

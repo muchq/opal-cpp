@@ -10,47 +10,47 @@
 namespace example::cafe {
 
 // Document-pivot serde for every aggregate shape in the model closure.
-// Serializers never fail; deserializers return smithy::Error on wire
+// Serializers never fail; deserializers return opal::Error on wire
 // mismatches and enforce @required members.
 
-smithy::Document SerializeAlternativeMilk(const AlternativeMilk& value);
-smithy::Outcome<AlternativeMilk> DeserializeAlternativeMilk(const smithy::Document& doc);
+opal::Document SerializeAlternativeMilk(const AlternativeMilk& value);
+opal::Outcome<AlternativeMilk> DeserializeAlternativeMilk(const opal::Document& doc);
 
-smithy::Document SerializeGetOrderInput(const GetOrderInput& value);
-smithy::Outcome<GetOrderInput> DeserializeGetOrderInput(const smithy::Document& doc);
+opal::Document SerializeGetOrderInput(const GetOrderInput& value);
+opal::Outcome<GetOrderInput> DeserializeGetOrderInput(const opal::Document& doc);
 
-smithy::Document SerializeCancelledStatus(const CancelledStatus& value);
-smithy::Outcome<CancelledStatus> DeserializeCancelledStatus(const smithy::Document& doc);
+opal::Document SerializeCancelledStatus(const CancelledStatus& value);
+opal::Outcome<CancelledStatus> DeserializeCancelledStatus(const opal::Document& doc);
 
-smithy::Document SerializePendingStatus(const PendingStatus& value);
-smithy::Outcome<PendingStatus> DeserializePendingStatus(const smithy::Document& doc);
+opal::Document SerializePendingStatus(const PendingStatus& value);
+opal::Outcome<PendingStatus> DeserializePendingStatus(const opal::Document& doc);
 
-smithy::Document SerializeReadyStatus(const ReadyStatus& value);
-smithy::Outcome<ReadyStatus> DeserializeReadyStatus(const smithy::Document& doc);
+opal::Document SerializeReadyStatus(const ReadyStatus& value);
+opal::Outcome<ReadyStatus> DeserializeReadyStatus(const opal::Document& doc);
 
-smithy::Document SerializeOrderStatus(const OrderStatus& value);
-smithy::Outcome<OrderStatus> DeserializeOrderStatus(const smithy::Document& doc);
+opal::Document SerializeOrderStatus(const OrderStatus& value);
+opal::Outcome<OrderStatus> DeserializeOrderStatus(const opal::Document& doc);
 
-smithy::Document SerializeGetOrderOutput(const GetOrderOutput& value);
-smithy::Outcome<GetOrderOutput> DeserializeGetOrderOutput(const smithy::Document& doc);
+opal::Document SerializeGetOrderOutput(const GetOrderOutput& value);
+opal::Outcome<GetOrderOutput> DeserializeGetOrderOutput(const opal::Document& doc);
 
-smithy::Document SerializeOrderNotFound(const OrderNotFound& value);
-smithy::Outcome<OrderNotFound> DeserializeOrderNotFound(const smithy::Document& doc);
+opal::Document SerializeOrderNotFound(const OrderNotFound& value);
+opal::Outcome<OrderNotFound> DeserializeOrderNotFound(const opal::Document& doc);
 
-smithy::Document SerializeDairyMilk(const DairyMilk& value);
-smithy::Outcome<DairyMilk> DeserializeDairyMilk(const smithy::Document& doc);
+opal::Document SerializeDairyMilk(const DairyMilk& value);
+opal::Outcome<DairyMilk> DeserializeDairyMilk(const opal::Document& doc);
 
-smithy::Document SerializeMilkOption(const MilkOption& value);
-smithy::Outcome<MilkOption> DeserializeMilkOption(const smithy::Document& doc);
+opal::Document SerializeMilkOption(const MilkOption& value);
+opal::Outcome<MilkOption> DeserializeMilkOption(const opal::Document& doc);
 
-smithy::Document SerializeOrderCoffeeInput(const OrderCoffeeInput& value);
-smithy::Outcome<OrderCoffeeInput> DeserializeOrderCoffeeInput(const smithy::Document& doc);
+opal::Document SerializeOrderCoffeeInput(const OrderCoffeeInput& value);
+opal::Outcome<OrderCoffeeInput> DeserializeOrderCoffeeInput(const opal::Document& doc);
 
-smithy::Document SerializeOrderCoffeeOutput(const OrderCoffeeOutput& value);
-smithy::Outcome<OrderCoffeeOutput> DeserializeOrderCoffeeOutput(const smithy::Document& doc);
+opal::Document SerializeOrderCoffeeOutput(const OrderCoffeeOutput& value);
+opal::Outcome<OrderCoffeeOutput> DeserializeOrderCoffeeOutput(const opal::Document& doc);
 
-smithy::Document SerializeOutOfBeans(const OutOfBeans& value);
-smithy::Outcome<OutOfBeans> DeserializeOutOfBeans(const smithy::Document& doc);
+opal::Document SerializeOutOfBeans(const OutOfBeans& value);
+opal::Outcome<OutOfBeans> DeserializeOutOfBeans(const opal::Document& doc);
 
 }  // namespace example::cafe
 

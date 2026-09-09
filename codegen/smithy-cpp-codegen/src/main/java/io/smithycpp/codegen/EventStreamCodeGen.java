@@ -222,12 +222,12 @@ final class EventStreamCodeGen {
 
   private static String eventUnionType(CppContext context, Optional<EventStreamInfo> info) {
     return info.map(i -> context.cppSymbols().toSymbol(eventUnion(i)).getName())
-        .orElse("smithy::eventstream::NoEvents");
+        .orElse("opal::eventstream::NoEvents");
   }
 
   /** The client's session type: Tx = the input event union, Rx = the output event union. */
   static String clientStreamType(CppContext context, OperationShape operation) {
-    return "smithy::eventstream::EventStream<"
+    return "opal::eventstream::EventStream<"
         + eventUnionType(context, inputInfo(context.model(), operation))
         + ", "
         + eventUnionType(context, outputInfo(context.model(), operation))
@@ -236,7 +236,7 @@ final class EventStreamCodeGen {
 
   /** The handler's session type: the client's with the parameters swapped. */
   static String serverStreamType(CppContext context, OperationShape operation) {
-    return "smithy::eventstream::EventStream<"
+    return "opal::eventstream::EventStream<"
         + eventUnionType(context, outputInfo(context.model(), operation))
         + ", "
         + eventUnionType(context, inputInfo(context.model(), operation))
@@ -245,7 +245,7 @@ final class EventStreamCodeGen {
 
   /** The async handler's session type (ADR-0021): {@link #serverStreamType}'s coroutine sibling. */
   static String asyncServerStreamType(CppContext context, OperationShape operation) {
-    return "smithy::eventstream::AsyncEventStream<"
+    return "opal::eventstream::AsyncEventStream<"
         + eventUnionType(context, outputInfo(context.model(), operation))
         + ", "
         + eventUnionType(context, inputInfo(context.model(), operation))
@@ -336,14 +336,14 @@ final class EventStreamCodeGen {
     w.write("// Streaming operation (ADR-0016): no generated unary-shaped test drives");
     w.write("// this; the stub closes the stream so the interface stays implemented.");
     w.openBlock(
-        "smithy::Outcome<smithy::Unit> $L(const $L& input, $L& stream, $L) override {",
+        "opal::Outcome<opal::Unit> $L(const $L& input, $L& stream, $L) override {",
         opName(operation),
         inputType,
         serverStreamAlias(operation),
         ProtocolSupport.REQUEST_CONTEXT_PARAM);
     w.write("(void)input;");
     w.write("stream.Close();");
-    w.write("return smithy::Unit{};");
+    w.write("return opal::Unit{};");
     w.closeBlock("}");
   }
 
@@ -369,10 +369,10 @@ final class EventStreamCodeGen {
     w.write("// configured twice); config.websocket_dialer overrides the Beast dialer the");
     w.write("// way http_client overrides the unary transport.");
     w.openBlock(
-        "smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> DialStream("
-            + "const smithy::ClientConfig& config, smithy::http::WebSocketDialRequest request) {");
+        "opal::Outcome<std::shared_ptr<opal::http::WebSocket>> DialStream("
+            + "const opal::ClientConfig& config, opal::http::WebSocketDialRequest request) {");
     w.openBlock("if (!config.endpoint.empty()) {");
-    w.write("auto endpoint = smithy::http::ParseEndpoint(config.endpoint);");
+    w.write("auto endpoint = opal::http::ParseEndpoint(config.endpoint);");
     w.write("if (!endpoint) return std::move(endpoint).error();");
     w.write("request.host = endpoint->host;");
     w.write("request.port = endpoint->port;");
@@ -382,10 +382,10 @@ final class EventStreamCodeGen {
     w.write("if (config.websocket_dialer) return config.websocket_dialer(request);");
     w.openBlock("if (request.host.empty()) {");
     w.write(
-        "return smithy::Error::Validation($S);",
+        "return opal::Error::Validation($S);",
         clientName + ": config needs an endpoint or a websocket_dialer");
     w.closeBlock("}");
-    w.write("return smithy::http::BeastWebSocketClient::Dialer()(request);");
+    w.write("return opal::http::BeastWebSocketClient::Dialer()(request);");
     w.closeBlock("}");
     w.write("");
     for (OperationShape operation : streamingOperations) {
@@ -489,8 +489,8 @@ final class EventStreamCodeGen {
     w.write("// busy wire can cancel it. Best-effort, like the blocking route: a send");
     w.write("// the terminated session refuses is discarded.");
     w.openBlock(
-        "smithy::eventstream::Detached Serve$LAsync(std::shared_ptr<types::$LAsyncHandler>"
-            + " handler, $L input, std::shared_ptr<smithy::http::WebSocket> socket) {",
+        "opal::eventstream::Detached Serve$LAsync(std::shared_ptr<types::$LAsyncHandler>"
+            + " handler, $L input, std::shared_ptr<opal::http::WebSocket> socket) {",
         op,
         serviceName,
         inputType);
@@ -502,7 +502,7 @@ final class EventStreamCodeGen {
     w.write("auto outcome = co_await handler->$L(std::move(input), stream);", op);
     w.openBlock("if (!outcome.ok()) {");
     w.write(
-        "(void)co_await smithy::eventstream::SendMessage(socket,"
+        "(void)co_await opal::eventstream::SendMessage(socket,"
             + " helpers::Build$LExceptionMessage(outcome.error()));",
         op);
     w.closeBlock("}");
@@ -561,7 +561,7 @@ final class EventStreamCodeGen {
     w.write("// One event per message (ADR-0016): the engaged member's structure is the");
     w.write("// payload, its member name the :event-type.");
     w.openBlock(
-        "smithy::Outcome<smithy::eventstream::Message> Encode$LEvent(const $L& event) {",
+        "opal::Outcome<opal::eventstream::Message> Encode$LEvent(const $L& event) {",
         op,
         unionType);
     for (MemberShape member : union.members()) {
@@ -569,7 +569,7 @@ final class EventStreamCodeGen {
       Shape target = context.model().expectShape(member.getTarget());
       w.openBlock("if (event.is_$L()) {", name);
       w.write(
-          "return smithy::eventstream::MakeEventMessage($S, $S, $L);",
+          "return opal::eventstream::MakeEventMessage($S, $S, $L);",
           member.getMemberName(),
           protocol.contentType(),
           protocol.eventPayloadEncode(
@@ -581,7 +581,7 @@ final class EventStreamCodeGen {
       w.closeBlock("}");
     }
     w.write(
-        "return smithy::Error::Validation($S);",
+        "return opal::Error::Validation($S);",
         context.cppSymbols().toSymbol(union).getName() + ": no event member engaged");
     w.closeBlock("}");
     w.write("");
@@ -606,11 +606,11 @@ final class EventStreamCodeGen {
       w.write("// $L models no events in this direction: any received message is a", op);
       w.write("// protocol violation and therefore terminal (ADR-0016).");
       w.openBlock(
-          "smithy::Outcome<smithy::eventstream::NoEvents> Decode$LEvent("
-              + "const smithy::eventstream::Message&) {",
+          "opal::Outcome<opal::eventstream::NoEvents> Decode$LEvent("
+              + "const opal::eventstream::Message&) {",
           op);
       w.write(
-          "return smithy::Error::Serialization($S);",
+          "return opal::Error::Serialization($S);",
           op + ": no events are modeled in this direction");
       w.closeBlock("}");
       w.write("");
@@ -619,18 +619,18 @@ final class EventStreamCodeGen {
     UnionShape union = eventUnion(rx.get());
     String unionType = context.cppSymbols().typeRef(union);
     w.openBlock(
-        "smithy::Outcome<$L> Decode$LEvent(const smithy::eventstream::Message& message) {",
+        "opal::Outcome<$L> Decode$LEvent(const opal::eventstream::Message& message) {",
         unionType,
         op);
-    w.write("auto envelope = smithy::eventstream::ParseEnvelope(message);");
+    w.write("auto envelope = opal::eventstream::ParseEnvelope(message);");
     w.write("if (!envelope) return std::move(envelope).error();");
-    w.openBlock("if (envelope->kind == smithy::eventstream::EventEnvelope::Kind::kException) {");
+    w.openBlock("if (envelope->kind == opal::eventstream::EventEnvelope::Kind::kException) {");
     if (clientSide) {
       writeClientExceptionDecode(w, context, service, protocol, operation);
     } else {
       w.write("// Clients send events, never exceptions; treat one as a terminal protocol");
       w.write("// violation carrying the peer's claimed identity.");
-      w.write("return smithy::Error::Modeled(envelope->type, \"peer sent an exception message\");");
+      w.write("return opal::Error::Modeled(envelope->type, \"peer sent an exception message\");");
     }
     w.closeBlock("}");
     for (MemberShape member : union.members()) {
@@ -648,7 +648,7 @@ final class EventStreamCodeGen {
       w.closeBlock("}");
     }
     w.write(
-        "return smithy::Error::Serialization($S + envelope->type);", op + ": unknown event type: ");
+        "return opal::Error::Serialization($S + envelope->type);", op + ": unknown event type: ");
     w.closeBlock("}");
     w.write("");
   }
@@ -671,13 +671,13 @@ final class EventStreamCodeGen {
     w.write("auto exception_doc = $L;", protocol.eventPayloadDecode("envelope->payload"));
     w.openBlock("if (exception_doc.ok() && exception_doc->is_map()) {");
     w.write("parsed.doc = *std::move(exception_doc);");
-    w.write("const smithy::Document* text = parsed.doc.Find(\"message\");");
+    w.write("const opal::Document* text = parsed.doc.Find(\"message\");");
     w.write("if (text != nullptr && text->is_string()) parsed.message = text->as_string();");
     w.closeBlock("}");
     Map<String, StructureShape> errors = modeledErrors(context, service, operation);
     if (!errors.isEmpty()) {
       w.write("// Make<Error>Error's header-patch source; exception messages carry none.");
-      w.write("smithy::http::HttpResponse response;");
+      w.write("opal::http::HttpResponse response;");
       for (Map.Entry<String, StructureShape> entry : errors.entrySet()) {
         w.write(
             "if (parsed.code == $S) return helpers::$L(response, std::move(parsed));",
@@ -705,12 +705,12 @@ final class EventStreamCodeGen {
     w.write("// A handler failure ends the stream with one exception message before the");
     w.write("// close (ADR-0016).");
     w.openBlock(
-        "smithy::eventstream::Message Build$LExceptionMessage(const smithy::Error& error) {", op);
+        "opal::eventstream::Message Build$LExceptionMessage(const opal::Error& error) {", op);
     w.write("std::string type = \"InternalFailure\";");
     w.write("// Never leak internal detail on unexpected failures.");
     w.write("std::string message = \"internal failure\";");
-    w.write("smithy::DocumentMap body;");
-    w.openBlock("if (error.kind() == smithy::ErrorKind::kModeled) {");
+    w.write("opal::DocumentMap body;");
+    w.openBlock("if (error.kind() == opal::ErrorKind::kModeled) {");
     w.write("type = error.code();");
     w.write("message = error.message();");
     for (Map.Entry<String, StructureShape> entry : errors.entrySet()) {
@@ -723,8 +723,8 @@ final class EventStreamCodeGen {
       w.closeBlock("}");
     }
     w.closeBlock(
-        "} else if (error.kind() == smithy::ErrorKind::kValidation || error.kind() =="
-            + " smithy::ErrorKind::kSerialization) {");
+        "} else if (error.kind() == opal::ErrorKind::kValidation || error.kind() =="
+            + " opal::ErrorKind::kSerialization) {");
     w.indent();
     w.write("type = \"SerializationException\";");
     w.write("message = error.message();");
@@ -733,12 +733,12 @@ final class EventStreamCodeGen {
     w.write(
         "const bool has_message = body.count(\"message\") != 0 || body.count(\"Message\") != 0;");
     w.openBlock("if (!has_message && !message.empty()) {");
-    w.write("body.emplace(\"message\", smithy::Document(std::move(message)));");
+    w.write("body.emplace(\"message\", opal::Document(std::move(message)));");
     w.closeBlock("}");
     w.write(
-        "return smithy::eventstream::MakeExceptionMessage(type, $S, $L);",
+        "return opal::eventstream::MakeExceptionMessage(type, $S, $L);",
         protocol.contentType(),
-        protocol.eventPayloadEncode("smithy::Document(std::move(body))"));
+        protocol.eventPayloadEncode("opal::Document(std::move(body))"));
     w.closeBlock("}");
     w.write("");
   }

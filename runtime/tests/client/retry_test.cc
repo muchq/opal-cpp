@@ -10,7 +10,7 @@
 
 #include "smithy/core/error.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 using std::chrono::milliseconds;
@@ -188,4 +188,4 @@ TEST(SendWithRetriesTest, MaxAttemptsOneDisablesRetries) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

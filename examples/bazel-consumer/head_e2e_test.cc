@@ -59,31 +59,31 @@ std::string ExpectedContentLength() {
 // false claim about the resource.
 class ProbeHandler final : public RedirectorHandler {
  public:
-  smithy::Outcome<ProbeOutput> Probe(const ProbeInput& input,
-                                     const smithy::server::RequestContext&) override {
+  opal::Outcome<ProbeOutput> Probe(const ProbeInput& input,
+                                   const opal::server::RequestContext&) override {
     if (input.slug != "abc") return NotFound(input.slug);
-    return ProbeOutput{.etag = kEtag, .content = smithy::Blob::FromString(kContent)};
+    return ProbeOutput{.etag = kEtag, .content = opal::Blob::FromString(kContent)};
   }
 
-  smithy::Outcome<FetchOutput> Fetch(const FetchInput& input,
-                                     const smithy::server::RequestContext&) override {
+  opal::Outcome<FetchOutput> Fetch(const FetchInput& input,
+                                   const opal::server::RequestContext&) override {
     if (input.slug != "abc") return NotFound(input.slug);
-    return FetchOutput{.status = 200, .etag = kEtag, .content = smithy::Blob::FromString(kContent)};
+    return FetchOutput{.status = 200, .etag = kEtag, .content = opal::Blob::FromString(kContent)};
   }
 
-  smithy::Outcome<ResolveOutput> Resolve(const ResolveInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<ResolveOutput> Resolve(const ResolveInput& input,
+                                       const opal::server::RequestContext&) override {
     return NotFound(input.slug);
   }
 
-  smithy::Outcome<ResolveDynamicOutput> ResolveDynamic(
-      const ResolveDynamicInput& input, const smithy::server::RequestContext&) override {
+  opal::Outcome<ResolveDynamicOutput> ResolveDynamic(const ResolveDynamicInput& input,
+                                                     const opal::server::RequestContext&) override {
     return NotFound(input.slug);
   }
 
  private:
-  static smithy::Error NotFound(const std::string& slug) {
-    smithy::Error error = smithy::Error::Modeled("NoSuchSlug", "no slug: " + slug);
+  static opal::Error NotFound(const std::string& slug) {
+    opal::Error error = opal::Error::Modeled("NoSuchSlug", "no slug: " + slug);
     error.set_detail(NoSuchSlug{.message = "no slug: " + slug});
     return error;
   }
@@ -132,7 +132,7 @@ std::string HeadersOf(const std::string& raw) {
 
 TEST(HeadE2ETest, AModeledHeadCarriesTheGetsLengthAndNoBody) {
   RedirectorServer server(std::make_shared<ProbeHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
 
   const std::string head =
@@ -158,13 +158,13 @@ TEST(HeadE2ETest, AModeledHeadCarriesTheGetsLengthAndNoBody) {
 
 TEST(HeadE2ETest, TheGeneratedClientReadsTheHeadWithoutBlocking) {
   RedirectorServer server(std::make_shared<ProbeHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
 
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.endpoint = "http://127.0.0.1:" + std::to_string(transport.port());
   config.http_client =
-      std::make_shared<smithy::http::SocketHttpClient>("127.0.0.1", transport.port());
+      std::make_shared<opal::http::SocketHttpClient>("127.0.0.1", transport.port());
   auto created = acme::redirect::RedirectorClient::Create(config);
   ASSERT_TRUE(created.ok()) << created.error().message();
   const auto& client = *created;

@@ -8,119 +8,119 @@
 
 namespace example::bookstore {
 
-smithy::Document SerializeAddBookInput(const AddBookInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("isbn", smithy::Document(value.isbn));
-  map.emplace("title", smithy::Document(value.title));
-  return smithy::Document(std::move(map));
+opal::Document SerializeAddBookInput(const AddBookInput& value) {
+  opal::DocumentMap map;
+  map.emplace("isbn", opal::Document(value.isbn));
+  map.emplace("title", opal::Document(value.title));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<AddBookInput> DeserializeAddBookInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("AddBookInput: expected a map on the wire");
+opal::Outcome<AddBookInput> DeserializeAddBookInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("AddBookInput: expected a map on the wire");
   AddBookInput out;
   {
-    const smithy::Document* member = doc.Find("isbn");
+    const opal::Document* member = doc.Find("isbn");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddBookInput: missing required member: isbn");
+      return opal::Error::Serialization("AddBookInput: missing required member: isbn");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("AddBookInput.isbn: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("AddBookInput.isbn: unexpected type on the wire");
     out.isbn = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("title");
+    const opal::Document* member = doc.Find("title");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddBookInput: missing required member: title");
+      return opal::Error::Serialization("AddBookInput: missing required member: title");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("AddBookInput.title: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("AddBookInput.title: unexpected type on the wire");
     out.title = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeAddBookOutput(const AddBookOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("status", smithy::Document(static_cast<std::int64_t>(value.status)));
-  map.emplace("isbn", smithy::Document(value.isbn));
-  return smithy::Document(std::move(map));
+opal::Document SerializeAddBookOutput(const AddBookOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("status", opal::Document(static_cast<std::int64_t>(value.status)));
+  map.emplace("isbn", opal::Document(value.isbn));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<AddBookOutput> DeserializeAddBookOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("AddBookOutput: expected a map on the wire");
+opal::Outcome<AddBookOutput> DeserializeAddBookOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("AddBookOutput: expected a map on the wire");
   AddBookOutput out;
   {
-    const smithy::Document* member = doc.Find("status");
+    const opal::Document* member = doc.Find("status");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddBookOutput: missing required member: status");
+      return opal::Error::Serialization("AddBookOutput: missing required member: status");
     }
-    if (!member->is_int()) return smithy::Error::Serialization("AddBookOutput.status: unexpected type on the wire");
-    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return smithy::Error::Serialization("AddBookOutput.status: value out of range");
+    if (!member->is_int()) return opal::Error::Serialization("AddBookOutput.status: unexpected type on the wire");
+    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return opal::Error::Serialization("AddBookOutput.status: value out of range");
     out.status = static_cast<std::int32_t>(member->as_int());
   }
   {
-    const smithy::Document* member = doc.Find("isbn");
+    const opal::Document* member = doc.Find("isbn");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddBookOutput: missing required member: isbn");
+      return opal::Error::Serialization("AddBookOutput: missing required member: isbn");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("AddBookOutput.isbn: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("AddBookOutput.isbn: unexpected type on the wire");
     out.isbn = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeBookNotFound(const BookNotFound& value) {
-  smithy::DocumentMap map;
-  map.emplace("message", smithy::Document(value.message));
-  map.emplace("isbn", smithy::Document(value.isbn));
-  return smithy::Document(std::move(map));
+opal::Document SerializeBookNotFound(const BookNotFound& value) {
+  opal::DocumentMap map;
+  map.emplace("message", opal::Document(value.message));
+  map.emplace("isbn", opal::Document(value.isbn));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<BookNotFound> DeserializeBookNotFound(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("BookNotFound: expected a map on the wire");
+opal::Outcome<BookNotFound> DeserializeBookNotFound(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("BookNotFound: expected a map on the wire");
   BookNotFound out;
   {
-    const smithy::Document* member = doc.Find("message");
+    const opal::Document* member = doc.Find("message");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("BookNotFound: missing required member: message");
+      return opal::Error::Serialization("BookNotFound: missing required member: message");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("BookNotFound.message: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("BookNotFound.message: unexpected type on the wire");
     out.message = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("isbn");
+    const opal::Document* member = doc.Find("isbn");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("BookNotFound: missing required member: isbn");
+      return opal::Error::Serialization("BookNotFound: missing required member: isbn");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("BookNotFound.isbn: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("BookNotFound.isbn: unexpected type on the wire");
     out.isbn = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeGetBookInput(const GetBookInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("isbn", smithy::Document(value.isbn));
+opal::Document SerializeGetBookInput(const GetBookInput& value) {
+  opal::DocumentMap map;
+  map.emplace("isbn", opal::Document(value.isbn));
   if (value.currency.has_value()) {
-    map.emplace("currency", smithy::Document((*value.currency)));
+    map.emplace("currency", opal::Document((*value.currency)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetBookInput> DeserializeGetBookInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetBookInput: expected a map on the wire");
+opal::Outcome<GetBookInput> DeserializeGetBookInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetBookInput: expected a map on the wire");
   GetBookInput out;
   {
-    const smithy::Document* member = doc.Find("isbn");
+    const opal::Document* member = doc.Find("isbn");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetBookInput: missing required member: isbn");
+      return opal::Error::Serialization("GetBookInput: missing required member: isbn");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GetBookInput.isbn: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GetBookInput.isbn: unexpected type on the wire");
     out.isbn = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("currency");
+    const opal::Document* member = doc.Find("currency");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("GetBookInput.currency: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("GetBookInput.currency: unexpected type on the wire");
       parsed_member = member->as_string();
       out.currency = std::move(parsed_member);
     }
@@ -128,44 +128,44 @@ smithy::Outcome<GetBookInput> DeserializeGetBookInput(const smithy::Document& do
   return out;
 }
 
-smithy::Document SerializeGetBookOutput(const GetBookOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("isbn", smithy::Document(value.isbn));
-  map.emplace("title", smithy::Document(value.title));
+opal::Document SerializeGetBookOutput(const GetBookOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("isbn", opal::Document(value.isbn));
+  map.emplace("title", opal::Document(value.title));
   if (value.price.has_value()) {
-    map.emplace("price", smithy::Document(static_cast<double>((*value.price))));
+    map.emplace("price", opal::Document(static_cast<double>((*value.price))));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetBookOutput> DeserializeGetBookOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetBookOutput: expected a map on the wire");
+opal::Outcome<GetBookOutput> DeserializeGetBookOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetBookOutput: expected a map on the wire");
   GetBookOutput out;
   {
-    const smithy::Document* member = doc.Find("isbn");
+    const opal::Document* member = doc.Find("isbn");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetBookOutput: missing required member: isbn");
+      return opal::Error::Serialization("GetBookOutput: missing required member: isbn");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GetBookOutput.isbn: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GetBookOutput.isbn: unexpected type on the wire");
     out.isbn = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("title");
+    const opal::Document* member = doc.Find("title");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetBookOutput: missing required member: title");
+      return opal::Error::Serialization("GetBookOutput: missing required member: title");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GetBookOutput.title: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GetBookOutput.title: unexpected type on the wire");
     out.title = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("price");
+    const opal::Document* member = doc.Find("price");
     if (member != nullptr && !member->is_null()) {
       float parsed_member{};
       {
-        auto parsed = smithy::DoubleFromDocument(*member);
-        if (!parsed) return smithy::Error::Serialization("GetBookOutput.price: expected a number");
-        auto narrowed = smithy::FloatFromDouble(*parsed);
-        if (!narrowed) return smithy::Error::Serialization("GetBookOutput.price: value out of range");
+        auto parsed = opal::DoubleFromDocument(*member);
+        if (!parsed) return opal::Error::Serialization("GetBookOutput.price: expected a number");
+        auto narrowed = opal::FloatFromDouble(*parsed);
+        if (!narrowed) return opal::Error::Serialization("GetBookOutput.price: value out of range");
         parsed_member = *narrowed;
       }
       out.price = std::move(parsed_member);

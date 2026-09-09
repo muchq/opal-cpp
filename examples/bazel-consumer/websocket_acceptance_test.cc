@@ -18,15 +18,15 @@
 
 namespace {
 
-using smithy::eventstream::Message;
-using smithy::http::BeastServerTransport;
-using smithy::http::BeastWebSocketClient;
-using smithy::http::HttpRequest;
-using smithy::http::HttpResponse;
-using smithy::http::WebSocket;
+using opal::eventstream::Message;
+using opal::http::BeastServerTransport;
+using opal::http::BeastWebSocketClient;
+using opal::http::HttpRequest;
+using opal::http::HttpResponse;
+using opal::http::WebSocket;
 
 Message Event(const std::string& kind, const std::string& body) {
-  return Message{.headers = {{":event-type", kind}}, .payload = smithy::Blob::FromString(body)};
+  return Message{.headers = {{":event-type", kind}}, .payload = opal::Blob::FromString(body)};
 }
 
 TEST(WebSocketAcceptanceTest, AConsumerServesAndDrainsAStreamThroughTheModuleBoundary) {
@@ -68,7 +68,7 @@ TEST(WebSocketAcceptanceTest, AConsumerServesAndDrainsAStreamThroughTheModuleBou
   // An unauthenticated dial is refused before any upgrade exists.
   EXPECT_FALSE(BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()}).ok());
 
-  smithy::http::Headers credentials;
+  opal::http::Headers credentials;
   credentials.Add("authorization", "Bearer consumer-token");
   auto dialed = BeastWebSocketClient::Dial(
       {.host = "127.0.0.1", .port = server.port(), .target = "/events", .headers = credentials});

@@ -36,16 +36,16 @@ class SmokeHandler : public CalculatorHandler {
   public:
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> Accumulate(const AccumulateInput& input, AccumulateServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Accumulate(const AccumulateInput& input, AccumulateServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<AddOutput> Add(const AddInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddOutput> Add(const AddInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalAddOutput();
     }
-    smithy::Outcome<DivideOutput> Divide(const DivideInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<DivideOutput> Divide(const DivideInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalDivideOutput();
     }
@@ -53,9 +53,9 @@ class SmokeHandler : public CalculatorHandler {
 
 CalculatorClient MakeClient(std::shared_ptr<CalculatorHandler> handler) {
   CalculatorServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -89,9 +89,9 @@ TEST(CalculatorSmokeTest, DivideRoundTrips) {
 TEST(CalculatorSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<DivideOutput> Divide(const DivideInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<DivideOutput> Divide(const DivideInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("DivisionByZero", "smoke");
+        opal::Error error = opal::Error::Modeled("DivisionByZero", "smoke");
             auto detail = [] {
           DivisionByZero v{};
           return v;
@@ -109,7 +109,7 @@ TEST(CalculatorSmokeTest, ModeledErrorsMapAcrossTheWire) {
   }();
   const auto outcome = client.Divide(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "DivisionByZero");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<DivisionByZero>(), nullptr);

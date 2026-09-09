@@ -35,7 +35,7 @@ int Run(int argc, char** argv) {
     std::fprintf(stderr, "usage: %s <port>\n", argv[0]);
     return 2;
   }
-  auto socket = smithy::http::BeastWebSocketClient::Dial(
+  auto socket = opal::http::BeastWebSocketClient::Dial(
       {.host = "127.0.0.1",
        .port = static_cast<std::uint16_t>(std::atoi(argv[1])),
        .raw_text_frames = true});
@@ -46,8 +46,8 @@ int Run(int argc, char** argv) {
 
   std::string line;
   while (std::getline(std::cin, line)) {
-    smithy::eventstream::Message frame;
-    frame.payload = smithy::Blob::FromString(line);
+    opal::eventstream::Message frame;
+    frame.payload = opal::Blob::FromString(line);
     if (!(*socket)->Send(frame).ok()) break;  // already closed on us: drain below
   }
 

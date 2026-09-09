@@ -40,20 +40,20 @@ using acme::todo::TodoServer;
 // teaches; QuickstartMirrorTest fails if the two ever diverge.
 class InMemoryHandler final : public TodoHandler {
  public:
-  smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     const std::lock_guard<std::mutex> lock(mu_);
     const std::string id = "task-" + std::to_string(next_id_++);
     titles_[id] = input.title;
     return AddTaskOutput{.taskId = id, .title = input.title};
   }
 
-  smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     const std::lock_guard<std::mutex> lock(mu_);
     const auto it = titles_.find(input.taskId);
     if (it == titles_.end()) {
-      smithy::Error error = smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+      opal::Error error = opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
       error.set_detail(NoSuchTask{.message = "no task: " + input.taskId});
       return error;  // the server turns this into the modeled 404
     }
@@ -73,13 +73,13 @@ class TodoIntegrationTest : public ::testing::TestWithParam<Transport> {
  protected:
   void SetUp() override {
     server_ = std::make_unique<TodoServer>(std::make_shared<InMemoryHandler>());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     if (GetParam() == Transport::kLoopback) {
-      auto loopback = std::make_shared<smithy::http::Loopback>();
+      auto loopback = std::make_shared<opal::http::Loopback>();
       ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
       config.http_client = loopback;
     } else {
-      socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+      socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
       ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
     }
@@ -93,7 +93,7 @@ class TodoIntegrationTest : public ::testing::TestWithParam<Transport> {
   }
 
   std::unique_ptr<TodoServer> server_;
-  std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+  std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
   std::unique_ptr<TodoClient> client_;
 };
 
@@ -133,24 +133,22 @@ INSTANTIATE_TEST_SUITE_P(Transports, TodoIntegrationTest,
 TEST(TodoCborTest, SameModelServesRpcv2Cbor) {
   class CborHandler final : public acme::todo::cbor::TodoHandler {
    public:
-    smithy::Outcome<acme::todo::cbor::AddTaskOutput> AddTask(
-        const acme::todo::cbor::AddTaskInput& input,
-        const smithy::server::RequestContext&) override {
+    opal::Outcome<acme::todo::cbor::AddTaskOutput> AddTask(
+        const acme::todo::cbor::AddTaskInput& input, const opal::server::RequestContext&) override {
       return acme::todo::cbor::AddTaskOutput{.taskId = "task-1", .title = input.title};
     }
-    smithy::Outcome<acme::todo::cbor::GetTaskOutput> GetTask(
-        const acme::todo::cbor::GetTaskInput& input,
-        const smithy::server::RequestContext&) override {
-      smithy::Error error = smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+    opal::Outcome<acme::todo::cbor::GetTaskOutput> GetTask(
+        const acme::todo::cbor::GetTaskInput& input, const opal::server::RequestContext&) override {
+      opal::Error error = opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
       error.set_detail(acme::todo::cbor::NoSuchTask{.message = "no task: " + input.taskId});
       return error;
     }
   };
 
   acme::todo::cbor::TodoServer server(std::make_shared<CborHandler>());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = acme::todo::cbor::TodoClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -171,24 +169,24 @@ TEST(TodoCborTest, SameModelServesRpcv2Cbor) {
 TEST(TodoJsonRpcTest, SameModelServesJsonRpc2) {
   class JsonRpcHandler final : public acme::todo::jsonrpc::TodoHandler {
    public:
-    smithy::Outcome<acme::todo::jsonrpc::AddTaskOutput> AddTask(
+    opal::Outcome<acme::todo::jsonrpc::AddTaskOutput> AddTask(
         const acme::todo::jsonrpc::AddTaskInput& input,
-        const smithy::server::RequestContext&) override {
+        const opal::server::RequestContext&) override {
       return acme::todo::jsonrpc::AddTaskOutput{.taskId = "task-1", .title = input.title};
     }
-    smithy::Outcome<acme::todo::jsonrpc::GetTaskOutput> GetTask(
+    opal::Outcome<acme::todo::jsonrpc::GetTaskOutput> GetTask(
         const acme::todo::jsonrpc::GetTaskInput& input,
-        const smithy::server::RequestContext&) override {
-      smithy::Error error = smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+        const opal::server::RequestContext&) override {
+      opal::Error error = opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
       error.set_detail(acme::todo::jsonrpc::NoSuchTask{.message = "no task: " + input.taskId});
       return error;
     }
   };
 
   acme::todo::jsonrpc::TodoServer server(std::make_shared<JsonRpcHandler>());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = acme::todo::jsonrpc::TodoClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -209,10 +207,10 @@ TEST(TodoJsonRpcTest, SameModelServesJsonRpc2) {
 // answers — 405 with a deterministic, deduplicated Allow list, and 404.
 TEST(TodoRoutingTest, WrongMethodGets405WithAllowAndUnknownPathGets404) {
   TodoServer server(std::make_shared<InMemoryHandler>());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
 
-  smithy::http::HttpRequest wrong_method;
+  opal::http::HttpRequest wrong_method;
   wrong_method.method = "DELETE";
   wrong_method.target = "/tasks";
   const auto not_allowed = loopback->Send(wrong_method);
@@ -220,7 +218,7 @@ TEST(TodoRoutingTest, WrongMethodGets405WithAllowAndUnknownPathGets404) {
   EXPECT_EQ(not_allowed->status, 405);
   EXPECT_EQ(not_allowed->headers.Get("allow").value_or(""), "POST");
 
-  smithy::http::HttpRequest unknown;
+  opal::http::HttpRequest unknown;
   unknown.method = "GET";
   unknown.target = "/no/such/route";
   const auto not_found = loopback->Send(unknown);
@@ -234,29 +232,29 @@ TEST(TodoRoutingTest, WrongMethodGets405WithAllowAndUnknownPathGets404) {
 TEST(TodoMetadataTest, RestHandlerSeesHeadersPeerAndTraceOverARealSocket) {
   class MetadataHandler final : public TodoHandler {
    public:
-    smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
-                                           const smithy::server::RequestContext& context) override {
+    opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
+                                         const opal::server::RequestContext& context) override {
       const auto trace =
-          smithy::http::ParseTraceparent(context.request->headers.Get("traceparent").value_or(""));
+          opal::http::ParseTraceparent(context.request->headers.Get("traceparent").value_or(""));
       return AddTaskOutput{.taskId = context.request->peer_address,
                            .title = input.title + "|" +
                                     context.request->headers.Get("x-tenant").value_or("missing") +
                                     "|" + (trace.has_value() ? trace->trace_id : "no-trace")};
     }
-    smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                           const smithy::server::RequestContext&) override {
-      return smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+    opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                         const opal::server::RequestContext&) override {
+      return opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
     }
   };
 
   TodoServer server(std::make_shared<MetadataHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
 
   // A raw request so unmodeled headers ride along (generated clients only
   // send what the model binds).
-  smithy::http::SocketHttpClient raw("127.0.0.1", transport.port());
-  smithy::http::HttpRequest request;
+  opal::http::SocketHttpClient raw("127.0.0.1", transport.port());
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/tasks";
   request.headers.Set("content-type", "application/json");
@@ -273,7 +271,7 @@ TEST(TodoMetadataTest, RestHandlerSeesHeadersPeerAndTraceOverARealSocket) {
   // And with no inbound traceparent at all, the ingress mints one
   // (ADR-0011): the handler still sees a parseable identity, never
   // "no-trace".
-  smithy::http::HttpRequest bare;
+  opal::http::HttpRequest bare;
   bare.method = "POST";
   bare.target = "/tasks";
   bare.headers.Set("content-type", "application/json");
@@ -292,22 +290,22 @@ TEST(TodoMetadataTest, RestHandlerSeesHeadersPeerAndTraceOverARealSocket) {
 TEST(TodoMetadataTest, ReturnedServerErrorsCarryTheTraceCorrelationId) {
   class FailingHandler final : public TodoHandler {
    public:
-    smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput&,
-                                           const smithy::server::RequestContext&) override {
-      return smithy::Error::Transport("db down");
+    opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput&,
+                                         const opal::server::RequestContext&) override {
+      return opal::Error::Transport("db down");
     }
-    smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                           const smithy::server::RequestContext&) override {
-      return smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+    opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                         const opal::server::RequestContext&) override {
+      return opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
     }
   };
 
   TodoServer server(std::make_shared<FailingHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
-  smithy::http::SocketHttpClient raw("127.0.0.1", transport.port());
+  opal::http::SocketHttpClient raw("127.0.0.1", transport.port());
 
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/tasks";
   request.headers.Set("content-type", "application/json");
@@ -319,7 +317,7 @@ TEST(TodoMetadataTest, ReturnedServerErrorsCarryTheTraceCorrelationId) {
   EXPECT_EQ(failed->headers.Get("x-correlation-id").value_or(""),
             "0af7651916cd43dd8448eb211c80319c");
 
-  smithy::http::HttpRequest missing;
+  opal::http::HttpRequest missing;
   missing.method = "GET";
   missing.target = "/tasks/nope";
   const auto modeled = raw.Send(missing);
@@ -338,22 +336,21 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
   int completed = 0;
   bool admit = true;
   bool ready = true;
-  auto handler = smithy::server::Chain(
-      {smithy::server::Guard([&admit](const smithy::http::HttpRequest&) { return admit; },
-                             smithy::server::TooManyRequests(std::chrono::seconds(1))),
+  auto handler = opal::server::Chain(
+      {opal::server::Guard([&admit](const opal::http::HttpRequest&) { return admit; },
+                           opal::server::TooManyRequests(std::chrono::seconds(1))),
        // Observe takes on_complete first, then the optional on_start.
-       smithy::server::Observe(
-           [&completed](const smithy::server::RequestObservation&) { ++completed; },
-           [&started](const smithy::server::RequestStart&) { ++started; }),
-       smithy::server::HealthEndpoint(),
-       smithy::server::HealthEndpoint("/readyz", {{"db", [&ready] { return ready; }}})},
+       opal::server::Observe([&completed](const opal::server::RequestObservation&) { ++completed; },
+                             [&started](const opal::server::RequestStart&) { ++started; }),
+       opal::server::HealthEndpoint(),
+       opal::server::HealthEndpoint("/readyz", {{"db", [&ready] { return ready; }}})},
       server.Handler());
 
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(handler).ok());
 
   // Liveness answers without reaching the router, and is observed.
-  smithy::http::HttpRequest health;
+  opal::http::HttpRequest health;
   health.method = "GET";
   health.target = "/health";
   const auto health_response = loopback->Send(health);
@@ -363,7 +360,7 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
 
   // Readiness re-probes on every request: 200 while the dependency serves,
   // 503 naming it once it stops.
-  smithy::http::HttpRequest readyz;
+  opal::http::HttpRequest readyz;
   readyz.method = "GET";
   readyz.target = "/readyz";
   const auto ready_response = loopback->Send(readyz);
@@ -376,7 +373,7 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
   EXPECT_EQ(unready_response->body, R"({"status":"unhealthy","failing":["db"]})");
 
   // The generated client works through the chain.
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto created = TodoClient::Create(std::move(config));
   ASSERT_TRUE(created.ok()) << created.error().message();
@@ -387,7 +384,7 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
 
   // Once admit flips, Guard sheds load with the shaped 429 before Observe.
   admit = false;
-  smithy::http::HttpRequest denied;
+  opal::http::HttpRequest denied;
   denied.method = "POST";
   denied.target = "/tasks";
   const auto denied_response = loopback->Send(denied);
@@ -409,8 +406,8 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
 // through the derivation, which the status alone cannot prove.
 TEST(TodoMiddlewareTest, PerClientRateLimitKeysOnTheDerivedClientAddressNotTheSpoofableHeader) {
   std::string seen;
-  const auto deny_banned = [&seen](const smithy::http::TrustedProxies& trusted) {
-    return smithy::server::PerClientRateLimit(
+  const auto deny_banned = [&seen](const opal::http::TrustedProxies& trusted) {
+    return opal::server::PerClientRateLimit(
         [&seen](const std::string& client) {
           seen = client;
           return client != "203.0.113.9";
@@ -419,7 +416,7 @@ TEST(TodoMiddlewareTest, PerClientRateLimitKeysOnTheDerivedClientAddressNotTheSp
   };
   TodoServer server(std::make_shared<InMemoryHandler>());
 
-  smithy::http::HttpRequest add;
+  opal::http::HttpRequest add;
   add.method = "POST";
   add.target = "/tasks";
   add.headers.Set("content-type", "application/json");
@@ -430,20 +427,20 @@ TEST(TodoMiddlewareTest, PerClientRateLimitKeysOnTheDerivedClientAddressNotTheSp
     // trusted-tier path and keys as the stamped peer itself; the banned
     // client is seen through the appended entry — the walk never reaches
     // the spoofed prefix — and shed as the shaped 429.
-    smithy::http::SocketHttpServer transport;
+    opal::http::SocketHttpServer transport;
     ASSERT_TRUE(transport
-                    .Start(smithy::server::Chain(
-                        {deny_banned(*smithy::http::TrustedProxies::Parse({"127.0.0.0/8"}))},
+                    .Start(opal::server::Chain(
+                        {deny_banned(*opal::http::TrustedProxies::Parse({"127.0.0.0/8"}))},
                         server.Handler()))
                     .ok());
-    smithy::http::SocketHttpClient raw("127.0.0.1", transport.port());
+    opal::http::SocketHttpClient raw("127.0.0.1", transport.port());
 
     const auto direct = raw.Send(add);
     ASSERT_TRUE(direct.ok()) << direct.error().message();
     EXPECT_EQ(direct->status, 200);
     EXPECT_EQ(seen, "127.0.0.1");
 
-    smithy::http::HttpRequest banned = add;
+    opal::http::HttpRequest banned = add;
     banned.headers.Set("x-forwarded-for", "198.51.100.7, 203.0.113.9");
     const auto denied = raw.Send(banned);
     ASSERT_TRUE(denied.ok()) << denied.error().message();
@@ -454,14 +451,14 @@ TEST(TodoMiddlewareTest, PerClientRateLimitKeysOnTheDerivedClientAddressNotTheSp
   {
     // The direct-connect deployment (no trust configured): the same header
     // is ignored wholly, the peer stays the key, the request is admitted.
-    smithy::http::SocketHttpServer transport;
+    opal::http::SocketHttpServer transport;
     ASSERT_TRUE(transport
-                    .Start(smithy::server::Chain(
-                        {deny_banned(smithy::http::TrustedProxies::None())}, server.Handler()))
+                    .Start(opal::server::Chain({deny_banned(opal::http::TrustedProxies::None())},
+                                               server.Handler()))
                     .ok());
-    smithy::http::SocketHttpClient raw("127.0.0.1", transport.port());
+    opal::http::SocketHttpClient raw("127.0.0.1", transport.port());
 
-    smithy::http::HttpRequest spoofed = add;
+    opal::http::HttpRequest spoofed = add;
     spoofed.headers.Set("x-forwarded-for", "203.0.113.9");
     const auto admitted = raw.Send(spoofed);
     ASSERT_TRUE(admitted.ok()) << admitted.error().message();
@@ -478,31 +475,31 @@ TEST(TodoMiddlewareTest, PerClientRateLimitKeysOnTheDerivedClientAddressNotTheSp
 // through the module boundary, with a live server proving nothing is sent.
 TEST(TodoRequestLineInjectionTest, ARawClientRefusesCrlfInTargetOrMethodAndServesCleanOnes) {
   TodoServer server(std::make_shared<InMemoryHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
-  smithy::http::SocketHttpClient client("127.0.0.1", transport.port());
+  opal::http::SocketHttpClient client("127.0.0.1", transport.port());
 
   // A smuggled second request line hidden in the target: refused, not sent.
-  smithy::http::HttpRequest injected_target;
+  opal::http::HttpRequest injected_target;
   injected_target.method = "POST";
   injected_target.target = "/tasks HTTP/1.1\r\nX-Smuggled: 1\r\n\r\nGET /tasks";
   injected_target.headers.Set("content-type", "application/json");
   injected_target.body = R"({"title":"x"})";
   const auto target_outcome = client.Send(injected_target);
   ASSERT_FALSE(target_outcome.ok());
-  EXPECT_EQ(target_outcome.error().kind(), smithy::ErrorKind::kValidation);
+  EXPECT_EQ(target_outcome.error().kind(), opal::ErrorKind::kValidation);
 
   // Same in the method.
-  smithy::http::HttpRequest injected_method;
+  opal::http::HttpRequest injected_method;
   injected_method.method = "POST /evil HTTP/1.1\r\nX-Smuggled: 1\r\n\r\nGET";
   injected_method.target = "/tasks";
   const auto method_outcome = client.Send(injected_method);
   ASSERT_FALSE(method_outcome.ok());
-  EXPECT_EQ(method_outcome.error().kind(), smithy::ErrorKind::kValidation);
+  EXPECT_EQ(method_outcome.error().kind(), opal::ErrorKind::kValidation);
 
   // A legitimate request on the same client still works — the guard is not
   // a false positive.
-  smithy::http::HttpRequest clean;
+  opal::http::HttpRequest clean;
   clean.method = "POST";
   clean.target = "/tasks";
   clean.headers.Set("content-type", "application/json");

@@ -43,41 +43,41 @@ Input MakeInput() {
 
 class RestHandler final : public example::roundtrip::rest::RoundTripRestHandler {
  public:
-  smithy::Outcome<example::roundtrip::rest::PutSinkOutput> PutSink(
+  opal::Outcome<example::roundtrip::rest::PutSinkOutput> PutSink(
       const example::roundtrip::rest::PutSinkInput& input,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rest::PutSinkOutput{.sinkId = input.sinkId, .sink = input.sink};
   }
-  smithy::Outcome<example::roundtrip::rest::UploadAttachmentOutput> UploadAttachment(
+  opal::Outcome<example::roundtrip::rest::UploadAttachmentOutput> UploadAttachment(
       const example::roundtrip::rest::UploadAttachmentInput&,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rest::UploadAttachmentOutput{};
   }
-  smithy::Outcome<example::roundtrip::rest::DescribeSinkOutput> DescribeSink(
+  opal::Outcome<example::roundtrip::rest::DescribeSinkOutput> DescribeSink(
       const example::roundtrip::rest::DescribeSinkInput&,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rest::DescribeSinkOutput{};
   }
 };
 
 class RpcHandler final : public example::roundtrip::rpc::RoundTripRpcHandler {
  public:
-  smithy::Outcome<example::roundtrip::rpc::PutSinkRpcOutput> PutSinkRpc(
+  opal::Outcome<example::roundtrip::rpc::PutSinkRpcOutput> PutSinkRpc(
       const example::roundtrip::rpc::PutSinkRpcInput& input,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rpc::PutSinkRpcOutput{.sinkId = input.sinkId, .sink = input.sink};
   }
-  smithy::Outcome<example::roundtrip::rpc::PingOutput> Ping(
-      const example::roundtrip::rpc::PingInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<example::roundtrip::rpc::PingOutput> Ping(
+      const example::roundtrip::rpc::PingInput&, const opal::server::RequestContext&) override {
     return example::roundtrip::rpc::PingOutput{};
   }
 };
 
 class JsonRpcHandler final : public example::roundtrip::jsonrpc::RoundTripJsonRpcHandler {
  public:
-  smithy::Outcome<example::roundtrip::jsonrpc::PutSinkRpcOutput> PutSinkRpc(
+  opal::Outcome<example::roundtrip::jsonrpc::PutSinkRpcOutput> PutSinkRpc(
       const example::roundtrip::jsonrpc::PutSinkRpcInput& input,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::jsonrpc::PutSinkRpcOutput{.sinkId = input.sinkId,
                                                          .sink = input.sink};
   }
@@ -87,9 +87,9 @@ template <typename Client, typename Server, typename Handler>
 Client MakeLoopbackClient() {
   // Handler() owns the router, so the Server object itself may go away.
   Server server(std::make_shared<Handler>());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
   config.http_client = std::move(loopback);
   return *Client::Create(std::move(config));

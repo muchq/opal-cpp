@@ -137,7 +137,7 @@ implementation lives.
 - **The translation is a wrapper socket, not a session flag.** ADR-0018
   mounted its translation inside the Beast session, which the in-memory
   pair never sees. The JSON-RPC translation instead lives in
-  `smithy::eventstream::JsonRpcStreamSocket`, a delegating
+  `opal::eventstream::JsonRpcStreamSocket`, a delegating
   `http::WebSocket` (the `DialedWebSocket` shape) worn by **both ends,
   on both seams, over both transports**: `Send`/`SendAsync` render an
   event-envelope `Message` as a notification (headerless raw-text
@@ -192,7 +192,7 @@ implementation lives.
   envelope, validates it, and dispatches on `method` among the
   service's streaming operations. The blocking seam reads it with
   `socket.Receive()`; the session seam awaits the new
-  `smithy::eventstream::ReceiveMessage(socket)` — the single-shot
+  `opal::eventstream::ReceiveMessage(socket)` — the single-shot
   receive twin of ADR-0021's `SendMessageAwaitable`, added to the
   runtime because a Detached launch body has no other way to read one
   message before constructing the stream. Unknown method, bad

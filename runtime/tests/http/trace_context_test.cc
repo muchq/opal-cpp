@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 constexpr char kTrace[] = "0af7651916cd43dd8448eb211c80319c";
@@ -67,4 +67,4 @@ TEST(TraceContextTest, GeneratedContextsAreValidAndDistinct) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

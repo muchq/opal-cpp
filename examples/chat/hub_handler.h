@@ -4,7 +4,7 @@
 // The multi-client hub (issue #112): the consumer pattern the Go-style
 // WebSocket hub hand-rolls, built on the two runtime primitives that make
 // it safe and short — owning session handles (EventStream::Share) and the
-// queued fan-out registry (smithy::server::SessionRegistry). Every session
+// queued fan-out registry (opal::server::SessionRegistry). Every session
 // registers its handle under a SessionKey id; room traffic fans out through
 // the registry's bounded per-session queues, so one slow client never
 // stalls a room (the default policy disconnects it instead); and shutdown
@@ -55,15 +55,15 @@ struct SessionKey {
 
 class HubHandler final : public ChatHandler {
  public:
-  using Registry = smithy::server::SessionRegistry<RoomEvents>;
+  using Registry = opal::server::SessionRegistry<RoomEvents>;
 
   HubHandler() = default;
   explicit HubHandler(Registry::Options options) : registry_(std::move(options)) {}
 
   // The unary neighbor reports live occupancy straight from the registry:
   // one converse member per id (watchers observe without counting).
-  smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
-                                             const smithy::server::RequestContext&) override {
+  opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
+                                           const opal::server::RequestContext&) override {
     std::map<std::string, int> occupancy;
     for (const std::string& id : registry_.Ids()) {
       const SessionKey key = SessionKey::Parse(id);
@@ -76,8 +76,8 @@ class HubHandler final : public ChatHandler {
     return output;
   }
 
-  smithy::Outcome<smithy::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream,
+                                     const opal::server::RequestContext&) override {
     const SessionKey key{.room = input.room, .name = input.nickname.value_or("anonymous")};
     const std::string id = key.Id();
 
@@ -85,7 +85,7 @@ class HubHandler final : public ChatHandler {
     // Add's atomicity doubles as the nickname reservation.
     if (!registry_.Add(id, stream.Share())) {
       const std::string reason = "nickname '" + key.name + "' is already in " + key.room;
-      smithy::Error taken = smithy::Error::Modeled("Kicked", reason);
+      opal::Error taken = opal::Error::Modeled("Kicked", reason);
       taken.set_detail(Kicked{.message = reason, .by = "hub"});
       return taken;  // one typed exception message, then the close
     }
@@ -118,11 +118,11 @@ class HubHandler final : public ChatHandler {
     registry_.Remove(id);
     registry_.Broadcast(RoomIds(key), RoomEvents::FromLeft(MemberLeft{.member = key.name}));
     if (left_cleanly) (void)stream.Send(RoomEvents::FromLeft(MemberLeft{.member = key.name}));
-    return smithy::Unit{};  // the generated caller closes the session
+    return opal::Unit{};  // the generated caller closes the session
   }
 
-  smithy::Outcome<smithy::Unit> Watch(const WatchInput& input, WatchServerStream& stream,
-                                      const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> Watch(const WatchInput& input, WatchServerStream& stream,
+                                  const opal::server::RequestContext&) override {
     // Watchers hold the same handle type as conversers (both directions
     // transmit RoomEvents), so one registry fans out to both.
     const SessionKey key{.room = input.room, .name = "#watch-" + std::to_string(++next_watcher_)};
@@ -131,7 +131,7 @@ class HubHandler final : public ChatHandler {
     // wire failure, or the hub closing the session (drain / slow-consumer).
     (void)stream.Receive();
     registry_.Remove(key.Id());
-    return smithy::Unit{};
+    return opal::Unit{};
   }
 
   // The graceful-shutdown step (issue #112 proposal 3), for main() to run

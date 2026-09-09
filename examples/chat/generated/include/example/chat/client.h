@@ -25,20 +25,20 @@ namespace example::chat {
 
 /// The typed session Converse returns (ADR-0016): Tx = what this client
 /// sends, Rx = what the server sends.
-using ConverseClientStream = smithy::eventstream::EventStream<ChatEvents, RoomEvents>;
+using ConverseClientStream = opal::eventstream::EventStream<ChatEvents, RoomEvents>;
 /// The typed session Watch returns (ADR-0016): Tx = what this client
 /// sends, Rx = what the server sends.
-using WatchClientStream = smithy::eventstream::EventStream<smithy::eventstream::NoEvents, RoomEvents>;
+using WatchClientStream = opal::eventstream::EventStream<opal::eventstream::NoEvents, RoomEvents>;
 
 /// simpleRestJson client for example.chat#Chat.
-/// Modeled service errors surface as smithy::Error with kind kModeled,
+/// Modeled service errors surface as opal::Error with kind kModeled,
 /// code() set to the error shape name, and the deserialized error
 /// structure attached. Dispatch on them through the per-operation
 /// <Operation>Errors listings below rather than comparing code() text.
 class ChatClient {
   public:
     /// Fails when the endpoint cannot be parsed and no transport is injected.
-    static smithy::Outcome<ChatClient> Create(smithy::ClientConfig config);
+    static opal::Outcome<ChatClient> Create(opal::ClientConfig config);
 
     /// Bidirectional: the client streams ChatEvents up and receives RoomEvents
     /// down over one WebSocket session. Initial-request members ride the upgrade
@@ -51,10 +51,10 @@ class ChatClient {
     /// (ADR-0016). Send carries input events, Receive yields output events
     /// (nullopt on the peer's clean close), and a received exception
     /// surfaces through Receive() as a modeled error, the unary shape.
-    smithy::Outcome<ConverseClientStream> Converse(const ConverseInput& input) const;
+    opal::Outcome<ConverseClientStream> Converse(const ConverseInput& input) const;
     /// Unary neighbor: an ordinary request/response on the same service, served
     /// by the same transport that upgrades the streaming operations.
-    smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input = {}) const;
+    opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input = {}) const;
     /// Server-push: no input stream, so the client's transmit direction is the
     /// runtime's NoEvents — the client only listens to the room.
     ///
@@ -63,18 +63,18 @@ class ChatClient {
     /// Receive is meaningful (nullopt on the peer's clean close — Send does
     /// not compile on a NoEvents direction), and a received exception
     /// surfaces through Receive() as a modeled error, the unary shape.
-    smithy::Outcome<WatchClientStream> Watch(const WatchInput& input) const;
+    opal::Outcome<WatchClientStream> Watch(const WatchInput& input) const;
 
   private:
-    ChatClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix);
-    smithy::Outcome<smithy::http::HttpResponse> Send(smithy::http::HttpRequest request) const;
+    ChatClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix);
+    opal::Outcome<opal::http::HttpResponse> Send(opal::http::HttpRequest request) const;
 
-    smithy::ClientConfig config_;
-    std::shared_ptr<smithy::http::HttpClient> transport_;
+    opal::ClientConfig config_;
+    std::shared_ptr<opal::http::HttpClient> transport_;
     std::string path_prefix_;
 };
 
-/// The modeled errors of Converse, matched from a smithy::Error so dispatch is
+/// The modeled errors of Converse, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -85,9 +85,9 @@ class ConverseErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static ConverseErrors FromError(const smithy::Error& error) {
+    static ConverseErrors FromError(const opal::Error& error) {
       ConverseErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "Kicked") {
         const auto* detail = error.detail<Kicked>();
         result.value_.emplace<1>(detail != nullptr ? *detail : Kicked{});
@@ -126,7 +126,7 @@ class ConverseErrors {
       switch (value_.index()) {
         case 1:
           out += "kicked = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -145,7 +145,7 @@ class ConverseErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("ConverseErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("ConverseErrors", requested, case_name());
       }
     }
 
@@ -162,8 +162,8 @@ template <>
 struct std::hash<example::chat::ConverseErrors> {
   std::size_t operator()(const example::chat::ConverseErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 

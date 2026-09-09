@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace smithy {
+namespace opal {
 namespace {
 
 constexpr std::string_view kAlphabet =
@@ -88,4 +88,4 @@ Outcome<Blob> Base64Decode(std::string_view text) {
   return Blob(std::move(out));
 }
 
-}  // namespace smithy
+}  // namespace opal

@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace smithy::internal {
+namespace opal::internal {
 
 // Detection for the containers generated members use — shared by the
 // element-wise dispatchers in hash.h (HashValue) and print.h (DebugAppend).
@@ -26,6 +26,6 @@ struct IsOptional : std::false_type {};
 template <typename E>
 struct IsOptional<std::optional<E>> : std::true_type {};
 
-}  // namespace smithy::internal
+}  // namespace opal::internal
 
 #endif  // SMITHY_CORE_CONTAINER_TRAITS_H_

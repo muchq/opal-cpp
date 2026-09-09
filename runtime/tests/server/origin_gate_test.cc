@@ -13,7 +13,7 @@
 
 #include "smithy/http/message.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 http::HttpRequest UpgradeFrom(const std::string& origin) {
@@ -136,4 +136,4 @@ TEST(OriginGateTest, AnEmptyAllowlistRefusesEveryBrowser) {
 }
 
 }  // namespace
-}  // namespace smithy::server
+}  // namespace opal::server

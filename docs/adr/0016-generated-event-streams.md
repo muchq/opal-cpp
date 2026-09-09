@@ -1,8 +1,8 @@
 # ADR-0016: Generated event streams — the EventStream API and its wire binding
 
 **Status:** Accepted (2026-07-19). Phase 8 slice 3 of ADR-0014's plan.
-Implemented: `smithy::eventstream::EventStream<Tx, Rx>` + envelope helpers,
-`smithy::server::WebSocketRouter`, `smithy::http::InMemoryWebSocketPair`,
+Implemented: `opal::eventstream::EventStream<Tx, Rx>` + envelope helpers,
+`opal::server::WebSocketRouter`, `opal::http::InMemoryWebSocketPair`,
 generated streaming operations (client + server) for `alloy#simpleRestJson`
 and `smithy.protocols#rpcv2Cbor`. Amended by ADR-0023: the jsonRpc2
 generation-time refusal is dead (the protocol streams natively over
@@ -65,11 +65,11 @@ normative definition, with an in-repo suite):
 
 ## The API
 
-- **`smithy::eventstream::EventStream<Tx, Rx>`** (runtime): blocking
+- **`opal::eventstream::EventStream<Tx, Rx>`** (runtime): blocking
   `Outcome<Unit> Send(const Tx&)`,
   `Outcome<std::optional<Rx>> Receive()` (nullopt is the peer's clean
   close — the ADR-0015 convention verbatim), idempotent `Close()`. It
-  wraps one `smithy::http::WebSocket` plus two codec functions the
+  wraps one `opal::http::WebSocket` plus two codec functions the
   generated code supplies; full-duplex threading, backpressure, and
   cancellation are the session's existing contract.
 - **Client**: a streaming operation generates
@@ -83,14 +83,14 @@ normative definition, with an in-repo suite):
   `Outcome<Unit> Op(const OpInput& input, EventStream<OutEvents, InEvents>& stream,
   const RequestContext& context)` — input first, context last, the
   ADR-0010 shape. The generated server exposes `StreamRouter()`, a
-  `smithy::server::WebSocketRouter` with every streaming route
+  `opal::server::WebSocketRouter` with every streaming route
   registered; applications mount it in one line each on
   `websocket_gate` / `on_websocket`. The router reuses the HTTP
   `Router`'s matching (method, literals > labels > greedy) and populates
   the same `RequestContext` from the upgrade request, so routing
   behavior cannot drift between unary and streaming.
 - **Transport-neutral seams**: `WebSocketRouter` and `EventStream` speak
-  `smithy::http::WebSocket`, never Beast. `InMemoryWebSocketPair` (the
+  `opal::http::WebSocket`, never Beast. `InMemoryWebSocketPair` (the
   loopback analog) lives in dep-light `:http`, so generated integration
   tests run streams without Boost; the real-wire chat example covers
   Beast in CI and via the g++ path locally.

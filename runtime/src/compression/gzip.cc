@@ -13,7 +13,7 @@
 #include <cstddef>
 #include <limits>
 
-namespace smithy {
+namespace opal {
 
 namespace {
 constexpr int kGzipWindowBits = 15 + 16;  // 32KB window, gzip wrapper
@@ -157,4 +157,4 @@ Outcome<std::string> GzipDecompress(std::string_view data, std::size_t max_outpu
   return internal::GzipDecompressChunked(data, max_output, kMaxFeed);
 }
 
-}  // namespace smithy
+}  // namespace opal

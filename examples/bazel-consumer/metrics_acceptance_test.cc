@@ -39,7 +39,7 @@ using acme::todo::TodoServer;
 // they are cheap to copy and address the same family.
 class MetricsHandler final : public TodoHandler {
  public:
-  explicit MetricsHandler(const std::shared_ptr<smithy::server::MetricsRegistry>& metrics)
+  explicit MetricsHandler(const std::shared_ptr<opal::server::MetricsRegistry>& metrics)
       : tasks_added_(metrics->NewCounter("todo_tasks_added_total", "Tasks added, by priority.")),
         title_length_(metrics->NewHistogram("todo_title_length_chars", "Task title length.",
                                             {8.0, 32.0, 128.0})),
@@ -52,54 +52,54 @@ class MetricsHandler final : public TodoHandler {
     tasks_stored_.Declare();
   }
 
-  smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     tasks_added_.Increment({{"priority", input.priority.has_value() ? "set" : "unset"}});
     title_length_.Observe(static_cast<double>(input.title.size()));
     tasks_stored_.Increment();
     return AddTaskOutput{.taskId = "task-1", .title = input.title};
   }
 
-  smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
-    smithy::Error error = smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+  opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                       const opal::server::RequestContext&) override {
+    opal::Error error = opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
     error.set_detail(NoSuchTask{.message = "no task: " + input.taskId});
     return error;
   }
 
  private:
-  smithy::server::Counter tasks_added_;
-  smithy::server::Histogram title_length_;
-  smithy::server::Gauge tasks_stored_;
+  opal::server::Counter tasks_added_;
+  opal::server::Histogram title_length_;
+  opal::server::Gauge tasks_stored_;
 };
 
 class MetricsAcceptanceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    Start(smithy::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
+    Start(opal::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
   }
 
   // Stands the service up under `options`, so a subclass can exercise a
   // different dialect — or none at all — over the same real socket.
-  void Start(smithy::server::MetricsOptions options) {
-    metrics_ = std::make_shared<smithy::server::MetricsRegistry>(std::move(options));
+  void Start(opal::server::MetricsOptions options) {
+    metrics_ = std::make_shared<opal::server::MetricsRegistry>(std::move(options));
     server_ = std::make_unique<TodoServer>(std::make_shared<MetricsHandler>(metrics_));
-    transport_ = std::make_unique<smithy::http::BeastServerTransport>(
-        smithy::http::BeastServerTransport::Options{.threads = 1, .handler_threads = 4});
+    transport_ = std::make_unique<opal::http::BeastServerTransport>(
+        opal::http::BeastServerTransport::Options{.threads = 1, .handler_threads = 4});
     // The composition the production guide documents, assembled here in
     // consumer code against the published targets alone.
     // The liveness probe sits INSIDE the recorder, so probe traffic is
     // counted — the arrangement that makes its operation label matter.
     ASSERT_TRUE(transport_
-                    ->Start(smithy::server::Chain({smithy::server::MetricsEndpoint(metrics_),
-                                                   smithy::server::RecordMetrics(metrics_),
-                                                   smithy::server::HealthEndpoint("/livez")},
-                                                  server_->Handler()))
+                    ->Start(opal::server::Chain({opal::server::MetricsEndpoint(metrics_),
+                                                 opal::server::RecordMetrics(metrics_),
+                                                 opal::server::HealthEndpoint("/livez")},
+                                                server_->Handler()))
                     .ok());
 
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.endpoint = "http://127.0.0.1:" + std::to_string(transport_->port());
-    auto http_client = smithy::http::BeastHttpClient::FromConfig(config);
+    auto http_client = opal::http::BeastHttpClient::FromConfig(config);
     ASSERT_TRUE(http_client.ok()) << http_client.error().message();
     config.http_client = *http_client;
     auto client = TodoClient::Create(std::move(config));
@@ -111,17 +111,17 @@ class MetricsAcceptanceTest : public ::testing::Test {
 
   // Scrapes /metrics the way Prometheus does: a plain GET, no generated code
   // in the loop.
-  smithy::Outcome<smithy::http::HttpResponse> Scrape() {
-    smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
-    smithy::http::HttpRequest request;
+  opal::Outcome<opal::http::HttpResponse> Scrape() {
+    opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
+    opal::http::HttpRequest request;
     request.method = "GET";
     request.target = "/metrics";
     return raw.Send(request);
   }
 
   std::unique_ptr<TodoServer> server_;
-  std::shared_ptr<smithy::server::MetricsRegistry> metrics_;
-  std::unique_ptr<smithy::http::BeastServerTransport> transport_;
+  std::shared_ptr<opal::server::MetricsRegistry> metrics_;
+  std::unique_ptr<opal::http::BeastServerTransport> transport_;
   std::unique_ptr<TodoClient> client_;
 };
 
@@ -183,8 +183,8 @@ TEST_F(MetricsAcceptanceTest, ScrapesDoNotCountThemselvesAndLeaveNothingInFlight
 TEST_F(MetricsAcceptanceTest, AnUnroutedRequestCountsWithAnEmptyOperation) {
   // A 404 never reaches an operation, and its target — which is what varies
   // without bound — must not become a label.
-  smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
-  smithy::http::HttpRequest request;
+  opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/no/such/route/8f3a2b";
   const auto missed = raw.Send(request);
@@ -209,15 +209,15 @@ TEST_F(MetricsAcceptanceTest, AHealthProbeIsItsOwnSeriesNotAnAnonymous404) {
   // miss the generated router, and before HealthEndpoint stamped its path
   // both reported `operation=""` — so a service polled every few seconds had
   // its 404 rate buried under probe volume and no query could separate them.
-  smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
-  smithy::http::HttpRequest probe;
+  opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
+  opal::http::HttpRequest probe;
   probe.method = "GET";
   probe.target = "/livez";
   const auto probed = raw.Send(probe);
   ASSERT_TRUE(probed.ok()) << probed.error().message();
   EXPECT_EQ(probed->status, 200);
 
-  smithy::http::HttpRequest unrouted;
+  opal::http::HttpRequest unrouted;
   unrouted.method = "GET";
   unrouted.target = "/livez-typo";
   ASSERT_TRUE(raw.Send(unrouted).ok());
@@ -326,13 +326,13 @@ TEST_F(MetricsAcceptanceTest, TheProbeRouteThePanelsSubtractIsReported) {
   // what this pins is that the probe gets a route of its own rather than
   // joining unmatched traffic, which is what makes the subtraction possible
   // at all.
-  smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
-  smithy::http::HttpRequest probe;
+  opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
+  opal::http::HttpRequest probe;
   probe.method = "GET";
   probe.target = "/livez";
   ASSERT_TRUE(raw.Send(probe).ok());
 
-  smithy::http::HttpRequest unrouted;
+  opal::http::HttpRequest unrouted;
   unrouted.method = "GET";
   unrouted.target = "/nope";
   ASSERT_TRUE(raw.Send(unrouted).ok());
@@ -358,7 +358,7 @@ TEST_F(MetricsAcceptanceTest, TheProbeRouteThePanelsSubtractIsReported) {
 // stack without asking for it.
 class DisabledMetricsAcceptanceTest : public MetricsAcceptanceTest {  // NOLINT
  protected:
-  void SetUp() override { Start(smithy::server::MetricsOptions{}); }
+  void SetUp() override { Start(opal::server::MetricsOptions{}); }
 };
 
 TEST_F(DisabledMetricsAcceptanceTest, TheScrapePathIsNotServedAndTheServiceStillWorks) {

@@ -41,7 +41,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
   public void writeClientHelpers(CppWriter w, CppContext context) {
     ProtocolSupport.writeErrorSupport(
         w,
-        "auto doc = smithy::cbor::Decode(smithy::Blob::FromString(response.body));",
+        "auto doc = opal::cbor::Decode(opal::Blob::FromString(response.body));",
         /* errorTypeHeader= */ "");
   }
 
@@ -64,7 +64,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
         w,
         SPEC.errorFn(),
         "application/cbor",
-        "smithy::cbor::Encode(smithy::Document(std::move(body))).ToString()",
+        "opal::cbor::Encode(opal::Document(std::move(body))).ToString()",
         "smithy-protocol",
         "rpc-v2-cbor");
     ProtocolSupport.writeServerErrorToResponse(w, context, service, operations, SPEC);
@@ -89,14 +89,14 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     boolean compressed = ProtocolSupport.gzipCompressed(operation);
     w.openBlock(
         "(void)router_->Add(\"POST\", \"/service/$L/operation/$L\", "
-            + "[handler](const smithy::http::HttpRequest& $L, "
+            + "[handler](const opal::http::HttpRequest& $L, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context) -> smithy::http::HttpResponse {",
+            + " context) -> opal::http::HttpResponse {",
         service.getId().getName(),
         operation.getId().getName(),
         compressed ? "raw_request" : "request");
     if (compressed) {
-      w.write("smithy::http::HttpRequest request = raw_request;");
+      w.write("opal::http::HttpRequest request = raw_request;");
       ProtocolSupport.writeRequestDecompression(
           w, operation, "CborError", "SerializationException");
     }
@@ -111,7 +111,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     w.openBlock(
         "if (const auto content_type = request.headers.Get(\"content-type\"); "
             + "content_type.has_value() && "
-            + "smithy::http::MediaTypeOf(*content_type) != \"application/cbor\") {");
+            + "opal::http::MediaTypeOf(*content_type) != \"application/cbor\") {");
     w.write(
         "return helpers::CborError(415, \"UnsupportedMediaTypeException\", "
             + "\"expected content-type: application/cbor\", {});");
@@ -119,9 +119,9 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     w.write("$L input{};", inputType);
     if (!ProtocolSupport.noModeledInput(input)) {
       w.write("// An absent body deserializes like an empty CBOR map.");
-      w.write("smithy::Document body_doc{smithy::DocumentMap{}};");
+      w.write("opal::Document body_doc{opal::DocumentMap{}};");
       w.openBlock("if (!request.body.empty()) {");
-      w.write("auto decoded = smithy::cbor::Decode(smithy::Blob::FromString(request.body));");
+      w.write("auto decoded = opal::cbor::Decode(opal::Blob::FromString(request.body));");
       w.write(
           "if (!decoded) return helpers::CborError(400, \"SerializationException\", "
               + "decoded.error().message(), {});");
@@ -130,11 +130,11 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
       ProtocolSupport.writeRpcParsedInput(w, context, input, "body_doc", "400", SPEC);
     }
     ProtocolSupport.writeRpcDispatch(w, operation, "handler->", SPEC, validation);
-    w.write("smithy::http::HttpResponse response;");
+    w.write("opal::http::HttpResponse response;");
     w.write("response.headers.Set(\"smithy-protocol\", \"rpc-v2-cbor\");");
     w.write("response.headers.Set(\"content-type\", \"application/cbor\");");
     w.write(
-        "response.body = smithy::cbor::Encode(Serialize$L(*outcome)).ToString();",
+        "response.body = opal::cbor::Encode(Serialize$L(*outcome)).ToString();",
         SerdeCodeGen.serdeFunctionSuffix(context, output));
     w.write("return response;");
     w.closeBlock("}, $S);", operation.getId().getName());
@@ -147,12 +147,12 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
 
   @Override
   public String eventPayloadEncode(String docExpr) {
-    return "smithy::cbor::Encode(" + docExpr + ")";
+    return "opal::cbor::Encode(" + docExpr + ")";
   }
 
   @Override
   public String eventPayloadDecode(String payloadExpr) {
-    return "smithy::cbor::Decode(" + payloadExpr + ")";
+    return "opal::cbor::Decode(" + payloadExpr + ")";
   }
 
   @Override
@@ -164,7 +164,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
       // initial members, since the fixed upgrade URI cannot carry them.
       w.write("(void)input;");
     }
-    w.write("smithy::http::WebSocketDialRequest request;");
+    w.write("opal::http::WebSocketDialRequest request;");
     w.write(
         "request.target = path_prefix_ + \"/service/$L/operation/$L\";",
         service.getId().getName(),
@@ -181,9 +181,9 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     String inputType = context.cppSymbols().toSymbol(input).getName();
     w.openBlock(
         "(void)stream_router_->Add(\"GET\", \"/service/$L/operation/$L\", "
-            + "[handler](const smithy::http::HttpRequest& request, "
+            + "[handler](const opal::http::HttpRequest& request, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context, smithy::http::WebSocket& socket) {",
+            + " context, opal::http::WebSocket& socket) {",
         service.getId().getName(),
         operation.getId().getName());
     w.write("(void)request;");
@@ -201,9 +201,9 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     String inputType = context.cppSymbols().toSymbol(input).getName();
     w.openBlock(
         "(void)stream_router_->AddSession(\"GET\", \"/service/$L/operation/$L\", "
-            + "[handler](const smithy::http::HttpRequest& request, "
+            + "[handler](const opal::http::HttpRequest& request, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context, std::shared_ptr<smithy::http::WebSocket> socket) {",
+            + " context, std::shared_ptr<opal::http::WebSocket> socket) {",
         service.getId().getName(),
         operation.getId().getName());
     w.write("(void)request;");
@@ -233,7 +233,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     if (!ProtocolSupport.noModeledInput(input)) {
       w.write("request.headers.Set(\"content-type\", \"application/cbor\");");
       w.write(
-          "request.body = smithy::cbor::Encode(Serialize$L($L)).ToString();",
+          "request.body = opal::cbor::Encode(Serialize$L($L)).ToString();",
           SerdeCodeGen.serdeFunctionSuffix(context, input),
           in);
     }
@@ -251,7 +251,7 @@ final class Rpcv2CborProtocol implements ProtocolGenerator {
     if (allOptional) {
       w.write("if (response->body.empty()) return $L{};", outType);
     }
-    w.write("auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));");
+    w.write("auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));");
     w.write("if (!body_doc) return std::move(body_doc).error();");
     w.write("return Deserialize$L(*body_doc);", SerdeCodeGen.serdeFunctionSuffix(context, output));
   }

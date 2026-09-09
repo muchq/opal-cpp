@@ -56,7 +56,7 @@ class CppCodegenPluginTest {
     assertTrue(header.contains("struct NoSuchResource {"));
     assertTrue(header.contains("std::optional<std::string> nextToken{};"));
     assertTrue(header.contains("namespace example::weather {"));
-    assertTrue(header.contains("smithy::Timestamp time{};"));
+    assertTrue(header.contains("opal::Timestamp time{};"));
     // Topological order: CityCoordinates is declared before its user GetCityOutput.
     assertTrue(
         header.indexOf("struct CityCoordinates {") < header.indexOf("struct GetCityOutput {"));
@@ -93,8 +93,8 @@ class CppCodegenPluginTest {
             b -> b.withMember("runtimeTarget", "//runtime:core"));
 
     String client = manifest.expectFileString("/src/client.cc");
-    assertTrue(client.contains("envelope.emplace(\"jsonrpc\", smithy::Document(\"2.0\"));"));
-    assertTrue(client.contains("envelope.emplace(\"method\", smithy::Document(\"Add\"));"));
+    assertTrue(client.contains("envelope.emplace(\"jsonrpc\", opal::Document(\"2.0\"));"));
+    assertTrue(client.contains("envelope.emplace(\"method\", opal::Document(\"Add\"));"));
     assertTrue(client.contains("request.target = path_prefix_ + \"/\";"));
 
     // One unary route per constructor (the calculator streams, so the async
@@ -139,7 +139,7 @@ class CppCodegenPluginTest {
     String header = manifest.expectFileString("/include/test/rec/types.h");
     // Structure-to-structure cycle edges box; list cycles ride std::vector's
     // incomplete-element support behind a forward declaration.
-    assertTrue(header.contains("std::optional<smithy::Boxed<TreeNode>> node{};"), header);
+    assertTrue(header.contains("std::optional<opal::Boxed<TreeNode>> node{};"), header);
     assertTrue(header.contains("std::optional<std::vector<TreeNode>> children{};"), header);
     assertTrue(header.contains("struct TreeNode;"), header);
   }

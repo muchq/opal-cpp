@@ -12,7 +12,7 @@
 #include "smithy/http/loopback.h"
 #include "smithy/http/trace_context.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 using std::chrono::milliseconds;
@@ -380,7 +380,7 @@ TEST(ObserveTest, CountsEveryRequest) {
 TEST(ObserveDeathTest, NullOnCompleteAbortsAtComposition) {
   // A composition-time contract violation fails fast (ADR-0009), so no
   // exception crosses the boundary and the runtime builds -fno-exceptions.
-  EXPECT_DEATH(Observe(nullptr), "smithy::server::Observe: on_complete may not be null");
+  EXPECT_DEATH(Observe(nullptr), "opal::server::Observe: on_complete may not be null");
 }
 
 TEST(ObserveTest, ThrowingCallbackDoesNotDiscardResponseOrPropagate) {
@@ -528,7 +528,7 @@ TEST(PerClientRateLimitTest, AnUnknownClientIsAdmittedWithoutConsultingAllow) {
 
 TEST(PerClientRateLimitDeathTest, ANullPolicyAbortsAtComposition) {
   EXPECT_DEATH(PerClientRateLimit(nullptr, http::TrustedProxies::None()),
-               "smithy::server::PerClientRateLimit: allow must not be null");
+               "opal::server::PerClientRateLimit: allow must not be null");
 }
 
 TEST(TooManyRequestsTest, ShapesThe429) {
@@ -773,4 +773,4 @@ TEST(HealthEndpointTest, AnswersHeadWithWhatTheGetWouldCarry) {
 }
 
 }  // namespace
-}  // namespace smithy::server
+}  // namespace opal::server

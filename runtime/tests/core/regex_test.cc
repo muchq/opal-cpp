@@ -10,12 +10,12 @@
 namespace {
 
 bool Search(const std::string& pattern, const std::string& text) {
-  auto re = smithy::Regex::Compile(pattern);
+  auto re = opal::Regex::Compile(pattern);
   EXPECT_TRUE(re.ok()) << pattern << ": " << (re.ok() ? "" : re.error().message());
   return re.ok() && re->Search(text);
 }
 
-bool Compiles(const std::string& pattern) { return smithy::Regex::Compile(pattern).ok(); }
+bool Compiles(const std::string& pattern) { return opal::Regex::Compile(pattern).ok(); }
 
 TEST(RegexTest, LiteralsUsePartialMatchSemantics) {
   EXPECT_TRUE(Search("bc", "abcd"));  // regex_search, not regex_match
@@ -133,7 +133,7 @@ TEST(RegexTest, UnsupportedConstructsFailAtCompileTime) {
 // bound deterministic — a loaded CI runner can't flake it the way a
 // wall-clock limit could.
 TEST(RegexTest, CatastrophicPatternIsLinear) {
-  auto re = smithy::Regex::Compile("^([0-9]+)+$");
+  auto re = opal::Regex::Compile("^([0-9]+)+$");
   ASSERT_TRUE(re.ok());
   std::string evil(100000, '1');
   evil.push_back('!');
@@ -148,7 +148,7 @@ TEST(RegexTest, MoreNestedQuantifierBombs) {
   std::string as(50000, 'a');
   const std::string bomb = as + "b";
   for (const char* pattern : {"^(a+)+$", "^(a|a)+$", "^(a*)*$"}) {
-    auto re = smithy::Regex::Compile(pattern);
+    auto re = opal::Regex::Compile(pattern);
     ASSERT_TRUE(re.ok()) << pattern;
     std::size_t steps = 0;
     EXPECT_FALSE(re->Search(bomb, &steps)) << pattern;
@@ -171,7 +171,7 @@ TEST(RegexTest, AgreesWithStdRegexOnRandomInputs) {
   const std::string alphabet = "abcdexy01239. -_";
   std::uniform_int_distribution<std::size_t> pick(0, alphabet.size() - 1);
   for (const char* pattern : patterns) {
-    auto mine = smithy::Regex::Compile(pattern);
+    auto mine = opal::Regex::Compile(pattern);
     ASSERT_TRUE(mine.ok()) << pattern;
     const std::regex theirs(pattern, std::regex::ECMAScript);
     for (int i = 0; i < 500; ++i) {

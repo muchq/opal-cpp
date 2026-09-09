@@ -14,37 +14,35 @@ namespace {
 
 class NullHandler final : public example::weather::WeatherHandler {
  public:
-  smithy::Outcome<example::weather::GetCityOutput> GetCity(
-      const example::weather::GetCityInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<example::weather::GetCityOutput> GetCity(
+      const example::weather::GetCityInput&, const opal::server::RequestContext&) override {
     return example::weather::GetCityOutput{.name = "x"};
   }
-  smithy::Outcome<example::weather::DeleteCityOutput> DeleteCity(
-      const example::weather::DeleteCityInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<example::weather::DeleteCityOutput> DeleteCity(
+      const example::weather::DeleteCityInput&, const opal::server::RequestContext&) override {
     return example::weather::DeleteCityOutput{};
   }
-  smithy::Outcome<example::weather::ListCitiesOutput> ListCities(
-      const example::weather::ListCitiesInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<example::weather::ListCitiesOutput> ListCities(
+      const example::weather::ListCitiesInput&, const opal::server::RequestContext&) override {
     return example::weather::ListCitiesOutput{};
   }
-  smithy::Outcome<example::weather::GetForecastOutput> GetForecast(
-      const example::weather::GetForecastInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<example::weather::GetForecastOutput> GetForecast(
+      const example::weather::GetForecastInput&, const opal::server::RequestContext&) override {
     return example::weather::GetForecastOutput{};
   }
-  smithy::Outcome<example::weather::GetCurrentTimeOutput> GetCurrentTime(
-      const example::weather::GetCurrentTimeInput&,
-      const smithy::server::RequestContext&) override {
+  opal::Outcome<example::weather::GetCurrentTimeOutput> GetCurrentTime(
+      const example::weather::GetCurrentTimeInput&, const opal::server::RequestContext&) override {
     return example::weather::GetCurrentTimeOutput{};
   }
-  smithy::Outcome<example::weather::GetReportOutput> GetReport(
-      const example::weather::GetReportInput& input,
-      const smithy::server::RequestContext&) override {
+  opal::Outcome<example::weather::GetReportOutput> GetReport(
+      const example::weather::GetReportInput& input, const opal::server::RequestContext&) override {
     return example::weather::GetReportOutput{.path = input.reportPath, .sizeBytes = 0};
   }
 };
 
-smithy::http::RequestHandler& Handler() {
+opal::http::RequestHandler& Handler() {
   static auto* server = new example::weather::WeatherServer(std::make_shared<NullHandler>());
-  static auto* handler = new smithy::http::RequestHandler(server->Handler());
+  static auto* handler = new opal::http::RequestHandler(server->Handler());
   return *handler;
 }
 
@@ -53,7 +51,7 @@ smithy::http::RequestHandler& Handler() {
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   // Layout: method '\n' target '\n' header-value '\n' body.
   const std::string all(reinterpret_cast<const char*>(data), size);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   std::size_t start = 0;
   std::string* fields[] = {&request.method, &request.target};
   for (std::string* field : fields) {

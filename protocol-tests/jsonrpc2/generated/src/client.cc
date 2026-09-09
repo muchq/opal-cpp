@@ -6,6 +6,8 @@
 #include <string_view>
 #include <utility>
 
+#include "opal/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/serde.h"
 #include "smithy/core/blob.h"
 #include "smithy/core/document.h"
 #include "smithy/core/document_serde.h"
@@ -17,12 +19,10 @@
 #include "smithy/http/uri.h"
 #include "smithy/http/websocket.h"
 #include "smithy/json/json.h"
-#include "smithy/protocoltests/jsonrpc2/client.h"
-#include "smithy/protocoltests/jsonrpc2/serde.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
-namespace types = ::smithy::protocoltests::jsonrpc2;
+namespace types = ::opal::protocoltests::jsonrpc2;
 
 namespace {
 namespace helpers {
@@ -39,43 +39,43 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   if (!doc.ok() || !doc->is_map()) return parsed;
-  const smithy::Document* error = doc->Find("error");
+  const opal::Document* error = doc->Find("error");
   if (error == nullptr || !error->is_map()) return parsed;
-  if (const smithy::Document* code = error->Find("code"); code != nullptr && code->is_int()) {
+  if (const opal::Document* code = error->Find("code"); code != nullptr && code->is_int()) {
     const std::int64_t rpc_code = code->as_int();
     parsed.status = rpc_code >= 100 && rpc_code < 600 ? static_cast<int>(rpc_code) : (rpc_code == -32603 ? 500 : 400);
   }
-  if (const smithy::Document* message = error->Find("message"); message != nullptr && message->is_string()) parsed.message = message->as_string();
-  if (const smithy::Document* data = error->Find("data"); data != nullptr) parsed.doc = *data;
+  if (const opal::Document* message = error->Find("message"); message != nullptr && message->is_string()) parsed.message = message->as_string();
+  if (const opal::Document* data = error->Find("data"); data != nullptr) parsed.doc = *data;
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
-smithy::Error MakeNotFoundErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeNotFoundErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("NotFoundError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("NotFoundError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeNotFoundError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -83,11 +83,11 @@ smithy::Error MakeNotFoundErrorError(const smithy::http::HttpResponse& response,
   return error;
 }
 
-smithy::Error MakeStreamAbortError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeStreamAbortError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("StreamAbort", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("StreamAbort", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeStreamAbort(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -95,11 +95,11 @@ smithy::Error MakeStreamAbortError(const smithy::http::HttpResponse& response, P
   return error;
 }
 
-smithy::Error MakeThrottledErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeThrottledErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = true;  // @retryable
-  smithy::Error error = smithy::Error::Modeled("ThrottledError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("ThrottledError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeThrottledError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -107,7 +107,7 @@ smithy::Error MakeThrottledErrorError(const smithy::http::HttpResponse& response
   return error;
 }
 
-smithy::Error ParseEchoPayloadError(const smithy::http::HttpResponse& response) {
+opal::Error ParseEchoPayloadError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "NotFoundError") return helpers::MakeNotFoundErrorError(response, std::move(parsed));
   if (parsed.code == "ThrottledError") return helpers::MakeThrottledErrorError(response, std::move(parsed));
@@ -118,9 +118,9 @@ smithy::Error ParseEchoPayloadError(const smithy::http::HttpResponse& response) 
 // TLS come from the same endpoint the unary transport uses (nothing is
 // configured twice); config.websocket_dialer overrides the Beast dialer the
 // way http_client overrides the unary transport.
-smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> DialStream(const smithy::ClientConfig& config, smithy::http::WebSocketDialRequest request) {
+opal::Outcome<std::shared_ptr<opal::http::WebSocket>> DialStream(const opal::ClientConfig& config, opal::http::WebSocketDialRequest request) {
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     request.host = endpoint->host;
     request.port = endpoint->port;
@@ -129,114 +129,114 @@ smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> DialStream(const smith
   }
   if (config.websocket_dialer) return config.websocket_dialer(request);
   if (request.host.empty()) {
-    return smithy::Error::Validation("JsonRpc2ProtocolClient: config needs an endpoint or a websocket_dialer");
+    return opal::Error::Validation("JsonRpc2ProtocolClient: config needs an endpoint or a websocket_dialer");
   }
-  return smithy::http::BeastWebSocketClient::Dialer()(request);
+  return opal::http::BeastWebSocketClient::Dialer()(request);
 }
 
 // One event per message (ADR-0016): the engaged member's structure is the
 // payload, its member name the :event-type.
-smithy::Outcome<smithy::eventstream::Message> EncodeEchoStreamEvent(const types::UpEvents& event) {
+opal::Outcome<opal::eventstream::Message> EncodeEchoStreamEvent(const types::UpEvents& event) {
   if (event.is_note()) {
-    return smithy::eventstream::MakeEventMessage("note", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeNote(event.as_note()))));
+    return opal::eventstream::MakeEventMessage("note", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeNote(event.as_note()))));
   }
-  return smithy::Error::Validation("UpEvents: no event member engaged");
+  return opal::Error::Validation("UpEvents: no event member engaged");
 }
 
-smithy::Outcome<types::DownEvents> DecodeEchoStreamEvent(const smithy::eventstream::Message& message) {
-  auto envelope = smithy::eventstream::ParseEnvelope(message);
+opal::Outcome<types::DownEvents> DecodeEchoStreamEvent(const opal::eventstream::Message& message) {
+  auto envelope = opal::eventstream::ParseEnvelope(message);
   if (!envelope) return std::move(envelope).error();
-  if (envelope->kind == smithy::eventstream::EventEnvelope::Kind::kException) {
+  if (envelope->kind == opal::eventstream::EventEnvelope::Kind::kException) {
     // A received exception is terminal (ADR-0016): the EventStream closes the
     // session and surfaces this error, exactly the unary shape.
     ParsedError parsed;
     parsed.code = helpers::SanitizeErrorCode(envelope->type);
-    auto exception_doc = smithy::json::Decode(envelope->payload.ToString());
+    auto exception_doc = opal::json::Decode(envelope->payload.ToString());
     if (exception_doc.ok() && exception_doc->is_map()) {
       parsed.doc = *std::move(exception_doc);
-      const smithy::Document* text = parsed.doc.Find("message");
+      const opal::Document* text = parsed.doc.Find("message");
       if (text != nullptr && text->is_string()) parsed.message = text->as_string();
     }
     // Make<Error>Error's header-patch source; exception messages carry none.
-    smithy::http::HttpResponse response;
+    opal::http::HttpResponse response;
     if (parsed.code == "StreamAbort") return helpers::MakeStreamAbortError(response, std::move(parsed));
     return helpers::GenericError(std::move(parsed));
   }
   if (envelope->type == "echo") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeEchoedNote(*doc);
     if (!event) return std::move(event).error();
     return types::DownEvents::FromEcho(*std::move(event));
   }
-  return smithy::Error::Serialization("EchoStream: unknown event type: " + envelope->type);
+  return opal::Error::Serialization("EchoStream: unknown event type: " + envelope->type);
 }
 
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<JsonRpc2ProtocolClient> JsonRpc2ProtocolClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<JsonRpc2ProtocolClient> JsonRpc2ProtocolClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("JsonRpc2ProtocolClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("JsonRpc2ProtocolClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("JsonRpc2ProtocolClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("JsonRpc2ProtocolClient: config needs an endpoint or an http_client");
   }
   return JsonRpc2ProtocolClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-JsonRpc2ProtocolClient::JsonRpc2ProtocolClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+JsonRpc2ProtocolClient::JsonRpc2ProtocolClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> JsonRpc2ProtocolClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> JsonRpc2ProtocolClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   request.headers.Set("user-agent", config_.user_agent);
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<EchoPayloadOutput> JsonRpc2ProtocolClient::EchoPayload(const EchoPayloadInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<EchoPayloadOutput> JsonRpc2ProtocolClient::EchoPayload(const EchoPayloadInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/";
   request.headers.Set("content-type", "application/json");
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
-  envelope.emplace("method", smithy::Document("EchoPayload"));
-  envelope.emplace("id", smithy::Document(1));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
+  envelope.emplace("method", opal::Document("EchoPayload"));
+  envelope.emplace("id", opal::Document(1));
   envelope.emplace("params", SerializeEchoPayloadInput(input));
-  request.body = smithy::json::Encode(smithy::Document(std::move(envelope)));
+  request.body = opal::json::Encode(opal::Document(std::move(envelope)));
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
-  auto envelope_doc = smithy::json::Decode(response->body);
+  auto envelope_doc = opal::json::Decode(response->body);
   // Errors are JSON-RPC envelopes on HTTP 200; non-200 means the request
   // never reached the protocol layer (router 404, proxy) and parses generically.
   const bool is_error = !envelope_doc.ok() || !envelope_doc->is_map() || envelope_doc->Find("error") != nullptr;
   if (response->status != 200 || is_error) return helpers::ParseEchoPayloadError(*response);
-  const smithy::Document* result = envelope_doc->Find("result");
+  const opal::Document* result = envelope_doc->Find("result");
   if (result == nullptr) return EchoPayloadOutput{};
   return DeserializeEchoPayloadOutput(*result);
 }
 
-smithy::Outcome<EchoStreamClientStream> JsonRpc2ProtocolClient::EchoStream(const EchoStreamInput& input) const {
-  smithy::http::WebSocketDialRequest request;
+opal::Outcome<EchoStreamClientStream> JsonRpc2ProtocolClient::EchoStream(const EchoStreamInput& input) const {
+  opal::http::WebSocketDialRequest request;
   // The shared endpoint (ADR-0023): the same target the unary POST uses —
   // the operation rides the opening envelope, and every frame is text.
   request.target = path_prefix_ + "/";
@@ -246,37 +246,37 @@ smithy::Outcome<EchoStreamClientStream> JsonRpc2ProtocolClient::EchoStream(const
   if (!socket) return std::move(socket).error();
   // The opening request envelope: selects the operation and carries the
   // initial-request members (the :initial-request seam, realized).
-  smithy::DocumentMap params = SerializeEchoStreamInput(input).as_map();
+  opal::DocumentMap params = SerializeEchoStreamInput(input).as_map();
   // The union is the session, never a params member.
   params.erase("events");
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
-  envelope.emplace("method", smithy::Document("EchoStream"));
-  envelope.emplace("id", smithy::Document(1));
-  envelope.emplace("params", smithy::Document(std::move(params)));
-  smithy::eventstream::Message opening;
-  opening.payload = smithy::Blob::FromString(smithy::json::Encode(smithy::Document(std::move(envelope))));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
+  envelope.emplace("method", opal::Document("EchoStream"));
+  envelope.emplace("id", opal::Document(1));
+  envelope.emplace("params", opal::Document(std::move(params)));
+  opal::eventstream::Message opening;
+  opening.payload = opal::Blob::FromString(opal::json::Encode(opal::Document(std::move(envelope))));
   auto sent = (*socket)->Send(opening);
   if (!sent) return std::move(sent).error();
   return EchoStreamClientStream(
-      std::make_shared<smithy::eventstream::JsonRpcStreamSocket>(*std::move(socket), smithy::Document(1), smithy::eventstream::JsonRpcStreamSocket::Role::kClient),
+      std::make_shared<opal::eventstream::JsonRpcStreamSocket>(*std::move(socket), opal::Document(1), opal::eventstream::JsonRpcStreamSocket::Role::kClient),
       helpers::EncodeEchoStreamEvent, helpers::DecodeEchoStreamEvent);
 }
 
-smithy::Outcome<NoArgsOutput> JsonRpc2ProtocolClient::NoArgs(const NoArgsInput& input) const {
+opal::Outcome<NoArgsOutput> JsonRpc2ProtocolClient::NoArgs(const NoArgsInput& input) const {
   (void)input;
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/";
   request.headers.Set("content-type", "application/json");
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
-  envelope.emplace("method", smithy::Document("NoArgs"));
-  envelope.emplace("id", smithy::Document(1));
-  request.body = smithy::json::Encode(smithy::Document(std::move(envelope)));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
+  envelope.emplace("method", opal::Document("NoArgs"));
+  envelope.emplace("id", opal::Document(1));
+  request.body = opal::json::Encode(opal::Document(std::move(envelope)));
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
-  auto envelope_doc = smithy::json::Decode(response->body);
+  auto envelope_doc = opal::json::Decode(response->body);
   // Errors are JSON-RPC envelopes on HTTP 200; non-200 means the request
   // never reached the protocol layer (router 404, proxy) and parses generically.
   const bool is_error = !envelope_doc.ok() || !envelope_doc->is_map() || envelope_doc->Find("error") != nullptr;
@@ -284,27 +284,27 @@ smithy::Outcome<NoArgsOutput> JsonRpc2ProtocolClient::NoArgs(const NoArgsInput& 
   return NoArgsOutput{};
 }
 
-smithy::Outcome<PutConstrainedOutput> JsonRpc2ProtocolClient::PutConstrained(const PutConstrainedInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<PutConstrainedOutput> JsonRpc2ProtocolClient::PutConstrained(const PutConstrainedInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/";
   request.headers.Set("content-type", "application/json");
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
-  envelope.emplace("method", smithy::Document("PutConstrained"));
-  envelope.emplace("id", smithy::Document(1));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
+  envelope.emplace("method", opal::Document("PutConstrained"));
+  envelope.emplace("id", opal::Document(1));
   envelope.emplace("params", SerializePutConstrainedInput(input));
-  request.body = smithy::json::Encode(smithy::Document(std::move(envelope)));
+  request.body = opal::json::Encode(opal::Document(std::move(envelope)));
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
-  auto envelope_doc = smithy::json::Decode(response->body);
+  auto envelope_doc = opal::json::Decode(response->body);
   // Errors are JSON-RPC envelopes on HTTP 200; non-200 means the request
   // never reached the protocol layer (router 404, proxy) and parses generically.
   const bool is_error = !envelope_doc.ok() || !envelope_doc->is_map() || envelope_doc->Find("error") != nullptr;
   if (response->status != 200 || is_error) return helpers::GenericError(helpers::ParseError(*response));
-  const smithy::Document* result = envelope_doc->Find("result");
-  if (result == nullptr) return smithy::Error::Serialization("jsonRpc2: response has no result member");
+  const opal::Document* result = envelope_doc->Find("result");
+  if (result == nullptr) return opal::Error::Serialization("jsonRpc2: response has no result member");
   return DeserializePutConstrainedOutput(*result);
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

@@ -4,7 +4,7 @@
 #include <random>
 #include <thread>
 
-namespace smithy {
+namespace opal {
 namespace {
 
 double UniformJitter() {
@@ -67,4 +67,4 @@ Outcome<http::HttpResponse> SendWithRetries(
   return outcome;
 }
 
-}  // namespace smithy
+}  // namespace opal

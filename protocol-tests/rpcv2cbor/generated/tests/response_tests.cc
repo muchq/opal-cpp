@@ -8,10 +8,10 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/rpcv2cbor/client.h"
+#include "opal/protocoltests/rpcv2cbor/client.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::rpcv2cbor {
+namespace opal::protocoltests::rpcv2cbor {
 
 // Generated from smithy.test#httpResponseTests (client cases),
 // including the cases attached to modeled error shapes.
@@ -24,13 +24,13 @@ namespace smithy::protocoltests::rpcv2cbor {
 namespace {
 
 struct Fixture {
-  std::shared_ptr<smithy::testing::CapturingTransport> transport;
+  std::shared_ptr<opal::testing::CapturingTransport> transport;
   RpcV2ProtocolClient client;
 };
 
 Fixture MakeFixture(const std::string& endpoint = "") {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   config.endpoint = endpoint;
@@ -47,7 +47,7 @@ TEST(RpcV2ProtocolResponseTest, empty_output) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v/8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v/8=");
   const auto outcome = fixture.client.EmptyInputOutput(EmptyInputOutputInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const EmptyInputOutputOutput expected = [] {
@@ -63,7 +63,7 @@ TEST(RpcV2ProtocolResponseTest, empty_output_no_body) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("");
+  fixture.transport->next_response.body = opal::testing::FromBase64("");
   const auto outcome = fixture.client.EmptyInputOutput(EmptyInputOutputInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const EmptyInputOutputOutput expected = [] {
@@ -79,7 +79,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborFloat16Inf) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oWV2YWx1Zfl8AA==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oWV2YWx1Zfl8AA==");
   const auto outcome = fixture.client.Float16(Float16Input{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const Float16Output expected = [] {
@@ -96,7 +96,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborFloat16NegInf) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oWV2YWx1Zfn8AA==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oWV2YWx1Zfn8AA==");
   const auto outcome = fixture.client.Float16(Float16Input{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const Float16Output expected = [] {
@@ -113,7 +113,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborFloat16Subnormal) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oWV2YWx1ZfkAUA==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oWV2YWx1ZfkAUA==");
   const auto outcome = fixture.client.Float16(Float16Input{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const Float16Output expected = [] {
@@ -130,12 +130,12 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDateTimeWithFractionalSeconds) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2hkYXRldGltZcH7Qcw32zgPvnf/");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2hkYXRldGltZcH7Qcw32zgPvnf/");
   const auto outcome = fixture.client.FractionalSeconds(FractionalSecondsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const FractionalSecondsOutput expected = [] {
   FractionalSecondsOutput v{};
-  v.datetime = smithy::Timestamp::FromEpochMilliseconds(946845296123LL);
+  v.datetime = opal::Timestamp::FromEpochMilliseconds(946845296123LL);
   return v;
 }();
   EXPECT_EQ(*outcome, expected);
@@ -146,7 +146,7 @@ TEST(RpcV2ProtocolResponseTest, no_output) {
   Fixture fixture = MakeFixture();
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("");
+  fixture.transport->next_response.body = opal::testing::FromBase64("");
   const auto outcome = fixture.client.NoInputOutput(NoInputOutputInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const NoInputOutputOutput expected = [] {
@@ -162,7 +162,7 @@ TEST(RpcV2ProtocolResponseTest, NoOutputClientAllowsEmptyCbor) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v/8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v/8=");
   const auto outcome = fixture.client.NoInputOutput(NoInputOutputInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const NoInputOutputOutput expected = [] {
@@ -179,7 +179,7 @@ TEST(RpcV2ProtocolResponseTest, NoOutputClientAllowsEmptyBody) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("");
+  fixture.transport->next_response.body = opal::testing::FromBase64("");
   const auto outcome = fixture.client.NoInputOutput(NoInputOutputInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const NoInputOutputOutput expected = [] {
@@ -195,7 +195,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientPopulatesDefaultsValuesWhenMissin
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v/8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v/8=");
   const auto outcome = fixture.client.OperationWithDefaults(OperationWithDefaultsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const OperationWithDefaultsOutput expected = [] {
@@ -203,8 +203,8 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientPopulatesDefaultsValuesWhenMissin
   v.defaultString = "hi";
   v.defaultBoolean = true;
   v.defaultList = std::vector<std::string>{};
-  v.defaultTimestamp = smithy::Timestamp::FromEpochMilliseconds(0LL);
-  v.defaultBlob = smithy::Blob::FromString("abc");
+  v.defaultTimestamp = opal::Timestamp::FromEpochMilliseconds(0LL);
+  v.defaultBlob = opal::Blob::FromString("abc");
   v.defaultByte = 1;
   v.defaultShort = 1;
   v.defaultInteger = 10;
@@ -216,7 +216,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientPopulatesDefaultsValuesWhenMissin
   v.defaultIntEnum = static_cast<TestIntEnum>(1);
   v.emptyString = "";
   v.falseBoolean = false;
-  v.emptyBlob = smithy::Blob::FromString("");
+  v.emptyBlob = opal::Blob::FromString("");
   v.zeroByte = 0;
   v.zeroShort = 0;
   v.zeroInteger = 0;
@@ -234,7 +234,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientIgnoresDefaultValuesIfMemberValue
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v21kZWZhdWx0U3RyaW5nY2J5ZW5kZWZhdWx0Qm9vbGVhbvRrZGVmYXVsdExpc3SBYWFwZGVmYXVsdFRpbWVzdGFtcMH7QAAAAAAAAABrZGVmYXVsdEJsb2JCaGlrZGVmYXVsdEJ5dGUCbGRlZmF1bHRTaG9ydAJuZGVmYXVsdEludGVnZXIUa2RlZmF1bHRMb25nGMhsZGVmYXVsdEZsb2F0+kAAAABtZGVmYXVsdERvdWJsZftAAAAAAAAAAGpkZWZhdWx0TWFwoWRuYW1lZEphY2trZGVmYXVsdEVudW1jQkFSbmRlZmF1bHRJbnRFbnVtAmtlbXB0eVN0cmluZ2Nmb29sZmFsc2VCb29sZWFu9WllbXB0eUJsb2JCaGloemVyb0J5dGUBaXplcm9TaG9ydAFremVyb0ludGVnZXIBaHplcm9Mb25nAWl6ZXJvRmxvYXT6P4AAAGp6ZXJvRG91Ymxl+z/wAAAAAAAA/w==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v21kZWZhdWx0U3RyaW5nY2J5ZW5kZWZhdWx0Qm9vbGVhbvRrZGVmYXVsdExpc3SBYWFwZGVmYXVsdFRpbWVzdGFtcMH7QAAAAAAAAABrZGVmYXVsdEJsb2JCaGlrZGVmYXVsdEJ5dGUCbGRlZmF1bHRTaG9ydAJuZGVmYXVsdEludGVnZXIUa2RlZmF1bHRMb25nGMhsZGVmYXVsdEZsb2F0+kAAAABtZGVmYXVsdERvdWJsZftAAAAAAAAAAGpkZWZhdWx0TWFwoWRuYW1lZEphY2trZGVmYXVsdEVudW1jQkFSbmRlZmF1bHRJbnRFbnVtAmtlbXB0eVN0cmluZ2Nmb29sZmFsc2VCb29sZWFu9WllbXB0eUJsb2JCaGloemVyb0J5dGUBaXplcm9TaG9ydAFremVyb0ludGVnZXIBaHplcm9Mb25nAWl6ZXJvRmxvYXT6P4AAAGp6ZXJvRG91Ymxl+z/wAAAAAAAA/w==");
   const auto outcome = fixture.client.OperationWithDefaults(OperationWithDefaultsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const OperationWithDefaultsOutput expected = [] {
@@ -242,8 +242,8 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientIgnoresDefaultValuesIfMemberValue
   v.defaultString = "bye";
   v.defaultBoolean = false;
   v.defaultList = std::vector<std::string>{"a"};
-  v.defaultTimestamp = smithy::Timestamp::FromEpochMilliseconds(2000LL);
-  v.defaultBlob = smithy::Blob::FromString("hi");
+  v.defaultTimestamp = opal::Timestamp::FromEpochMilliseconds(2000LL);
+  v.defaultBlob = opal::Blob::FromString("hi");
   v.defaultByte = 2;
   v.defaultShort = 2;
   v.defaultInteger = 20;
@@ -255,7 +255,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientIgnoresDefaultValuesIfMemberValue
   v.defaultIntEnum = static_cast<TestIntEnum>(2);
   v.emptyString = "foo";
   v.falseBoolean = true;
-  v.emptyBlob = smithy::Blob::FromString("hi");
+  v.emptyBlob = opal::Blob::FromString("hi");
   v.zeroByte = 1;
   v.zeroShort = 1;
   v.zeroInteger = 1;
@@ -273,7 +273,7 @@ TEST(RpcV2ProtocolResponseTest, optional_output) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v/8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v/8=");
   const auto outcome = fixture.client.OptionalInputOutput(OptionalInputOutputInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const OptionalInputOutputOutput expected = [] {
@@ -289,7 +289,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborRecursiveShapes) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2ZuZXN0ZWS/Y2Zvb2RGb28xZm5lc3RlZL9jYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyv2Nmb29kRm9vMmZuZXN0ZWS/Y2JhcmRCYXIy//////8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2ZuZXN0ZWS/Y2Zvb2RGb28xZm5lc3RlZL9jYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyv2Nmb29kRm9vMmZuZXN0ZWS/Y2JhcmRCYXIy//////8=");
   const auto outcome = fixture.client.RecursiveShapes(RecursiveShapesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RecursiveShapesOutput expected = [] {
@@ -325,7 +325,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborRecursiveShapesUsingDefiniteLength) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oWZuZXN0ZWSiY2Zvb2RGb28xZm5lc3RlZKJjYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyomNmb29kRm9vMmZuZXN0ZWShY2JhcmRCYXIy");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oWZuZXN0ZWSiY2Zvb2RGb28xZm5lc3RlZKJjYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyomNmb29kRm9vMmZuZXN0ZWShY2JhcmRCYXIy");
   const auto outcome = fixture.client.RecursiveShapes(RecursiveShapesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RecursiveShapesOutput expected = [] {
@@ -361,7 +361,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborMaps) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oW5kZW5zZVN0cnVjdE1hcKJjZm9voWJoaWV0aGVyZWNiYXqhYmhpY2J5ZQ==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oW5kZW5zZVN0cnVjdE1hcKJjZm9voWJoaWV0aGVyZWNiYXqhYmhpY2J5ZQ==");
   const auto outcome = fixture.client.RpcV2CborDenseMaps(RpcV2CborDenseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborDenseMapsOutput expected = [] {
@@ -386,7 +386,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesZeroValuesInMaps) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("om5kZW5zZU51bWJlck1hcKFheABvZGVuc2VCb29sZWFuTWFwoWF49A==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("om5kZW5zZU51bWJlck1hcKFheABvZGVuc2VCb29sZWFuTWFwoWF49A==");
   const auto outcome = fixture.client.RpcV2CborDenseMaps(RpcV2CborDenseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborDenseMapsOutput expected = [] {
@@ -404,7 +404,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesDenseSetMap) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oWtkZW5zZVNldE1hcKJheIBheYJhYWFi");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oWtkZW5zZVNldE1hcKJheIBheYJhYWFi");
   const auto outcome = fixture.client.RpcV2CborDenseMaps(RpcV2CborDenseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborDenseMapsOutput expected = [] {
@@ -421,7 +421,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborLists) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2pzdHJpbmdMaXN0n2Nmb29jYmFy/2lzdHJpbmdTZXSfY2Zvb2NiYXL/a2ludGVnZXJMaXN0nwEC/2tib29sZWFuTGlzdJ/19P9tdGltZXN0YW1wTGlzdJ/B+0HU1/vzgAAAwftB1Nf784AAAP9oZW51bUxpc3SfY0Zvb2Ew/2tpbnRFbnVtTGlzdJ8BAv9wbmVzdGVkU3RyaW5nTGlzdJ+fY2Zvb2NiYXL/n2NiYXpjcXV4//9tc3RydWN0dXJlTGlzdJ+/YWFhMWFiYTL/v2FhYTNhYmE0//9oYmxvYkxpc3SfQ2Zvb0NiYXL//w==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2pzdHJpbmdMaXN0n2Nmb29jYmFy/2lzdHJpbmdTZXSfY2Zvb2NiYXL/a2ludGVnZXJMaXN0nwEC/2tib29sZWFuTGlzdJ/19P9tdGltZXN0YW1wTGlzdJ/B+0HU1/vzgAAAwftB1Nf784AAAP9oZW51bUxpc3SfY0Zvb2Ew/2tpbnRFbnVtTGlzdJ8BAv9wbmVzdGVkU3RyaW5nTGlzdJ+fY2Zvb2NiYXL/n2NiYXpjcXV4//9tc3RydWN0dXJlTGlzdJ+/YWFhMWFiYTL/v2FhYTNhYmE0//9oYmxvYkxpc3SfQ2Zvb0NiYXL//w==");
   const auto outcome = fixture.client.RpcV2CborLists(RpcV2CborListsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborListsOutput expected = [] {
@@ -430,7 +430,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborLists) {
   v.stringSet = std::vector<std::string>{"foo", "bar"};
   v.integerList = std::vector<std::int32_t>{1, 2};
   v.booleanList = std::vector<bool>{true, false};
-  v.timestampList = std::vector<smithy::Timestamp>{smithy::Timestamp::FromEpochMilliseconds(1398796238000LL), smithy::Timestamp::FromEpochMilliseconds(1398796238000LL)};
+  v.timestampList = std::vector<opal::Timestamp>{opal::Timestamp::FromEpochMilliseconds(1398796238000LL), opal::Timestamp::FromEpochMilliseconds(1398796238000LL)};
   v.enumList = std::vector<FooEnum>{FooEnum::FromString("Foo"), FooEnum::FromString("0")};
   v.intEnumList = std::vector<IntegerEnum>{static_cast<IntegerEnum>(1), static_cast<IntegerEnum>(2)};
   v.nestedStringList = std::vector<std::vector<std::string>>{std::vector<std::string>{"foo", "bar"}, std::vector<std::string>{"baz", "qux"}};
@@ -445,7 +445,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborLists) {
   v.b = "4";
   return v;
 }()};
-  v.blobList = std::vector<smithy::Blob>{smithy::Blob::FromString("foo"), smithy::Blob::FromString("bar")};
+  v.blobList = std::vector<opal::Blob>{opal::Blob::FromString("foo"), opal::Blob::FromString("bar")};
   return v;
 }();
   EXPECT_EQ(*outcome, expected);
@@ -457,7 +457,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborListsEmpty) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2pzdHJpbmdMaXN0n///");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2pzdHJpbmdMaXN0n///");
   const auto outcome = fixture.client.RpcV2CborLists(RpcV2CborListsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborListsOutput expected = [] {
@@ -474,7 +474,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborIndefiniteStringInsideIndefiniteListCan
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2pzdHJpbmdMaXN0n394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n//8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2pzdHJpbmdMaXN0n394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n//8=");
   const auto outcome = fixture.client.RpcV2CborLists(RpcV2CborListsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborListsOutput expected = [] {
@@ -491,7 +491,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborIndefiniteStringInsideDefiniteListCanDe
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("oWpzdHJpbmdMaXN0g394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n");
+  fixture.transport->next_response.body = opal::testing::FromBase64("oWpzdHJpbmdMaXN0g394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n");
   const auto outcome = fixture.client.RpcV2CborLists(RpcV2CborListsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborListsOutput expected = [] {
@@ -508,7 +508,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSparseJsonMaps) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v29zcGFyc2VTdHJ1Y3RNYXC/Y2Zvb79iaGlldGhlcmX/Y2Jher9iaGljYnll////");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v29zcGFyc2VTdHJ1Y3RNYXC/Y2Zvb79iaGlldGhlcmX/Y2Jher9iaGljYnll////");
   const auto outcome = fixture.client.RpcV2CborSparseMaps(RpcV2CborSparseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborSparseMapsOutput expected = [] {
@@ -533,7 +533,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesNullMapValues) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v3BzcGFyc2VCb29sZWFuTWFwv2F49v9vc3BhcnNlTnVtYmVyTWFwv2F49v9vc3BhcnNlU3RyaW5nTWFwv2F49v9vc3BhcnNlU3RydWN0TWFwv2F49v//");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v3BzcGFyc2VCb29sZWFuTWFwv2F49v9vc3BhcnNlTnVtYmVyTWFwv2F49v9vc3BhcnNlU3RyaW5nTWFwv2F49v9vc3BhcnNlU3RydWN0TWFwv2F49v//");
   const auto outcome = fixture.client.RpcV2CborSparseMaps(RpcV2CborSparseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborSparseMapsOutput expected = [] {
@@ -553,7 +553,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesSparseSetMap) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXmfYWFhYv9heJ////8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXmfYWFhYv9heJ////8=");
   const auto outcome = fixture.client.RpcV2CborSparseMaps(RpcV2CborSparseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborSparseMapsOutput expected = [] {
@@ -570,7 +570,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesSparseSetMapAndRetainsNull)
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL/YXr2//8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL/YXr2//8=");
   const auto outcome = fixture.client.RpcV2CborSparseMaps(RpcV2CborSparseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborSparseMapsOutput expected = [] {
@@ -587,7 +587,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesZeroValuesInSparseMaps) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v29zcGFyc2VOdW1iZXJNYXC/YXgA/3BzcGFyc2VCb29sZWFuTWFwv2F49P//");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v29zcGFyc2VOdW1iZXJNYXC/YXgA/3BzcGFyc2VCb29sZWFuTWFwv2F49P//");
   const auto outcome = fixture.client.RpcV2CborSparseMaps(RpcV2CborSparseMapsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborSparseMapsOutput expected = [] {
@@ -605,7 +605,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesUnionValue) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("omhjb250ZW50c6Frc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
+  fixture.transport->next_response.body = opal::testing::FromBase64("omhjb250ZW50c6Frc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
   const auto outcome = fixture.client.RpcV2CborUnions(RpcV2CborUnionsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborUnionsOutput expected = [] {
@@ -623,7 +623,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborDeserializesNestedUnionValue) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("omhjb250ZW50c6FqdW5pb25WYWx1ZaFrc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
+  fixture.transport->next_response.body = opal::testing::FromBase64("omhjb250ZW50c6FqdW5pb25WYWx1ZaFrc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
   const auto outcome = fixture.client.RpcV2CborUnions(RpcV2CborUnionsInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const RpcV2CborUnionsOutput expected = [] {
@@ -641,7 +641,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSimpleScalarProperties) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v3B0cnVlQm9vbGVhblZhbHVl9XFmYWxzZUJvb2xlYW5WYWx1ZfRpYnl0ZVZhbHVlBWtkb3VibGVWYWx1Zfs//jlYEGJN02pmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAanNob3J0VmFsdWUZJqprc3RyaW5nVmFsdWVmc2ltcGxlaWJsb2JWYWx1ZUNmb2//");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v3B0cnVlQm9vbGVhblZhbHVl9XFmYWxzZUJvb2xlYW5WYWx1ZfRpYnl0ZVZhbHVlBWtkb3VibGVWYWx1Zfs//jlYEGJN02pmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAanNob3J0VmFsdWUZJqprc3RyaW5nVmFsdWVmc2ltcGxlaWJsb2JWYWx1ZUNmb2//");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -654,7 +654,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSimpleScalarProperties) {
   v.integerValue = 256;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*outcome, expected);
@@ -666,7 +666,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSimpleScalarPropertiesUsingDefiniteLeng
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("qXB0cnVlQm9vbGVhblZhbHVl9XFmYWxzZUJvb2xlYW5WYWx1ZfRpYnl0ZVZhbHVlBWtkb3VibGVWYWx1Zfs//jlYEGJN02pmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAanNob3J0VmFsdWUZJqprc3RyaW5nVmFsdWVmc2ltcGxlaWJsb2JWYWx1ZUNmb28=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("qXB0cnVlQm9vbGVhblZhbHVl9XFmYWxzZUJvb2xlYW5WYWx1ZfRpYnl0ZVZhbHVlBWtkb3VibGVWYWx1Zfs//jlYEGJN02pmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAanNob3J0VmFsdWUZJqprc3RyaW5nVmFsdWVmc2ltcGxlaWJsb2JWYWx1ZUNmb28=");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -679,7 +679,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSimpleScalarPropertiesUsingDefiniteLeng
   v.integerValue = 256;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*outcome, expected);
@@ -691,7 +691,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborClientDoesntDeserializeNullStructureVal
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2tzdHJpbmdWYWx1Zfb/");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2tzdHJpbmdWYWx1Zfb/");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -707,7 +707,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSupportsInfinityFloatOutputs) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2tkb3VibGVWYWx1Zft/8AAAAAAAAGpmbG9hdFZhbHVl+n+AAAD/");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2tkb3VibGVWYWx1Zft/8AAAAAAAAGpmbG9hdFZhbHVl+n+AAAD/");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -725,7 +725,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSupportsNegativeInfinityFloatOutputs) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2tkb3VibGVWYWx1Zfv/8AAAAAAAAGpmbG9hdFZhbHVl+v+AAAD/");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2tkb3VibGVWYWx1Zfv/8AAAAAAAAGpmbG9hdFZhbHVl+v+AAAD/");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -743,7 +743,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSupportsUpcastingDataOnDeserialize) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2tkb3VibGVWYWx1Zfk+AGpmbG9hdFZhbHVl+UegbGludGVnZXJWYWx1ZRg4aWxvbmdWYWx1ZRkBAGpzaG9ydFZhbHVlCv8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2tkb3VibGVWYWx1Zfk+AGpmbG9hdFZhbHVl+UegbGludGVnZXJWYWx1ZRg4aWxvbmdWYWx1ZRkBAGpzaG9ydFZhbHVlCv8=");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -766,7 +766,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborExtraFieldsInTheBodyShouldBeSkippedByCl
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABrZXh0cmFPYmplY3S/c2luZGVmaW5pdGVMZW5ndGhNYXC/a3dpdGhBbkFycmF5nwECA///cWRlZmluaXRlTGVuZ3RoTWFwo3J3aXRoQURlZmluaXRlQXJyYXmDAQIDeB1hbmRTb21lSW5kZWZpbml0ZUxlbmd0aFN0cmluZ3gfdGhhdCBoYXMsIGJlZW4gY2h1bmtlZCBvbiBjb21tYWxub3JtYWxTdHJpbmdjZm9vanNob3J0VmFsdWUZJw9uc29tZU90aGVyRmllbGR2dGhpcyBzaG91bGQgYmUgc2tpcHBlZP9saW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABrZXh0cmFPYmplY3S/c2luZGVmaW5pdGVMZW5ndGhNYXC/a3dpdGhBbkFycmF5nwECA///cWRlZmluaXRlTGVuZ3RoTWFwo3J3aXRoQURlZmluaXRlQXJyYXmDAQIDeB1hbmRTb21lSW5kZWZpbml0ZUxlbmd0aFN0cmluZ3gfdGhhdCBoYXMsIGJlZW4gY2h1bmtlZCBvbiBjb21tYWxub3JtYWxTdHJpbmdjZm9vanNob3J0VmFsdWUZJw9uc29tZU90aGVyRmllbGR2dGhpcyBzaG91bGQgYmUgc2tpcHBlZP9saW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
   const auto outcome = fixture.client.SimpleScalarProperties(SimpleScalarPropertiesInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SimpleScalarPropertiesOutput expected = [] {
@@ -780,7 +780,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborExtraFieldsInTheBodyShouldBeSkippedByCl
   v.longValue = 9873LL;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*outcome, expected);
@@ -792,7 +792,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSparseMapsDeserializeNullValues) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v29zcGFyc2VTdHJpbmdNYXC/Y2Zvb/b//w==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v29zcGFyc2VTdHJpbmdNYXC/Y2Zvb/b//w==");
   const auto outcome = fixture.client.SparseNullsOperation(SparseNullsOperationInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SparseNullsOperationOutput expected = [] {
@@ -809,7 +809,7 @@ TEST(RpcV2ProtocolResponseTest, RpcV2CborSparseListsDeserializeNull) {
   fixture.transport->next_response.status = 200;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v3BzcGFyc2VTdHJpbmdMaXN0n/b//w==");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v3BzcGFyc2VTdHJpbmdMaXN0n/b//w==");
   const auto outcome = fixture.client.SparseNullsOperation(SparseNullsOperationInput{});
   ASSERT_TRUE(outcome.ok()) << outcome.error().message();
   const SparseNullsOperationOutput expected = [] {
@@ -826,7 +826,7 @@ TEST(RpcV2ProtocolErrorTest, RpcV2CborComplexError) {
   fixture.transport->next_response.status = 400;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2ZfX3R5cGV4K3NtaXRoeS5wcm90b2NvbHRlc3RzLnJwY3YyQ2JvciNDb21wbGV4RXJyb3JoVG9wTGV2ZWxpVG9wIGxldmVsZk5lc3RlZL9jRm9vY2Jhcv//");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2ZfX3R5cGV4K3NtaXRoeS5wcm90b2NvbHRlc3RzLnJwY3YyQ2JvciNDb21wbGV4RXJyb3JoVG9wTGV2ZWxpVG9wIGxldmVsZk5lc3RlZL9jRm9vY2Jhcv//");
   const auto outcome = fixture.client.GreetingWithErrors(GreetingWithErrorsInput{});
   ASSERT_FALSE(outcome.ok());
   EXPECT_EQ(outcome.error().code(), "ComplexError");
@@ -850,7 +850,7 @@ TEST(RpcV2ProtocolErrorTest, RpcV2CborEmptyComplexError) {
   fixture.transport->next_response.status = 400;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2ZfX3R5cGV4K3NtaXRoeS5wcm90b2NvbHRlc3RzLnJwY3YyQ2JvciNDb21wbGV4RXJyb3L/");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2ZfX3R5cGV4K3NtaXRoeS5wcm90b2NvbHRlc3RzLnJwY3YyQ2JvciNDb21wbGV4RXJyb3L/");
   const auto outcome = fixture.client.GreetingWithErrors(GreetingWithErrorsInput{});
   ASSERT_FALSE(outcome.ok());
   EXPECT_EQ(outcome.error().code(), "ComplexError");
@@ -869,7 +869,7 @@ TEST(RpcV2ProtocolErrorTest, RpcV2CborInvalidGreetingError) {
   fixture.transport->next_response.status = 400;
   fixture.transport->next_response.headers.Set("Content-Type", "application/cbor");
   fixture.transport->next_response.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  fixture.transport->next_response.body = smithy::testing::FromBase64("v2ZfX3R5cGV4LnNtaXRoeS5wcm90b2NvbHRlc3RzLnJwY3YyQ2JvciNJbnZhbGlkR3JlZXRpbmdnTWVzc2FnZWJIaf8=");
+  fixture.transport->next_response.body = opal::testing::FromBase64("v2ZfX3R5cGV4LnNtaXRoeS5wcm90b2NvbHRlc3RzLnJwY3YyQ2JvciNJbnZhbGlkR3JlZXRpbmdnTWVzc2FnZWJIaf8=");
   const auto outcome = fixture.client.GreetingWithErrors(GreetingWithErrorsInput{});
   ASSERT_FALSE(outcome.ok());
   EXPECT_EQ(outcome.error().code(), "InvalidGreeting");
@@ -883,4 +883,4 @@ TEST(RpcV2ProtocolErrorTest, RpcV2CborInvalidGreetingError) {
   EXPECT_EQ(*detail, expected);
 }
 
-}  // namespace smithy::protocoltests::rpcv2cbor
+}  // namespace opal::protocoltests::rpcv2cbor

@@ -11,7 +11,7 @@ import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.ShapeId;
 
 /**
- * RecursionIndex decides which generated members get smithy::Boxed indirection and which cycles the
+ * RecursionIndex decides which generated members get opal::Boxed indirection and which cycles the
  * generator must refuse — decisions previously pinned only by whole-model goldens.
  */
 class RecursionIndexTest {

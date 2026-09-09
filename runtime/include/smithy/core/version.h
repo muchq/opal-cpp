@@ -3,11 +3,11 @@
 
 #include <string_view>
 
-namespace smithy {
+namespace opal {
 
 // Returns the smithy-cpp runtime version as a semantic version string.
 std::string_view Version();
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_VERSION_H_

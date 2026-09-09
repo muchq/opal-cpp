@@ -19,7 +19,7 @@ already receive both the raw `HttpRequest` and the router's `RequestContext`
 Three shapes were considered for the handler surface:
 
 1. **A second parameter on every operation** — `Op(const OpInput&, const
-   smithy::server::RequestContext&)`, with `RequestContext` gaining the raw request.
+   opal::server::RequestContext&)`, with `RequestContext` gaining the raw request.
 2. **An opt-in overload pair** — keep the 1-arg pure virtual, add a defaulted 2-arg virtual
    delegating to it. Non-breaking, but a permanent two-method surface per operation and
    "which do I implement" ambiguity in the primary teaching artifacts.
@@ -29,7 +29,7 @@ Three shapes were considered for the handler surface:
 ## Decision
 
 Shape 1. Every generated handler method is
-`Op(const OpInput& input, const smithy::server::RequestContext& context)`:
+`Op(const OpInput& input, const opal::server::RequestContext& context)`:
 
 - `RequestContext` (the type route lambdas already thread) gains
   `const http::HttpRequest* request`, set by `Router::Route` for the handler call's

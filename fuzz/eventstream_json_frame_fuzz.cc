@@ -17,13 +17,13 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const std::string_view text(reinterpret_cast<const char*>(data), size);
-  const auto message = smithy::eventstream::DecodeJsonFrame(text);
+  const auto message = opal::eventstream::DecodeJsonFrame(text);
   if (!message.ok()) {
     return 0;
   }
-  const auto reencoded = smithy::eventstream::EncodeJsonFrame(*message);
+  const auto reencoded = opal::eventstream::EncodeJsonFrame(*message);
   if (!reencoded.ok()) std::abort();  // decoded but not re-encodable: bounds asymmetry
-  const auto again = smithy::eventstream::DecodeJsonFrame(*reencoded);
+  const auto again = opal::eventstream::DecodeJsonFrame(*reencoded);
   if (!again.ok()) std::abort();         // the canonical form must decode
   if (*again != *message) std::abort();  // and be a fixed point
   return 0;

@@ -17,7 +17,7 @@
 #include <variant>
 #include <vector>
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 std::string EncodeOrDie(const Message& message) {
@@ -663,4 +663,4 @@ TEST(EventStreamFrameTest, RandomMessagesRoundTripByteExactly) {
 }
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

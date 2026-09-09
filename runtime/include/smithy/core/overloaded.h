@@ -1,11 +1,11 @@
 #ifndef SMITHY_CORE_OVERLOADED_H_
 #define SMITHY_CORE_OVERLOADED_H_
 
-namespace smithy {
+namespace opal {
 
 // Overload-set builder for visiting generated unions (or any std::variant):
 //
-//   status.visit(smithy::Overloaded{
+//   status.visit(opal::Overloaded{
 //       [](const PendingStatus& p) { ... },
 //       [](const ReadyStatus& r) { ... },
 //       [](const CancelledStatus&) { ... },
@@ -18,6 +18,6 @@ struct Overloaded : Fs... {
 template <typename... Fs>
 Overloaded(Fs...) -> Overloaded<Fs...>;
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_OVERLOADED_H_

@@ -7,14 +7,14 @@
 #include "smithy/json/json.h"
 #include "tests/testing/random_document.h"
 
-namespace smithy::json {
+namespace opal::json {
 namespace {
 
 TEST(JsonPropertyTest, RandomNativeDocumentsRoundTrip) {
-  smithy::testing::DocumentGeneratorOptions options;
+  opal::testing::DocumentGeneratorOptions options;
   options.with_blobs = false;
   options.with_timestamps = false;
-  smithy::testing::RandomDocumentGenerator generator(/*seed=*/20260706, options);
+  opal::testing::RandomDocumentGenerator generator(/*seed=*/20260706, options);
   for (int i = 0; i < 500; ++i) {
     const Document original = generator.Next();
     const std::string text = Encode(original);
@@ -26,10 +26,10 @@ TEST(JsonPropertyTest, RandomNativeDocumentsRoundTrip) {
 }
 
 TEST(JsonPropertyTest, EncodingIsDeterministic) {
-  smithy::testing::DocumentGeneratorOptions options;
+  opal::testing::DocumentGeneratorOptions options;
   options.with_blobs = false;
   options.with_timestamps = false;
-  smithy::testing::RandomDocumentGenerator generator(/*seed=*/99, options);
+  opal::testing::RandomDocumentGenerator generator(/*seed=*/99, options);
   for (int i = 0; i < 50; ++i) {
     const Document doc = generator.Next();
     ASSERT_EQ(Encode(doc), Encode(doc)) << "iteration " << i;
@@ -37,4 +37,4 @@ TEST(JsonPropertyTest, EncodingIsDeterministic) {
 }
 
 }  // namespace
-}  // namespace smithy::json
+}  // namespace opal::json

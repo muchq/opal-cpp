@@ -19,7 +19,7 @@
 
 #include "smithy/cbor/cbor.h"
 
-namespace smithy::cbor {
+namespace opal::cbor {
 namespace {
 
 Blob FromHex(std::string_view hex) {
@@ -257,4 +257,4 @@ TEST(CborHostileTest, EveryStrictPrefixOfAValidDocumentIsRejected) {
 }
 
 }  // namespace
-}  // namespace smithy::cbor
+}  // namespace opal::cbor

@@ -155,7 +155,7 @@ public final class DirectedCppCodegen
   @Override
   public void generateStructure(GenerateStructureDirective<CppContext, CppSettings> directive) {
     if (directive.shape().getId().toString().equals("smithy.api#Unit")) {
-      return; // Maps to the runtime's smithy::Unit; nothing to declare.
+      return; // Maps to the runtime's opal::Unit; nothing to declare.
     }
     directive
         .context()

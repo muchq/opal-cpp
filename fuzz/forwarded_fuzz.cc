@@ -16,7 +16,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   if (size == 0) {
     return 0;
   }
-  static const smithy::http::TrustedProxies trusted = *smithy::http::TrustedProxies::Parse(
+  static const opal::http::TrustedProxies trusted = *opal::http::TrustedProxies::Parse(
       {"10.0.0.0/8", "192.0.2.1", "2001:db8::/32", "::ffff:172.16.0.0/108"});
 
   // data[0] picks the peer so every run anchors a walk — trusted and
@@ -26,7 +26,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   static constexpr std::array<std::string_view, 6> kPeers = {
       "10.0.0.1:443", "203.0.113.9:52814", "[2001:db8::1]:443", "[::ffff:172.16.0.1]:1", "",
       "garbage"};
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.peer_address = std::string(kPeers[data[0] % kPeers.size()]);
   std::string_view rest(reinterpret_cast<const char*>(data + 1), size - 1);
   while (!rest.empty()) {
@@ -38,9 +38,9 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
 
   // Source/address consistency invariants (issue #104): the label must
   // always agree with what the walk actually did.
-  const auto derived = smithy::http::DeriveClient(request, trusted);
-  using Source = smithy::http::DerivedClient::Source;
-  if (smithy::http::ClientAddress(request, trusted) != derived.address) std::abort();
+  const auto derived = opal::http::DeriveClient(request, trusted);
+  using Source = opal::http::DerivedClient::Source;
+  if (opal::http::ClientAddress(request, trusted) != derived.address) std::abort();
   if ((derived.source == Source::kUnknown) != derived.address.empty()) std::abort();
   const bool header_present = request.headers.Has("x-forwarded-for");
   if (derived.source == Source::kDirectPeer && header_present) std::abort();
@@ -56,11 +56,11 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
     // Canonical output is a fixed point: a derived key is a valid
     // host-route trust entry (Parse must accept it), and re-deriving from it
     // changes nothing.
-    const auto echo = smithy::http::TrustedProxies::Parse({client});
+    const auto echo = opal::http::TrustedProxies::Parse({client});
     if (!echo.ok() || !echo->Contains(client)) std::abort();
-    smithy::http::HttpRequest again;
+    opal::http::HttpRequest again;
     again.peer_address = client;
-    if (smithy::http::ClientAddress(again, smithy::http::TrustedProxies::None()) != client) {
+    if (opal::http::ClientAddress(again, opal::http::TrustedProxies::None()) != client) {
       std::abort();
     }
   }
@@ -70,7 +70,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   // and Parse returns a valid boundary or an Error — never a crash. When it
   // parses, exercise Contains on the result; the parser is fuzzed either way.
   (void)trusted.Contains(text);
-  const auto probe = smithy::http::TrustedProxies::Parse({std::string(text)});
+  const auto probe = opal::http::TrustedProxies::Parse({std::string(text)});
   if (probe.ok()) {
     (void)probe->Contains("10.0.0.1");
   }

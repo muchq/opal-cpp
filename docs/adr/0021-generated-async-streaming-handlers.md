@@ -5,13 +5,13 @@ on a design doc ("generated async surfaces — coroutine handler
 signatures"), requested as the consumer assessment's named follow-on: a fully-generated
 handler still pins a thread per stream, and the zero-thread mode has been
 reachable only by hand-mounting a session loop via `AddSession`.
-Implemented: `smithy::eventstream::StreamTask`, the generated
+Implemented: `opal::eventstream::StreamTask`, the generated
 `<Service>AsyncHandler` / `<Op>AsyncServerStream` surface, the
 `<Service>Server` async constructor wiring `AddSession` routes, the
 `examples/chat` async hub ported onto it, and an out-of-tree consumer
 hub with shell-driven tests. Amended by ADR-0023: jsonRpc2 streams ride
 the same seam through a shared-endpoint session driver
-(`ServeJsonRpcSession`) plus `smithy::eventstream::ReceiveMessage`, the
+(`ServeJsonRpcSession`) plus `opal::eventstream::ReceiveMessage`, the
 single-shot receive twin of this ADR's `SendMessageAwaitable`.
 
 ## Context
@@ -48,7 +48,7 @@ something whose frame outlives the handler must own it.
 
 ## Decision
 
-**One new runtime coroutine type, `smithy::eventstream::StreamTask`.**
+**One new runtime coroutine type, `opal::eventstream::StreamTask`.**
 A lazy task whose `co_return` value is `Outcome<Unit>`: started by
 `co_await`, resuming its awaiter by symmetric transfer at completion,
 awaitable exactly once. A handler coroutine that throws completes with
@@ -64,12 +64,12 @@ then act on its outcome*.
 For a service with streaming operations the generator now also emits:
 
 - `using <Op>AsyncServerStream =
-  smithy::eventstream::AsyncEventStream<TxUnion, RxUnion>;` beside the
+  opal::eventstream::AsyncEventStream<TxUnion, RxUnion>;` beside the
   blocking alias, same direction convention (Tx = server sends).
 - `class <Service>AsyncHandler` — streaming operations as
 
   ```cpp
-  virtual smithy::eventstream::StreamTask
+  virtual opal::eventstream::StreamTask
   Converse(ConverseInput input, ConverseAsyncServerStream& stream) = 0;
   ```
 
@@ -92,16 +92,16 @@ For a service with streaming operations the generator now also emits:
 
   ```cpp
   // generated, anonymous namespace
-  smithy::eventstream::Detached ServeConverseAsync(
+  opal::eventstream::Detached ServeConverseAsync(
       std::shared_ptr<ChatAsyncHandler> handler, ConverseInput input,
-      std::shared_ptr<smithy::http::WebSocket> socket) {
+      std::shared_ptr<opal::http::WebSocket> socket) {
     ConverseAsyncServerStream stream(socket, EncodeConverseEvent,
                                      DecodeConverseEvent);
     auto outcome = co_await handler->Converse(std::move(input), stream);
     if (!outcome.ok()) {
       // Awaited, and best-effort: the wait keeps this frame — and the
       // stream it owns — alive until the wire has taken the refusal.
-      (void)co_await smithy::eventstream::SendMessage(
+      (void)co_await opal::eventstream::SendMessage(
           socket, BuildConverseExceptionMessage(outcome.error()));
     }
     stream.Close();

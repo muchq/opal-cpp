@@ -162,7 +162,7 @@ TEST_F(HubEndToEndTest, ANicknameCollisionIsRefusedWithTheTypedError) {
   ASSERT_TRUE(impostor.ok()) << impostor.error().message();
   auto outcome = impostor->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "Kicked");
   const Kicked* detail = outcome.error().detail<Kicked>();
   ASSERT_NE(detail, nullptr);
@@ -243,7 +243,7 @@ TEST_F(HubEndToEndTest, ASlowConsumerIsDisconnectedNotWaitedFor) {
   // ada floods; sloth never reads. Reading each round's own echo asserts
   // liveness and keeps ada's wire drained; the hub's left-announcement for
   // the disconnected sloth interleaves whenever the policy fires.
-  constexpr int kFlood = 5 * smithy::http::InMemoryWebSocketPair::kQueueDepth;
+  constexpr int kFlood = 5 * opal::http::InMemoryWebSocketPair::kQueueDepth;
   bool sloth_left = false;
   for (int i = 0; i < kFlood; ++i) {
     ASSERT_TRUE(ada.Send(Say("tick-" + std::to_string(i))).ok());

@@ -39,7 +39,7 @@ struct DescribeSinkError {
     out += sep;
     sep = ", ";
     out += ".message = ";
-    smithy::DebugAppend(out, this->message);
+    opal::DebugAppend(out, this->message);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -62,7 +62,7 @@ struct DescribeSinkInput {
     out += sep;
     sep = ", ";
     out += ".sinkId = ";
-    smithy::DebugAppend(out, this->sinkId);
+    opal::DebugAppend(out, this->sinkId);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -86,12 +86,12 @@ struct NestedConfig {
     out += sep;
     sep = ", ";
     out += ".label = ";
-    smithy::DebugAppend(out, this->label);
+    opal::DebugAppend(out, this->label);
     if (this->depth.has_value()) {
       out += sep;
       sep = ", ";
       out += ".depth = ";
-      smithy::DebugAppend(out, *this->depth);
+      opal::DebugAppend(out, *this->depth);
     }
     out += '}';
   }
@@ -170,15 +170,15 @@ class SinkChoice {
       switch (value_.index()) {
         case 1:
           out += "text = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         case 2:
           out += "count = ";
-          smithy::DebugAppend(out, std::get<2>(value_));
+          opal::DebugAppend(out, std::get<2>(value_));
           break;
         case 3:
           out += "nested = ";
-          smithy::DebugAppend(out, std::get<3>(value_));
+          opal::DebugAppend(out, std::get<3>(value_));
           break;
         default:
           break;
@@ -197,7 +197,7 @@ class SinkChoice {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("SinkChoice", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("SinkChoice", requested, case_name());
       }
     }
 
@@ -281,12 +281,12 @@ struct KitchenSink {
   std::optional<std::int64_t> big{};
   std::optional<float> ratio{};
   std::optional<double> precise{};
-  std::optional<smithy::Blob> blob{};
+  std::optional<opal::Blob> blob{};
   std::optional<Priority> priority{};
   std::optional<Weight> weight{};
-  std::optional<smithy::Timestamp> dateTime{};
-  std::optional<smithy::Timestamp> httpDate{};
-  std::optional<smithy::Timestamp> epoch{};
+  std::optional<opal::Timestamp> dateTime{};
+  std::optional<opal::Timestamp> httpDate{};
+  std::optional<opal::Timestamp> epoch{};
   std::optional<std::vector<std::string>> names{};
   std::optional<std::vector<std::string>> uniqueNames{};
   std::optional<std::vector<std::optional<std::int32_t>>> sparseNumbers{};
@@ -301,120 +301,120 @@ struct KitchenSink {
     out += sep;
     sep = ", ";
     out += ".name = ";
-    smithy::DebugAppend(out, this->name);
+    opal::DebugAppend(out, this->name);
     if (this->flag.has_value()) {
       out += sep;
       sep = ", ";
       out += ".flag = ";
-      smithy::DebugAppend(out, *this->flag);
+      opal::DebugAppend(out, *this->flag);
     }
     if (this->tiny.has_value()) {
       out += sep;
       sep = ", ";
       out += ".tiny = ";
-      smithy::DebugAppend(out, *this->tiny);
+      opal::DebugAppend(out, *this->tiny);
     }
     if (this->small.has_value()) {
       out += sep;
       sep = ", ";
       out += ".small = ";
-      smithy::DebugAppend(out, *this->small);
+      opal::DebugAppend(out, *this->small);
     }
     if (this->medium.has_value()) {
       out += sep;
       sep = ", ";
       out += ".medium = ";
-      smithy::DebugAppend(out, *this->medium);
+      opal::DebugAppend(out, *this->medium);
     }
     if (this->big.has_value()) {
       out += sep;
       sep = ", ";
       out += ".big = ";
-      smithy::DebugAppend(out, *this->big);
+      opal::DebugAppend(out, *this->big);
     }
     if (this->ratio.has_value()) {
       out += sep;
       sep = ", ";
       out += ".ratio = ";
-      smithy::DebugAppend(out, *this->ratio);
+      opal::DebugAppend(out, *this->ratio);
     }
     if (this->precise.has_value()) {
       out += sep;
       sep = ", ";
       out += ".precise = ";
-      smithy::DebugAppend(out, *this->precise);
+      opal::DebugAppend(out, *this->precise);
     }
     if (this->blob.has_value()) {
       out += sep;
       sep = ", ";
       out += ".blob = ";
-      smithy::DebugAppend(out, *this->blob);
+      opal::DebugAppend(out, *this->blob);
     }
     if (this->priority.has_value()) {
       out += sep;
       sep = ", ";
       out += ".priority = ";
-      smithy::DebugAppend(out, *this->priority);
+      opal::DebugAppend(out, *this->priority);
     }
     if (this->weight.has_value()) {
       out += sep;
       sep = ", ";
       out += ".weight = ";
-      smithy::DebugAppend(out, *this->weight);
+      opal::DebugAppend(out, *this->weight);
     }
     if (this->dateTime.has_value()) {
       out += sep;
       sep = ", ";
       out += ".dateTime = ";
-      smithy::DebugAppend(out, *this->dateTime);
+      opal::DebugAppend(out, *this->dateTime);
     }
     if (this->httpDate.has_value()) {
       out += sep;
       sep = ", ";
       out += ".httpDate = ";
-      smithy::DebugAppend(out, *this->httpDate);
+      opal::DebugAppend(out, *this->httpDate);
     }
     if (this->epoch.has_value()) {
       out += sep;
       sep = ", ";
       out += ".epoch = ";
-      smithy::DebugAppend(out, *this->epoch);
+      opal::DebugAppend(out, *this->epoch);
     }
     if (this->names.has_value()) {
       out += sep;
       sep = ", ";
       out += ".names = ";
-      smithy::DebugAppend(out, *this->names);
+      opal::DebugAppend(out, *this->names);
     }
     if (this->uniqueNames.has_value()) {
       out += sep;
       sep = ", ";
       out += ".uniqueNames = ";
-      smithy::DebugAppend(out, *this->uniqueNames);
+      opal::DebugAppend(out, *this->uniqueNames);
     }
     if (this->sparseNumbers.has_value()) {
       out += sep;
       sep = ", ";
       out += ".sparseNumbers = ";
-      smithy::DebugAppend(out, *this->sparseNumbers);
+      opal::DebugAppend(out, *this->sparseNumbers);
     }
     if (this->attributes.has_value()) {
       out += sep;
       sep = ", ";
       out += ".attributes = ";
-      smithy::DebugAppend(out, *this->attributes);
+      opal::DebugAppend(out, *this->attributes);
     }
     if (this->nested.has_value()) {
       out += sep;
       sep = ", ";
       out += ".nested = ";
-      smithy::DebugAppend(out, *this->nested);
+      opal::DebugAppend(out, *this->nested);
     }
     if (this->choice.has_value()) {
       out += sep;
       sep = ", ";
       out += ".choice = ";
-      smithy::DebugAppend(out, *this->choice);
+      opal::DebugAppend(out, *this->choice);
     }
     out += '}';
   }
@@ -439,7 +439,7 @@ struct DescribeSinkOutput {
       out += sep;
       sep = ", ";
       out += ".sink = ";
-      smithy::DebugAppend(out, *this->sink);
+      opal::DebugAppend(out, *this->sink);
     }
     out += '}';
   }
@@ -464,12 +464,12 @@ struct SinkNotFound {
     out += sep;
     sep = ", ";
     out += ".message = ";
-    smithy::DebugAppend(out, this->message);
+    opal::DebugAppend(out, this->message);
     if (this->resourceType.has_value()) {
       out += sep;
       sep = ", ";
       out += ".resourceType = ";
-      smithy::DebugAppend(out, *this->resourceType);
+      opal::DebugAppend(out, *this->resourceType);
     }
     out += '}';
   }
@@ -488,10 +488,10 @@ struct PutSinkInput {
   std::optional<std::string> tag{};
   std::int32_t limit{};
   std::optional<Priority> priority{};
-  smithy::Timestamp created{};
+  opal::Timestamp created{};
   std::optional<std::map<std::string, std::string>> metadata{};
   std::optional<KitchenSink> sink{};
-  std::optional<smithy::Document> freeform{};
+  std::optional<opal::Document> freeform{};
 
   /// Debug rendering for logs and tests — for humans, never parse it.
   void AppendDebugTo(std::string& out) const {
@@ -500,44 +500,44 @@ struct PutSinkInput {
     out += sep;
     sep = ", ";
     out += ".sinkId = ";
-    smithy::DebugAppend(out, this->sinkId);
+    opal::DebugAppend(out, this->sinkId);
     if (this->tag.has_value()) {
       out += sep;
       sep = ", ";
       out += ".tag = ";
-      smithy::DebugAppend(out, *this->tag);
+      opal::DebugAppend(out, *this->tag);
     }
     out += sep;
     sep = ", ";
     out += ".limit = ";
-    smithy::DebugAppend(out, this->limit);
+    opal::DebugAppend(out, this->limit);
     if (this->priority.has_value()) {
       out += sep;
       sep = ", ";
       out += ".priority = ";
-      smithy::DebugAppend(out, *this->priority);
+      opal::DebugAppend(out, *this->priority);
     }
     out += sep;
     sep = ", ";
     out += ".created = ";
-    smithy::DebugAppend(out, this->created);
+    opal::DebugAppend(out, this->created);
     if (this->metadata.has_value()) {
       out += sep;
       sep = ", ";
       out += ".metadata = ";
-      smithy::DebugAppend(out, *this->metadata);
+      opal::DebugAppend(out, *this->metadata);
     }
     if (this->sink.has_value()) {
       out += sep;
       sep = ", ";
       out += ".sink = ";
-      smithy::DebugAppend(out, *this->sink);
+      opal::DebugAppend(out, *this->sink);
     }
     if (this->freeform.has_value()) {
       out += sep;
       sep = ", ";
       out += ".freeform = ";
-      smithy::DebugAppend(out, *this->freeform);
+      opal::DebugAppend(out, *this->freeform);
     }
     out += '}';
   }
@@ -547,8 +547,8 @@ struct PutSinkInput {
   }
 
   friend bool operator==(const PutSinkInput&, const PutSinkInput&) = default;
-  // Equality-only: a member type has no ordering (smithy::Document or
-  // recursion via smithy::Boxed) — see generated-types.md.
+  // Equality-only: a member type has no ordering (opal::Document or
+  // recursion via opal::Boxed) — see generated-types.md.
 };
 
 
@@ -564,7 +564,7 @@ struct PutSinkResponse {
       out += sep;
       sep = ", ";
       out += ".note = ";
-      smithy::DebugAppend(out, *this->note);
+      opal::DebugAppend(out, *this->note);
     }
     out += '}';
   }
@@ -592,30 +592,30 @@ struct PutSinkOutput {
     out += sep;
     sep = ", ";
     out += ".sinkId = ";
-    smithy::DebugAppend(out, this->sinkId);
+    opal::DebugAppend(out, this->sinkId);
     if (this->revision.has_value()) {
       out += sep;
       sep = ", ";
       out += ".revision = ";
-      smithy::DebugAppend(out, *this->revision);
+      opal::DebugAppend(out, *this->revision);
     }
     if (this->echoedMetadata.has_value()) {
       out += sep;
       sep = ", ";
       out += ".echoedMetadata = ";
-      smithy::DebugAppend(out, *this->echoedMetadata);
+      opal::DebugAppend(out, *this->echoedMetadata);
     }
     if (this->sink.has_value()) {
       out += sep;
       sep = ", ";
       out += ".sink = ";
-      smithy::DebugAppend(out, *this->sink);
+      opal::DebugAppend(out, *this->sink);
     }
     if (this->echo.has_value()) {
       out += sep;
       sep = ", ";
       out += ".echo = ";
-      smithy::DebugAppend(out, *this->echo);
+      opal::DebugAppend(out, *this->echo);
     }
     out += '}';
   }
@@ -641,13 +641,13 @@ struct SinkQuotaExceeded {
       out += sep;
       sep = ", ";
       out += ".message = ";
-      smithy::DebugAppend(out, *this->message);
+      opal::DebugAppend(out, *this->message);
     }
     if (this->retryAfterSeconds.has_value()) {
       out += sep;
       sep = ", ";
       out += ".retryAfterSeconds = ";
-      smithy::DebugAppend(out, *this->retryAfterSeconds);
+      opal::DebugAppend(out, *this->retryAfterSeconds);
     }
     out += '}';
   }
@@ -672,12 +672,12 @@ struct Receipt {
     out += sep;
     sep = ", ";
     out += ".receiptId = ";
-    smithy::DebugAppend(out, this->receiptId);
+    opal::DebugAppend(out, this->receiptId);
     if (this->size.has_value()) {
       out += sep;
       sep = ", ";
       out += ".size = ";
-      smithy::DebugAppend(out, *this->size);
+      opal::DebugAppend(out, *this->size);
     }
     out += '}';
   }
@@ -694,7 +694,7 @@ struct Receipt {
 struct UploadAttachmentInput {
   std::string sinkId{};
   std::optional<std::string> name{};
-  std::optional<smithy::Blob> data{};
+  std::optional<opal::Blob> data{};
 
   /// Debug rendering for logs and tests — for humans, never parse it.
   void AppendDebugTo(std::string& out) const {
@@ -703,18 +703,18 @@ struct UploadAttachmentInput {
     out += sep;
     sep = ", ";
     out += ".sinkId = ";
-    smithy::DebugAppend(out, this->sinkId);
+    opal::DebugAppend(out, this->sinkId);
     if (this->name.has_value()) {
       out += sep;
       sep = ", ";
       out += ".name = ";
-      smithy::DebugAppend(out, *this->name);
+      opal::DebugAppend(out, *this->name);
     }
     if (this->data.has_value()) {
       out += sep;
       sep = ", ";
       out += ".data = ";
-      smithy::DebugAppend(out, *this->data);
+      opal::DebugAppend(out, *this->data);
     }
     out += '}';
   }
@@ -739,7 +739,7 @@ struct UploadAttachmentOutput {
       out += sep;
       sep = ", ";
       out += ".receipt = ";
-      smithy::DebugAppend(out, *this->receipt);
+      opal::DebugAppend(out, *this->receipt);
     }
     out += '}';
   }
@@ -762,7 +762,7 @@ template <>
 struct std::hash<example::roundtrip::rest::DescribeSinkError> {
   std::size_t operator()(const example::roundtrip::rest::DescribeSinkError& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
     return seed;
   }
 };
@@ -771,7 +771,7 @@ template <>
 struct std::hash<example::roundtrip::rest::DescribeSinkInput> {
   std::size_t operator()(const example::roundtrip::rest::DescribeSinkInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sinkId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sinkId));
     return seed;
   }
 };
@@ -780,8 +780,8 @@ template <>
 struct std::hash<example::roundtrip::rest::NestedConfig> {
   std::size_t operator()(const example::roundtrip::rest::NestedConfig& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.label));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.depth));
+    seed = opal::HashCombine(seed, opal::HashValue(value.label));
+    seed = opal::HashCombine(seed, opal::HashValue(value.depth));
     return seed;
   }
 };
@@ -790,16 +790,16 @@ template <>
 struct std::hash<example::roundtrip::rest::SinkChoice> {
   std::size_t operator()(const example::roundtrip::rest::SinkChoice& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
 template <>
 struct std::hash<example::roundtrip::rest::Priority> {
   std::size_t operator()(const example::roundtrip::rest::Priority& value) const noexcept {
-    return smithy::HashCombine(static_cast<std::size_t>(value.value_),
-                               smithy::HashValue(value.unknown_));
+    return opal::HashCombine(static_cast<std::size_t>(value.value_),
+                               opal::HashValue(value.unknown_));
   }
 };
 
@@ -807,26 +807,26 @@ template <>
 struct std::hash<example::roundtrip::rest::KitchenSink> {
   std::size_t operator()(const example::roundtrip::rest::KitchenSink& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.name));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.flag));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.tiny));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.small));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.medium));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.big));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.ratio));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.precise));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.blob));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.priority));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.weight));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.dateTime));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.httpDate));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.epoch));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.names));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.uniqueNames));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sparseNumbers));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.attributes));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.nested));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.choice));
+    seed = opal::HashCombine(seed, opal::HashValue(value.name));
+    seed = opal::HashCombine(seed, opal::HashValue(value.flag));
+    seed = opal::HashCombine(seed, opal::HashValue(value.tiny));
+    seed = opal::HashCombine(seed, opal::HashValue(value.small));
+    seed = opal::HashCombine(seed, opal::HashValue(value.medium));
+    seed = opal::HashCombine(seed, opal::HashValue(value.big));
+    seed = opal::HashCombine(seed, opal::HashValue(value.ratio));
+    seed = opal::HashCombine(seed, opal::HashValue(value.precise));
+    seed = opal::HashCombine(seed, opal::HashValue(value.blob));
+    seed = opal::HashCombine(seed, opal::HashValue(value.priority));
+    seed = opal::HashCombine(seed, opal::HashValue(value.weight));
+    seed = opal::HashCombine(seed, opal::HashValue(value.dateTime));
+    seed = opal::HashCombine(seed, opal::HashValue(value.httpDate));
+    seed = opal::HashCombine(seed, opal::HashValue(value.epoch));
+    seed = opal::HashCombine(seed, opal::HashValue(value.names));
+    seed = opal::HashCombine(seed, opal::HashValue(value.uniqueNames));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sparseNumbers));
+    seed = opal::HashCombine(seed, opal::HashValue(value.attributes));
+    seed = opal::HashCombine(seed, opal::HashValue(value.nested));
+    seed = opal::HashCombine(seed, opal::HashValue(value.choice));
     return seed;
   }
 };
@@ -835,7 +835,7 @@ template <>
 struct std::hash<example::roundtrip::rest::DescribeSinkOutput> {
   std::size_t operator()(const example::roundtrip::rest::DescribeSinkOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sink));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sink));
     return seed;
   }
 };
@@ -844,8 +844,8 @@ template <>
 struct std::hash<example::roundtrip::rest::SinkNotFound> {
   std::size_t operator()(const example::roundtrip::rest::SinkNotFound& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.resourceType));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.resourceType));
     return seed;
   }
 };
@@ -854,7 +854,7 @@ template <>
 struct std::hash<example::roundtrip::rest::PutSinkResponse> {
   std::size_t operator()(const example::roundtrip::rest::PutSinkResponse& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.note));
+    seed = opal::HashCombine(seed, opal::HashValue(value.note));
     return seed;
   }
 };
@@ -863,11 +863,11 @@ template <>
 struct std::hash<example::roundtrip::rest::PutSinkOutput> {
   std::size_t operator()(const example::roundtrip::rest::PutSinkOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sinkId));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.revision));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.echoedMetadata));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sink));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.echo));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sinkId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.revision));
+    seed = opal::HashCombine(seed, opal::HashValue(value.echoedMetadata));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sink));
+    seed = opal::HashCombine(seed, opal::HashValue(value.echo));
     return seed;
   }
 };
@@ -876,8 +876,8 @@ template <>
 struct std::hash<example::roundtrip::rest::SinkQuotaExceeded> {
   std::size_t operator()(const example::roundtrip::rest::SinkQuotaExceeded& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.retryAfterSeconds));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.retryAfterSeconds));
     return seed;
   }
 };
@@ -886,8 +886,8 @@ template <>
 struct std::hash<example::roundtrip::rest::Receipt> {
   std::size_t operator()(const example::roundtrip::rest::Receipt& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.receiptId));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.size));
+    seed = opal::HashCombine(seed, opal::HashValue(value.receiptId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.size));
     return seed;
   }
 };
@@ -896,9 +896,9 @@ template <>
 struct std::hash<example::roundtrip::rest::UploadAttachmentInput> {
   std::size_t operator()(const example::roundtrip::rest::UploadAttachmentInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sinkId));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.name));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.data));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sinkId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.name));
+    seed = opal::HashCombine(seed, opal::HashValue(value.data));
     return seed;
   }
 };
@@ -907,7 +907,7 @@ template <>
 struct std::hash<example::roundtrip::rest::UploadAttachmentOutput> {
   std::size_t operator()(const example::roundtrip::rest::UploadAttachmentOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.receipt));
+    seed = opal::HashCombine(seed, opal::HashValue(value.receipt));
     return seed;
   }
 };

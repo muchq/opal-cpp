@@ -19,7 +19,7 @@
 
 #include "smithy/eventstream/event_stream.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // The multi-client fan-out helper (issue #112): a thread-safe map of owning
 // session handles (EventStream::Share) with a bounded outbound queue per
@@ -28,7 +28,7 @@ namespace smithy::server {
 // send loops per consumer. Tx is the event union the sessions transmit; Id
 // is the application's session key (player id, connection id).
 //
-//   smithy::server::SessionRegistry<RoomEvents> registry;
+//   opal::server::SessionRegistry<RoomEvents> registry;
 //   registry.Add(player_id, stream.Share());              // handler entry
 //   registry.SendTo(player_id, event);                    // queued, non-blocking
 //   registry.Broadcast(ids, [&](const Id& id) { return RedactFor(id); });
@@ -831,6 +831,6 @@ class SessionRegistry {
   bool expiry_stop_ = false;
 };
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_SESSION_REGISTRY_H_

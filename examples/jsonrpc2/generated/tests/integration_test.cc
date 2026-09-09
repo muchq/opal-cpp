@@ -143,27 +143,27 @@ class ScriptedHandler final : public CalculatorHandler {
   public:
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> Accumulate(const AccumulateInput& input, AccumulateServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Accumulate(const AccumulateInput& input, AccumulateServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<AddOutput> Add(const AddInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddOutput> Add(const AddInput& input, const opal::server::RequestContext&) override {
       lastAdd = input;
       if (nextAddError.has_value()) return *nextAddError;
       return nextAddOutput;
     }
     std::optional<AddInput> lastAdd;
     AddOutput nextAddOutput{};
-    std::optional<smithy::Error> nextAddError;
-    smithy::Outcome<DivideOutput> Divide(const DivideInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextAddError;
+    opal::Outcome<DivideOutput> Divide(const DivideInput& input, const opal::server::RequestContext&) override {
       lastDivide = input;
       if (nextDivideError.has_value()) return *nextDivideError;
       return nextDivideOutput;
     }
     std::optional<DivideInput> lastDivide;
     DivideOutput nextDivideOutput{};
-    std::optional<smithy::Error> nextDivideError;
+    std::optional<opal::Error> nextDivideError;
 };
 
 enum class TransportKind { kLoopback, kSocket };
@@ -173,14 +173,14 @@ class CalculatorIntegrationTest : public ::testing::TestWithParam<TransportKind>
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<CalculatorServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -193,7 +193,7 @@ class CalculatorIntegrationTest : public ::testing::TestWithParam<TransportKind>
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<CalculatorServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<CalculatorClient> client_;
 };
 
@@ -252,13 +252,13 @@ TEST_P(CalculatorIntegrationTest, DivideMaximalRoundTrips) {
 TEST_P(CalculatorIntegrationTest, DivideDivisionByZeroMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const DivisionByZero detail = RandomDivisionByZero(rng);
-  smithy::Error error = smithy::Error::Modeled("DivisionByZero", "integration");
+  opal::Error error = opal::Error::Modeled("DivisionByZero", "integration");
   error.set_detail(detail);
   handler_->nextDivideError = error;
   const DivideInput input = RandomDivideInput(rng);
   const auto outcome = client_->Divide(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "DivisionByZero");
   ASSERT_NE(outcome.error().detail<DivisionByZero>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<DivisionByZero>(), detail);
@@ -267,17 +267,17 @@ TEST_P(CalculatorIntegrationTest, DivideDivisionByZeroMapsAcrossTheWire) {
 TEST(CalculatorIntegrationUnknownMembers, AddToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   CalculatorServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *CalculatorClient::Create(std::move(config));
@@ -293,17 +293,17 @@ TEST(CalculatorIntegrationUnknownMembers, AddToleratesUnknownResponseMembers) {
 TEST(CalculatorIntegrationUnknownMembers, DivideToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   CalculatorServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *CalculatorClient::Create(std::move(config));

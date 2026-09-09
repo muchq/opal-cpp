@@ -1,8 +1,8 @@
 # ADR-0017: Event-stream session handles and the fan-out registry
 
 **Status:** Accepted (2026-07-20). Issue #112.
-Implemented: `smithy::eventstream::EventStreamHandle<Tx>` +
-`EventStream::Share()`, `smithy::server::SessionRegistry<Tx, Id>`, the
+Implemented: `opal::eventstream::EventStreamHandle<Tx>` +
+`EventStream::Share()`, `opal::server::SessionRegistry<Tx, Id>`, the
 `examples/chat` hub (handler, server and CLI binaries, in-memory and
 shell-driven e2e suites).
 
@@ -46,7 +46,7 @@ stream's teardown byte-for-byte what it was. `EventStream` becomes
 move-only: two owners would each claim the teardown, and handles are how a
 session fans out.
 
-**A fan-out registry over handles.** `smithy::server::SessionRegistry<Tx,
+**A fan-out registry over handles.** `opal::server::SessionRegistry<Tx,
 Id = std::string>` maps ids to handles with a bounded outbound queue and
 one writer thread per session (the Go hub's per-client goroutine, typed):
 `SendTo`/`Broadcast` enqueue and return — never blocking on any wire — and

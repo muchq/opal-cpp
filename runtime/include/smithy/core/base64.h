@@ -7,7 +7,7 @@
 #include "smithy/core/blob.h"
 #include "smithy/core/outcome.h"
 
-namespace smithy {
+namespace opal {
 
 // Standard base64 (RFC 4648 §4, with padding), as required for blob shapes in
 // JSON-based protocols.
@@ -16,6 +16,6 @@ std::string Base64Encode(const Blob& blob);
 // Rejects non-alphabet characters, bad padding, and non-canonical trailing bits.
 Outcome<Blob> Base64Decode(std::string_view text);
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_BASE64_H_

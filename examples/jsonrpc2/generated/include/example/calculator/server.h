@@ -17,16 +17,16 @@ namespace example::calculator {
 
 /// The typed session a Accumulate handler borrows (ADR-0016): Tx = what this
 /// server sends, Rx = what the client sends.
-using AccumulateServerStream = smithy::eventstream::EventStream<Totals, Terms>;
+using AccumulateServerStream = opal::eventstream::EventStream<Totals, Terms>;
 /// The same session for an async handler (ADR-0021): co_await where the
 /// blocking sibling parks a thread; identical directions and Share().
-using AccumulateAsyncServerStream = smithy::eventstream::AsyncEventStream<Totals, Terms>;
+using AccumulateAsyncServerStream = opal::eventstream::AsyncEventStream<Totals, Terms>;
 
 /// Implement one method per operation. Return a modeled error as
-/// smithy::Error::Modeled("<ErrorShapeName>", message), optionally with the
+/// opal::Error::Modeled("<ErrorShapeName>", message), optionally with the
 /// typed error structure attached via set_detail() so it serializes fully.
 /// The context carries the raw request and routing captures — see
-/// smithy::server::RequestContext; leave the parameter unnamed when unused.
+/// opal::server::RequestContext; leave the parameter unnamed when unused.
 /// Implementations must be thread-safe: transports may invoke any mix of
 /// operations concurrently on the one handler instance.
 class CalculatorHandler {
@@ -46,11 +46,11 @@ class CalculatorHandler {
     /// `stream` is valid only until this method returns; join any helper
     /// thread still using it. Blocks the transport's handler thread for
     /// the session's lifetime.
-    virtual smithy::Outcome<smithy::Unit> Accumulate(const AccumulateInput& input, AccumulateServerStream& stream, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<opal::Unit> Accumulate(const AccumulateInput& input, AccumulateServerStream& stream, const opal::server::RequestContext& context) = 0;
     /// Adds two numbers.
-    virtual smithy::Outcome<AddOutput> Add(const AddInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<AddOutput> Add(const AddInput& input, const opal::server::RequestContext& context) = 0;
     /// Divides dividend by divisor; dividing by zero is a modeled error.
-    virtual smithy::Outcome<DivideOutput> Divide(const DivideInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<DivideOutput> Divide(const DivideInput& input, const opal::server::RequestContext& context) = 0;
 };
 
 /// CalculatorHandler's zero-thread sibling (ADR-0021): implement this and construct
@@ -69,8 +69,8 @@ class CalculatorAsyncHandler {
     ///
     /// Async streaming operation (ADR-0021): a coroutine serving the whole
     /// session — co_await stream.Receive()/Send() until done.
-    /// co_return smithy::Unit{} for a clean close, or an error — modeled as
-    /// smithy::Error::Modeled("<ErrorShapeName>", message) + set_detail(),
+    /// co_return opal::Unit{} for a clean close, or an error — modeled as
+    /// opal::Error::Modeled("<ErrorShapeName>", message) + set_detail(),
     /// like a blocking handler — which ends the stream with one best-effort
     /// exception message before the close. `input` is the coroutine's own
     /// copy: the upgrade request (and its RequestContext) is gone by the
@@ -79,16 +79,16 @@ class CalculatorAsyncHandler {
     /// task completes. Code before the first co_await runs on the launching
     /// handler thread (brief blocking is fine there); every later resumption
     /// is a transport completion context — never block those.
-    virtual smithy::eventstream::StreamTask Accumulate(AccumulateInput input, AccumulateAsyncServerStream& stream) = 0;
+    virtual opal::eventstream::StreamTask Accumulate(AccumulateInput input, AccumulateAsyncServerStream& stream) = 0;
     /// Adds two numbers.
-    virtual smithy::Outcome<AddOutput> Add(const AddInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<AddOutput> Add(const AddInput& input, const opal::server::RequestContext& context) = 0;
     /// Divides dividend by divisor; dividing by zero is a modeled error.
-    virtual smithy::Outcome<DivideOutput> Divide(const DivideInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<DivideOutput> Divide(const DivideInput& input, const opal::server::RequestContext& context) = 0;
 };
 
 /// jsonRpc2 server for example.calculator#Calculator: routing, deserialization, handler dispatch,
 /// response serialization, and modeled-error mapping. Pass Handler() to any
-/// smithy::http::HttpServerTransport.
+/// opal::http::HttpServerTransport.
 class CalculatorServer {
   public:
     explicit CalculatorServer(std::shared_ptr<CalculatorHandler> handler);
@@ -98,7 +98,7 @@ class CalculatorServer {
     /// constructor chosen decides which two-line mount applies (StreamRouter).
     explicit CalculatorServer(std::shared_ptr<CalculatorAsyncHandler> handler);
 
-    smithy::http::RequestHandler Handler() const;
+    opal::http::RequestHandler Handler() const;
 
     /// The WebSocket router carrying every streaming route (ADR-0016), ready
     /// to mount on the transport in two lines — the serve line keyed to the
@@ -107,11 +107,11 @@ class CalculatorServer {
     ///   options.on_websocket = server.StreamRouter()->Serve();  // blocking handler
     ///   options.on_websocket_session =
     ///       server.StreamRouter()->ServeSession();  // async handler (ADR-0021)
-    std::shared_ptr<smithy::server::WebSocketRouter> StreamRouter() const;
+    std::shared_ptr<opal::server::WebSocketRouter> StreamRouter() const;
 
   private:
-    std::shared_ptr<smithy::server::Router> router_;
-    std::shared_ptr<smithy::server::WebSocketRouter> stream_router_;
+    std::shared_ptr<opal::server::Router> router_;
+    std::shared_ptr<opal::server::WebSocketRouter> stream_router_;
 };
 
 }  // namespace example::calculator

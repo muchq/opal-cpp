@@ -34,43 +34,43 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   if (!doc.ok() || !doc->is_map()) return parsed;
-  const smithy::Document* error = doc->Find("error");
+  const opal::Document* error = doc->Find("error");
   if (error == nullptr || !error->is_map()) return parsed;
-  if (const smithy::Document* code = error->Find("code"); code != nullptr && code->is_int()) {
+  if (const opal::Document* code = error->Find("code"); code != nullptr && code->is_int()) {
     const std::int64_t rpc_code = code->as_int();
     parsed.status = rpc_code >= 100 && rpc_code < 600 ? static_cast<int>(rpc_code) : (rpc_code == -32603 ? 500 : 400);
   }
-  if (const smithy::Document* message = error->Find("message"); message != nullptr && message->is_string()) parsed.message = message->as_string();
-  if (const smithy::Document* data = error->Find("data"); data != nullptr) parsed.doc = *data;
+  if (const opal::Document* message = error->Find("message"); message != nullptr && message->is_string()) parsed.message = message->as_string();
+  if (const opal::Document* data = error->Find("data"); data != nullptr) parsed.doc = *data;
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
-smithy::Error MakeSinkNotFoundError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeSinkNotFoundError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("SinkNotFound", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeSinkNotFound(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -78,11 +78,11 @@ smithy::Error MakeSinkNotFoundError(const smithy::http::HttpResponse& response, 
   return error;
 }
 
-smithy::Error MakeSinkQuotaExceededError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeSinkQuotaExceededError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("SinkQuotaExceeded", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("SinkQuotaExceeded", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeSinkQuotaExceeded(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -90,7 +90,7 @@ smithy::Error MakeSinkQuotaExceededError(const smithy::http::HttpResponse& respo
   return error;
 }
 
-smithy::Error ParsePutSinkRpcError(const smithy::http::HttpResponse& response) {
+opal::Error ParsePutSinkRpcError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "SinkNotFound") return helpers::MakeSinkNotFoundError(response, std::move(parsed));
   if (parsed.code == "SinkQuotaExceeded") return helpers::MakeSinkQuotaExceededError(response, std::move(parsed));
@@ -100,57 +100,57 @@ smithy::Error ParsePutSinkRpcError(const smithy::http::HttpResponse& response) {
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<RoundTripJsonRpcClient> RoundTripJsonRpcClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<RoundTripJsonRpcClient> RoundTripJsonRpcClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("RoundTripJsonRpcClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("RoundTripJsonRpcClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("RoundTripJsonRpcClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("RoundTripJsonRpcClient: config needs an endpoint or an http_client");
   }
   return RoundTripJsonRpcClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-RoundTripJsonRpcClient::RoundTripJsonRpcClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+RoundTripJsonRpcClient::RoundTripJsonRpcClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> RoundTripJsonRpcClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> RoundTripJsonRpcClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   request.headers.Set("user-agent", config_.user_agent);
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<PutSinkRpcOutput> RoundTripJsonRpcClient::PutSinkRpc(const PutSinkRpcInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<PutSinkRpcOutput> RoundTripJsonRpcClient::PutSinkRpc(const PutSinkRpcInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/";
   request.headers.Set("content-type", "application/json");
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
-  envelope.emplace("method", smithy::Document("PutSinkRpc"));
-  envelope.emplace("id", smithy::Document(1));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
+  envelope.emplace("method", opal::Document("PutSinkRpc"));
+  envelope.emplace("id", opal::Document(1));
   envelope.emplace("params", SerializePutSinkRpcInput(input));
-  request.body = smithy::json::Encode(smithy::Document(std::move(envelope)));
+  request.body = opal::json::Encode(opal::Document(std::move(envelope)));
   // @requestCompression(gzip): applied last, appended to Content-Encoding.
   if (request.body.size() >= static_cast<std::size_t>(config_.request_min_compression_size_bytes)) {
-    auto compressed = smithy::GzipCompress(request.body);
+    auto compressed = opal::GzipCompress(request.body);
     if (!compressed) return std::move(compressed).error();
     request.body = *std::move(compressed);
     const auto existing_encoding = request.headers.Get("content-encoding");
@@ -158,13 +158,13 @@ smithy::Outcome<PutSinkRpcOutput> RoundTripJsonRpcClient::PutSinkRpc(const PutSi
   }
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
-  auto envelope_doc = smithy::json::Decode(response->body);
+  auto envelope_doc = opal::json::Decode(response->body);
   // Errors are JSON-RPC envelopes on HTTP 200; non-200 means the request
   // never reached the protocol layer (router 404, proxy) and parses generically.
   const bool is_error = !envelope_doc.ok() || !envelope_doc->is_map() || envelope_doc->Find("error") != nullptr;
   if (response->status != 200 || is_error) return helpers::ParsePutSinkRpcError(*response);
-  const smithy::Document* result = envelope_doc->Find("result");
-  if (result == nullptr) return smithy::Error::Serialization("jsonRpc2: response has no result member");
+  const opal::Document* result = envelope_doc->Find("result");
+  if (result == nullptr) return opal::Error::Serialization("jsonRpc2: response has no result member");
   return DeserializePutSinkRpcOutput(*result);
 }
 

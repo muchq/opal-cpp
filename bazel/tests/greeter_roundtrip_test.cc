@@ -17,18 +17,18 @@ namespace {
 
 class Handler final : public GreeterHandler {
  public:
-  smithy::Outcome<GreetOutput> Greet(const GreetInput& input,
-                                     const smithy::server::RequestContext&) override {
+  opal::Outcome<GreetOutput> Greet(const GreetInput& input,
+                                   const opal::server::RequestContext&) override {
     return GreetOutput{.greeting = "hello, " + input.name};
   }
 };
 
 TEST(GreeterMultiModelTest, OverlayBoundServiceRoundTrips) {
   GreeterServer server(std::make_shared<Handler>());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
 
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = GreeterClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();

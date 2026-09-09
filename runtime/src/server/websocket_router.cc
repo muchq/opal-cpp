@@ -7,7 +7,7 @@
 
 #include "smithy/http/uri.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 namespace {
 
@@ -168,4 +168,4 @@ WebSocketRouter::ServeSession() const {
   };
 }
 
-}  // namespace smithy::server
+}  // namespace opal::server

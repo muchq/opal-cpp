@@ -3,7 +3,7 @@ load("//bazel:copts.bzl", COPTS = "SMITHY_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
-# Read by //tools:release_test, which pins the User-Agent to smithy::Version().
+# Read by //tools:release_test, which pins the User-Agent to opal::Version().
 exports_files([
     "src/core/version.cc",
     "include/smithy/client/config.h",
@@ -752,13 +752,13 @@ genrule(
         "{",
         "  echo '#include <string>'",
         "  echo '#include <vector>'",
-        "  echo 'namespace smithy::json {'",
+        "  echo 'namespace opal::json {'",
         "  echo 'std::vector<std::string> CorpusFiles() {'",
         "  echo '  return {'",
         "  for f in $(SRCS); do echo \"    \\\"$$(basename $$f)\\\",\"; done",
         "  echo '  };'",
         "  echo '}'",
-        "  echo '}  // namespace smithy::json'",
+        "  echo '}  // namespace opal::json'",
         "} > $@",
     ]),
 )

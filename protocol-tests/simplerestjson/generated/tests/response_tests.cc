@@ -8,23 +8,23 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/simplerestjson/client.h"
+#include "opal/protocoltests/simplerestjson/client.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 
 // Generated from smithy.test#httpResponseTests (client cases),
 // including the cases attached to modeled error shapes.
 namespace {
 
 struct Fixture {
-  std::shared_ptr<smithy::testing::CapturingTransport> transport;
+  std::shared_ptr<opal::testing::CapturingTransport> transport;
   PizzaAdminServiceClient client;
 };
 
 Fixture MakeFixture(const std::string& endpoint = "") {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   config.endpoint = endpoint;
@@ -47,7 +47,7 @@ TEST(PizzaAdminServiceResponseTest, AddMenuItemResult) {
   const AddMenuItemOutput expected = [] {
   AddMenuItemOutput v{};
   v.itemId = "1";
-  v.added = smithy::Timestamp::FromEpochMilliseconds(1576540098000LL);
+  v.added = opal::Timestamp::FromEpochMilliseconds(1576540098000LL);
   return v;
 }();
   EXPECT_EQ(*outcome, expected);
@@ -232,13 +232,13 @@ TEST(PizzaAdminServiceResponseTest, OpenUnionsUnknownTaggedUnionCase) {
   const OpenUnionsOutput expected = [] {
   OpenUnionsOutput v{};
   v.data = OpenUnionsPayload::FromTagged(OpenTaggedUnion::FromOther([] {
-  smithy::DocumentMap map;
+  opal::DocumentMap map;
   map.emplace("whatisthis", [] {
-  smithy::DocumentMap map;
-  map.emplace("nested", smithy::Document(std::string("something different")));
-  return smithy::Document(std::move(map));
+  opal::DocumentMap map;
+  map.emplace("nested", opal::Document(std::string("something different")));
+  return opal::Document(std::move(map));
 }());
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }()));
   return v;
 }();
@@ -276,10 +276,10 @@ TEST(PizzaAdminServiceResponseTest, OpenUnionsUnknownDiscriminatedUnionCase) {
   const OpenUnionsOutput expected = [] {
   OpenUnionsOutput v{};
   v.data = OpenUnionsPayload::FromDiscriminated(OpenDiscriminatedUnion::FromOther([] {
-  smithy::DocumentMap map;
-  map.emplace("key", smithy::Document(std::string("mysterious_and_important")));
-  map.emplace("extras", smithy::Document(std::int64_t{42}));
-  return smithy::Document(std::move(map));
+  opal::DocumentMap map;
+  map.emplace("key", opal::Document(std::string("mysterious_and_important")));
+  map.emplace("extras", opal::Document(std::int64_t{42}));
+  return opal::Document(std::move(map));
 }()));
   return v;
 }();
@@ -296,15 +296,15 @@ TEST(PizzaAdminServiceResponseTest, PreserveKeyOrderResponse) {
   PreserveOrderOutput v{};
   v.map = std::map<std::string, std::int32_t>{{"a", 1}, {"d", 2}, {"e", 3}, {"b", 4}};
   v.document = [] {
-  smithy::DocumentMap map;
-  map.emplace("foo", smithy::Document(std::int64_t{1}));
-  map.emplace("a", smithy::Document(std::string("b")));
+  opal::DocumentMap map;
+  map.emplace("foo", opal::Document(std::int64_t{1}));
+  map.emplace("a", opal::Document(std::string("b")));
   map.emplace("c", [] {
-  smithy::DocumentList list;
-  return smithy::Document(std::move(list));
+  opal::DocumentList list;
+  return opal::Document(std::move(list));
 }());
-  map.emplace("bar", smithy::Document(nullptr));
-  return smithy::Document(std::move(map));
+  map.emplace("bar", opal::Document(nullptr));
+  return opal::Document(std::move(map));
 }();
   return v;
 }();
@@ -383,4 +383,4 @@ TEST(PizzaAdminServiceErrorTest, PriceErrorTest) {
   EXPECT_EQ(*detail, expected);
 }
 
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

@@ -42,51 +42,51 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   if (doc.ok()) parsed.doc = *std::move(doc);
   const auto type_header = response.headers.Get("x-error-type");
   if (type_header.has_value()) parsed.code = helpers::SanitizeErrorCode(*type_header);
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type == nullptr) type = parsed.doc.Find("code");
     if (parsed.code == "UnknownError" && type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
-    const smithy::Document* text = parsed.doc.Find("message");
+    const opal::Document* text = parsed.doc.Find("message");
     if (text != nullptr && text->is_string()) parsed.message = text->as_string();
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
 // Strict text parsing for label/query/header bindings ([[maybe_unused]]:
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -94,21 +94,21 @@ smithy::Error GenericError(ParsedError parsed) {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
 
-smithy::Error MakeDescribeSinkErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeDescribeSinkErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("DescribeSinkError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("DescribeSinkError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeDescribeSinkError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -116,11 +116,11 @@ smithy::Error MakeDescribeSinkErrorError(const smithy::http::HttpResponse& respo
   return error;
 }
 
-smithy::Error MakeSinkNotFoundError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeSinkNotFoundError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("SinkNotFound", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeSinkNotFound(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -128,13 +128,13 @@ smithy::Error MakeSinkNotFoundError(const smithy::http::HttpResponse& response, 
   return error;
 }
 
-smithy::Error MakeSinkQuotaExceededError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeSinkQuotaExceededError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("SinkQuotaExceeded", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("SinkQuotaExceeded", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   if (const auto header_value = response.headers.Get("x-retry-after-seconds"); header_value.has_value()) {
-    if (auto parsed_num = helpers::ParseInt64Text(*header_value, -2147483648LL, 2147483647LL)) parsed.doc.as_map().insert_or_assign("retryAfterSeconds", smithy::Document(*parsed_num));
+    if (auto parsed_num = helpers::ParseInt64Text(*header_value, -2147483648LL, 2147483647LL)) parsed.doc.as_map().insert_or_assign("retryAfterSeconds", opal::Document(*parsed_num));
   }
   auto detail = DeserializeSinkQuotaExceeded(parsed.doc);
   if (detail.ok()) {
@@ -143,7 +143,7 @@ smithy::Error MakeSinkQuotaExceededError(const smithy::http::HttpResponse& respo
   return error;
 }
 
-smithy::Error ParseDescribeSinkError(const smithy::http::HttpResponse& response) {
+opal::Error ParseDescribeSinkError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "DescribeSinkError") return helpers::MakeDescribeSinkErrorError(response, std::move(parsed));
   if (parsed.code == "SinkNotFound") return helpers::MakeSinkNotFoundError(response, std::move(parsed));
@@ -152,7 +152,7 @@ smithy::Error ParseDescribeSinkError(const smithy::http::HttpResponse& response)
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParsePutSinkError(const smithy::http::HttpResponse& response) {
+opal::Error ParsePutSinkError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "SinkNotFound") return helpers::MakeSinkNotFoundError(response, std::move(parsed));
   if (parsed.code == "SinkQuotaExceeded") return helpers::MakeSinkQuotaExceededError(response, std::move(parsed));
@@ -161,7 +161,7 @@ smithy::Error ParsePutSinkError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseUploadAttachmentError(const smithy::http::HttpResponse& response) {
+opal::Error ParseUploadAttachmentError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "SinkNotFound") return helpers::MakeSinkNotFoundError(response, std::move(parsed));
   if (parsed.code == "UnknownError" && parsed.status == 404) return helpers::MakeSinkNotFoundError(response, std::move(parsed));
@@ -171,80 +171,80 @@ smithy::Error ParseUploadAttachmentError(const smithy::http::HttpResponse& respo
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<RoundTripRestClient> RoundTripRestClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<RoundTripRestClient> RoundTripRestClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("RoundTripRestClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("RoundTripRestClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("RoundTripRestClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("RoundTripRestClient: config needs an endpoint or an http_client");
   }
   return RoundTripRestClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-RoundTripRestClient::RoundTripRestClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+RoundTripRestClient::RoundTripRestClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> RoundTripRestClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> RoundTripRestClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   request.headers.Set("user-agent", config_.user_agent);
   // @httpApiKeyAuth: attach the configured key where the model binds it.
   if (config_.api_key) {
     request.target += request.target.find('?') == std::string::npos ? "?" : "&";
-    request.target += "api-key=" + smithy::http::EncodeQueryComponent(config_.api_key());
+    request.target += "api-key=" + opal::http::EncodeQueryComponent(config_.api_key());
   }
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<DescribeSinkOutput> RoundTripRestClient::DescribeSink(const DescribeSinkInput& input) const {
+opal::Outcome<DescribeSinkOutput> RoundTripRestClient::DescribeSink(const DescribeSinkInput& input) const {
   std::string target = path_prefix_;
   target += "/sinks";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.sinkId);
-  smithy::http::HttpRequest request;
+  target += opal::http::EncodePathSegment(input.sinkId);
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseDescribeSinkError(*response);
   if (response->body.empty()) return DescribeSinkOutput{};
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeDescribeSinkOutput(*body_doc);
 }
 
-smithy::Outcome<PutSinkOutput> RoundTripRestClient::PutSink(const PutSinkInput& input) const {
+opal::Outcome<PutSinkOutput> RoundTripRestClient::PutSink(const PutSinkInput& input) const {
   std::string target = path_prefix_;
   target += "/sinks";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.sinkId);
-  smithy::http::QueryString query;
+  target += opal::http::EncodePathSegment(input.sinkId);
+  opal::http::QueryString query;
   query.Add("limit", std::to_string(static_cast<std::int64_t>(input.limit)));
   if (input.tag.has_value()) {
     query.Add("tag", (*input.tag));
   }
   target += query.ToString();
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "PUT";
   request.target = std::move(target);
-  request.headers.Set("x-sink-created", input.created.Format(smithy::TimestampFormat::kHttpDate));
+  request.headers.Set("x-sink-created", input.created.Format(opal::TimestampFormat::kHttpDate));
   if (input.priority.has_value()) {
     request.headers.Set("x-sink-priority", std::string((*input.priority).ToString()));
   }
@@ -253,18 +253,18 @@ smithy::Outcome<PutSinkOutput> RoundTripRestClient::PutSink(const PutSinkInput& 
       request.headers.Set("x-meta-" + map_key, map_value);
     }
   }
-  smithy::DocumentMap body_map;
+  opal::DocumentMap body_map;
   if (input.sink.has_value()) {
     body_map.emplace("sink", SerializeKitchenSink((*input.sink)));
   }
   if (input.freeform.has_value()) {
     body_map.emplace("freeform", (*input.freeform));
   }
-  request.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  request.body = opal::json::Encode(opal::Document(std::move(body_map)));
   request.headers.Set("content-type", "application/json");
   // @requestCompression(gzip): applied last, appended to Content-Encoding.
   if (request.body.size() >= static_cast<std::size_t>(config_.request_min_compression_size_bytes)) {
-    auto compressed = smithy::GzipCompress(request.body);
+    auto compressed = opal::GzipCompress(request.body);
     if (!compressed) return std::move(compressed).error();
     request.body = *std::move(compressed);
     const auto existing_encoding = request.headers.Get("content-encoding");
@@ -274,7 +274,7 @@ smithy::Outcome<PutSinkOutput> RoundTripRestClient::PutSink(const PutSinkInput& 
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParsePutSinkError(*response);
   PutSinkOutput out{};
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   auto parsed = DeserializePutSinkOutput(*body_doc);
   if (!parsed) return std::move(parsed).error();
@@ -285,20 +285,20 @@ smithy::Outcome<PutSinkOutput> RoundTripRestClient::PutSink(const PutSinkInput& 
     out.revision = static_cast<std::int32_t>(*parsed_num);
   }
   for (const auto& [header_name, header_value] : response->headers.entries()) {
-    if (!smithy::http::HeaderNameStartsWith(header_name, "x-echo-")) continue;
+    if (!opal::http::HeaderNameStartsWith(header_name, "x-echo-")) continue;
     if (!out.echoedMetadata.has_value()) out.echoedMetadata.emplace();
     (*out.echoedMetadata).insert_or_assign(header_name.substr(7), header_value);
   }
   return out;
 }
 
-smithy::Outcome<UploadAttachmentOutput> RoundTripRestClient::UploadAttachment(const UploadAttachmentInput& input) const {
+opal::Outcome<UploadAttachmentOutput> RoundTripRestClient::UploadAttachment(const UploadAttachmentInput& input) const {
   std::string target = path_prefix_;
   target += "/sinks";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.sinkId);
+  target += opal::http::EncodePathSegment(input.sinkId);
   target += "/attachment";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = std::move(target);
   if (input.name.has_value()) {
@@ -314,9 +314,9 @@ smithy::Outcome<UploadAttachmentOutput> RoundTripRestClient::UploadAttachment(co
   if (response->status != 200) return helpers::ParseUploadAttachmentError(*response);
   UploadAttachmentOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    const smithy::Document* payload_ptr = &*payload_doc;
+    const opal::Document* payload_ptr = &*payload_doc;
     if (!payload_ptr->is_map() || !payload_ptr->as_map().empty()) {
       types::Receipt parsed_payload{};
       {

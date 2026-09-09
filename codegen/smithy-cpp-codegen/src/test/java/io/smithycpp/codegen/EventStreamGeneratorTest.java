@@ -124,23 +124,23 @@ class EventStreamGeneratorTest {
     assertTrue(
         client.contains(
             "using ConverseClientStream ="
-                + " smithy::eventstream::EventStream<ClientEvents, ServerEvents>;"),
+                + " opal::eventstream::EventStream<ClientEvents, ServerEvents>;"),
         client);
     assertTrue(
         client.contains(
-            "smithy::Outcome<ConverseClientStream> Converse(const ConverseInput& input) const;"),
+            "opal::Outcome<ConverseClientStream> Converse(const ConverseInput& input) const;"),
         client);
     // Detection is directional: no input stream parameterizes Tx with the
     // runtime's NoEvents (and the empty input still defaults).
     assertTrue(
         client.contains(
             "using WatchClientStream ="
-                + " smithy::eventstream::EventStream<smithy::eventstream::NoEvents,"
+                + " opal::eventstream::EventStream<opal::eventstream::NoEvents,"
                 + " ServerEvents>;"),
         client);
     assertTrue(
         client.contains(
-            "smithy::Outcome<WatchClientStream> Watch(const WatchInput& input = {}) const;"),
+            "opal::Outcome<WatchClientStream> Watch(const WatchInput& input = {}) const;"),
         client);
     // The NoEvents direction's doc-comment tells the truth: Send does not
     // compile there, only Receive is meaningful.
@@ -152,7 +152,7 @@ class EventStreamGeneratorTest {
     String client = rest().expectFileString("/src/client.cc");
     // The upgrade target resolves labels and query exactly like a unary
     // request; header bindings ride the upgrade GET.
-    assertTrue(client.contains("target += smithy::http::EncodePathSegment(input.room);"), client);
+    assertTrue(client.contains("target += opal::http::EncodePathSegment(input.room);"), client);
     assertTrue(client.contains("query.Add(\"since\","), client);
     assertTrue(client.contains("request.headers.Set(\"x-client\", (*input.client));"), client);
     // config.websocket_dialer wins; the Beast dialer is the fallback.
@@ -160,17 +160,17 @@ class EventStreamGeneratorTest {
         client.contains("if (config.websocket_dialer) return config.websocket_dialer(request);"),
         client);
     assertTrue(
-        client.contains("return smithy::http::BeastWebSocketClient::Dialer()(request);"), client);
+        client.contains("return opal::http::BeastWebSocketClient::Dialer()(request);"), client);
     // Encode: member-name dispatch -> serde -> protocol bytes -> envelope.
     assertTrue(
         client.contains(
-            "return smithy::eventstream::MakeEventMessage(\"message\", \"application/json\","
-                + " smithy::Blob::FromString(smithy::json::Encode(SerializeChatMessage("
+            "return opal::eventstream::MakeEventMessage(\"message\", \"application/json\","
+                + " opal::Blob::FromString(opal::json::Encode(SerializeChatMessage("
                 + "event.as_message()))));"),
         client);
     // Decode: envelope parse, exception dispatch through the Make<Error>Error
     // machinery (generic fallback), then member-name dispatch into the union.
-    assertTrue(client.contains("smithy::eventstream::ParseEnvelope(message);"), client);
+    assertTrue(client.contains("opal::eventstream::ParseEnvelope(message);"), client);
     assertTrue(
         client.contains(
             "if (parsed.code == \"RoomGone\") return helpers::MakeRoomGoneError(response,"
@@ -199,20 +199,19 @@ class EventStreamGeneratorTest {
     assertTrue(
         header.contains(
             "using ConverseServerStream ="
-                + " smithy::eventstream::EventStream<ServerEvents, ClientEvents>;"),
+                + " opal::eventstream::EventStream<ServerEvents, ClientEvents>;"),
         header);
     assertTrue(
         header.contains(
-            "virtual smithy::Outcome<smithy::Unit> Converse(const ConverseInput& input,"
+            "virtual opal::Outcome<opal::Unit> Converse(const ConverseInput& input,"
                 + " ConverseServerStream& stream,"
-                + " const smithy::server::RequestContext& context) = 0;"),
+                + " const opal::server::RequestContext& context) = 0;"),
         header);
     assertTrue(
-        header.contains("std::shared_ptr<smithy::server::WebSocketRouter> StreamRouter() const;"),
+        header.contains("std::shared_ptr<opal::server::WebSocketRouter> StreamRouter() const;"),
         header);
     assertTrue(
-        header.contains("std::shared_ptr<smithy::server::WebSocketRouter> stream_router_;"),
-        header);
+        header.contains("std::shared_ptr<opal::server::WebSocketRouter> stream_router_;"), header);
 
     String server = manifest.expectFileString("/src/server.cc");
     // Streaming routes register as GET (upgrades are GETs on the wire,
@@ -228,7 +227,7 @@ class EventStreamGeneratorTest {
             "(void)socket.Send(helpers::BuildConverseExceptionMessage(outcome.error()));"),
         server);
     assertTrue(server.contains("stream.Close();"), server);
-    assertTrue(server.contains("return smithy::eventstream::MakeExceptionMessage(type,"), server);
+    assertTrue(server.contains("return opal::eventstream::MakeExceptionMessage(type,"), server);
     // Streaming operations answer over the session, never an HTTP response.
     assertFalse(server.contains("BuildConverseResponse"), server);
     assertFalse(server.contains("BuildWatchResponse"), server);
@@ -257,11 +256,11 @@ class EventStreamGeneratorTest {
     assertTrue(
         header.contains(
             "using ConverseAsyncServerStream ="
-                + " smithy::eventstream::AsyncEventStream<ServerEvents, ClientEvents>;"),
+                + " opal::eventstream::AsyncEventStream<ServerEvents, ClientEvents>;"),
         header);
     assertTrue(
         header.contains(
-            "virtual smithy::eventstream::StreamTask Converse(ConverseInput input,"
+            "virtual opal::eventstream::StreamTask Converse(ConverseInput input,"
                 + " ConverseAsyncServerStream& stream) = 0;"),
         header);
     // Unary operations keep the blocking shape on the async handler —
@@ -299,9 +298,9 @@ class EventStreamGeneratorTest {
         server);
     assertTrue(
         server.contains(
-            "smithy::eventstream::Detached ServeConverseAsync(std::shared_ptr<types::SvcAsyncHandler>"
+            "opal::eventstream::Detached ServeConverseAsync(std::shared_ptr<types::SvcAsyncHandler>"
                 + " handler, types::ConverseInput input,"
-                + " std::shared_ptr<smithy::http::WebSocket> socket) {"),
+                + " std::shared_ptr<opal::http::WebSocket> socket) {"),
         server);
     assertTrue(
         server.contains("auto outcome = co_await handler->Converse(std::move(input), stream);"),
@@ -312,7 +311,7 @@ class EventStreamGeneratorTest {
     // cancel the in-flight send — and the close follows it.
     assertTrue(
         server.contains(
-            "(void)co_await smithy::eventstream::SendMessage(socket,"
+            "(void)co_await opal::eventstream::SendMessage(socket,"
                 + " helpers::BuildConverseExceptionMessage(outcome.error()));"),
         server);
     assertFalse(server.contains("socket->SendAsync(BuildConverseExceptionMessage"), server);
@@ -335,13 +334,13 @@ class EventStreamGeneratorTest {
     assertTrue(
         server.contains(
             "(void)socket.Send(helpers::BuildConverseExceptionMessage("
-                + "smithy::Error::Validation(validation_failures.front().message)));"),
+                + "opal::Error::Validation(validation_failures.front().message)));"),
         server);
     // The session (async) route refuses identically on its owned socket.
     assertTrue(
         server.contains(
             "(void)socket->Send(helpers::BuildConverseExceptionMessage("
-                + "smithy::Error::Validation(validation_failures.front().message)));"),
+                + "opal::Error::Validation(validation_failures.front().message)));"),
         server);
     assertFalse(server.contains("ValidateWatchInput"), server);
   }
@@ -355,10 +354,10 @@ class EventStreamGeneratorTest {
         client);
     assertTrue(
         client.contains(
-            "return smithy::eventstream::MakeEventMessage(\"message\", \"application/cbor\","
-                + " smithy::cbor::Encode(SerializeChatMessage(event.as_message())));"),
+            "return opal::eventstream::MakeEventMessage(\"message\", \"application/cbor\","
+                + " opal::cbor::Encode(SerializeChatMessage(event.as_message())));"),
         client);
-    assertTrue(client.contains("smithy::cbor::Decode(envelope->payload)"), client);
+    assertTrue(client.contains("opal::cbor::Decode(envelope->payload)"), client);
     String server = manifest.expectFileString("/src/server.cc");
     assertTrue(
         server.contains("(void)stream_router_->Add(\"GET\", \"/service/Svc/operation/Chat\","),
@@ -430,25 +429,21 @@ class EventStreamGeneratorTest {
     // The opening envelope carries the initial-request members as params,
     // with the stream union erased — it is the session, not a member.
     assertTrue(
-        client.contains("smithy::DocumentMap params = SerializeChatInput(input).as_map();"),
-        client);
+        client.contains("opal::DocumentMap params = SerializeChatInput(input).as_map();"), client);
     assertTrue(client.contains("params.erase(\"events\");"), client);
-    assertTrue(
-        client.contains("envelope.emplace(\"method\", smithy::Document(\"Chat\"));"), client);
-    assertTrue(client.contains("envelope.emplace(\"id\", smithy::Document(1));"), client);
+    assertTrue(client.contains("envelope.emplace(\"method\", opal::Document(\"Chat\"));"), client);
+    assertTrue(client.contains("envelope.emplace(\"id\", opal::Document(1));"), client);
     // The socket is wrapped in the JSON-RPC translation before the typed
     // stream sees it; the codecs are the shared JSON pair.
-    assertTrue(
-        client.contains("std::make_shared<smithy::eventstream::JsonRpcStreamSocket>"), client);
+    assertTrue(client.contains("std::make_shared<opal::eventstream::JsonRpcStreamSocket>"), client);
     assertTrue(
         client.contains(
-            "return smithy::eventstream::MakeEventMessage(\"message\", \"application/json\","
-                + " smithy::Blob::FromString(smithy::json::Encode(SerializeChatMessage("
+            "return opal::eventstream::MakeEventMessage(\"message\", \"application/json\","
+                + " opal::Blob::FromString(opal::json::Encode(SerializeChatMessage("
                 + "event.as_message()))));"),
         client);
     // A no-input operation still opens with (empty) params.
-    assertTrue(
-        client.contains("envelope.emplace(\"method\", smithy::Document(\"Watch\"));"), client);
+    assertTrue(client.contains("envelope.emplace(\"method\", opal::Document(\"Watch\"));"), client);
   }
 
   @Test
@@ -466,7 +461,7 @@ class EventStreamGeneratorTest {
     // frame — never parking a handler thread — and the blocking driver
     // blocks in Receive, each dispatching on the envelope's method.
     assertTrue(
-        server.contains("auto first = co_await smithy::eventstream::ReceiveMessage(socket);"),
+        server.contains("auto first = co_await opal::eventstream::ReceiveMessage(socket);"),
         server);
     assertTrue(
         server.contains("const JsonRpcOpening opening = helpers::ParseJsonRpcOpening(**first);"),
@@ -488,8 +483,8 @@ class EventStreamGeneratorTest {
     // identity otherwise — never an exception message.
     assertTrue(
         server.contains(
-            "smithy::eventstream::JsonRpcStreamSocket wrapped(socket, opening.id,"
-                + " smithy::eventstream::JsonRpcStreamSocket::Role::kServer);"),
+            "opal::eventstream::JsonRpcStreamSocket wrapped(socket, opening.id,"
+                + " opal::eventstream::JsonRpcStreamSocket::Role::kServer);"),
         server);
     assertTrue(server.contains("BuildJsonRpcTerminalResult(opening.id)"), server);
     assertTrue(
@@ -498,9 +493,9 @@ class EventStreamGeneratorTest {
         server);
     assertTrue(
         server.contains(
-            "smithy::eventstream::Detached ServeChatAsync(std::shared_ptr<types::SvcAsyncHandler>"
-                + " handler, types::ChatInput input, std::shared_ptr<smithy::http::WebSocket> socket,"
-                + " smithy::Document id) {"),
+            "opal::eventstream::Detached ServeChatAsync(std::shared_ptr<types::SvcAsyncHandler>"
+                + " handler, types::ChatInput input, std::shared_ptr<opal::http::WebSocket> socket,"
+                + " opal::Document id) {"),
         server);
     assertFalse(server.contains("BuildChatExceptionMessage"), server);
     assertFalse(server.contains("MakeExceptionMessage"), server);

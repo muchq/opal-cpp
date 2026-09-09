@@ -9,7 +9,7 @@
 #include "smithy/core/exception_guard.h"
 #include "smithy/http/trace_context.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // The mint half of the guard's contract (server_dispatch.h, ADR-0011).
@@ -50,7 +50,7 @@ HttpResponse InternalError(const HttpRequest& request, const std::string& what) 
 }
 
 // A 5xx that leaves the handler chain without a correlation id gets the
-// request's trace id (issue #46) — a returned smithy::Error mapped to a 500
+// request's trace id (issue #46) — a returned opal::Error mapped to a 500
 // by a generated server then correlates exactly like a thrown one, across
 // every protocol, with no generated code involved. A handler-set id wins.
 void CorrelateServerError(const HttpRequest& request, HttpResponse& response) {
@@ -82,7 +82,7 @@ HttpResponse InvokeHandlerGuarded(const RequestHandler& handler, HttpRequest req
   // out of the transport executor and terminates the process, dropping every
   // in-flight request (ADR-0003). Under -fno-exceptions the handler cannot
   // throw, so this compiles to a direct call.
-  return smithy::internal::Contain(
+  return opal::internal::Contain(
       [&] {
         HttpResponse response = handler(request);
         CorrelateServerError(request, response);
@@ -93,4 +93,4 @@ HttpResponse InvokeHandlerGuarded(const RequestHandler& handler, HttpRequest req
       });
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

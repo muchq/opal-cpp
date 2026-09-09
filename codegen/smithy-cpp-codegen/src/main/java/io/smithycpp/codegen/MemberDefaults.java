@@ -92,11 +92,11 @@ final class MemberDefaults {
       case FLOAT -> "static_cast<float>(" + value.expectNumberNode().getValue().doubleValue() + ")";
       case DOUBLE -> String.valueOf(value.expectNumberNode().getValue().doubleValue());
       case TIMESTAMP ->
-          "smithy::Timestamp::FromEpochMilliseconds("
+          "opal::Timestamp::FromEpochMilliseconds("
               + Math.round(value.expectNumberNode().getValue().doubleValue() * 1000.0)
               + "LL)";
       case BLOB ->
-          "smithy::Blob::FromString("
+          "opal::Blob::FromString("
               + CppLiterals.stringLiteral(
                   new String(
                       Base64.getDecoder().decode(value.expectStringNode().getValue()),

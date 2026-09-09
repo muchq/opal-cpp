@@ -14,7 +14,7 @@
 // to include this header — the public entry points already pass the one
 // correct bound.
 
-namespace smithy::internal {
+namespace opal::internal {
 
 // Preconditions (ADR-0009, enforced fatally): 0 < max_feed <= the largest
 // value zlib's 32-bit avail_in can carry. Zero cannot make progress and a
@@ -24,6 +24,6 @@ Outcome<std::string> GzipCompressChunked(std::string_view data, std::size_t max_
 Outcome<std::string> GzipDecompressChunked(std::string_view data, std::size_t max_output,
                                            std::size_t max_feed);
 
-}  // namespace smithy::internal
+}  // namespace opal::internal
 
 #endif  // SMITHY_COMPRESSION_GZIP_TEST_PEER_H_

@@ -146,7 +146,7 @@ struct Rng {
 
 [[maybe_unused]] GetCurrentTimeOutput RandomGetCurrentTimeOutput([[maybe_unused]] Rng& rng) {
   GetCurrentTimeOutput v{};
-  v.time = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  v.time = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
   return v;
 }
 
@@ -165,54 +165,54 @@ struct Rng {
 
 class ScriptedHandler final : public WeatherHandler {
   public:
-    smithy::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const opal::server::RequestContext&) override {
       lastDeleteCity = input;
       if (nextDeleteCityError.has_value()) return *nextDeleteCityError;
       return nextDeleteCityOutput;
     }
     std::optional<DeleteCityInput> lastDeleteCity;
     DeleteCityOutput nextDeleteCityOutput{};
-    std::optional<smithy::Error> nextDeleteCityError;
-    smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextDeleteCityError;
+    opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input, const opal::server::RequestContext&) override {
       lastGetCity = input;
       if (nextGetCityError.has_value()) return *nextGetCityError;
       return nextGetCityOutput;
     }
     std::optional<GetCityInput> lastGetCity;
     GetCityOutput nextGetCityOutput{};
-    std::optional<smithy::Error> nextGetCityError;
-    smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextGetCityError;
+    opal::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input, const opal::server::RequestContext&) override {
       lastGetCurrentTime = input;
       if (nextGetCurrentTimeError.has_value()) return *nextGetCurrentTimeError;
       return nextGetCurrentTimeOutput;
     }
     std::optional<GetCurrentTimeInput> lastGetCurrentTime;
     GetCurrentTimeOutput nextGetCurrentTimeOutput{};
-    std::optional<smithy::Error> nextGetCurrentTimeError;
-    smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextGetCurrentTimeError;
+    opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input, const opal::server::RequestContext&) override {
       lastGetForecast = input;
       if (nextGetForecastError.has_value()) return *nextGetForecastError;
       return nextGetForecastOutput;
     }
     std::optional<GetForecastInput> lastGetForecast;
     GetForecastOutput nextGetForecastOutput{};
-    std::optional<smithy::Error> nextGetForecastError;
-    smithy::Outcome<GetReportOutput> GetReport(const GetReportInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextGetForecastError;
+    opal::Outcome<GetReportOutput> GetReport(const GetReportInput& input, const opal::server::RequestContext&) override {
       lastGetReport = input;
       if (nextGetReportError.has_value()) return *nextGetReportError;
       return nextGetReportOutput;
     }
     std::optional<GetReportInput> lastGetReport;
     GetReportOutput nextGetReportOutput{};
-    std::optional<smithy::Error> nextGetReportError;
-    smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextGetReportError;
+    opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input, const opal::server::RequestContext&) override {
       lastListCities = input;
       if (nextListCitiesError.has_value()) return *nextListCitiesError;
       return nextListCitiesOutput;
     }
     std::optional<ListCitiesInput> lastListCities;
     ListCitiesOutput nextListCitiesOutput{};
-    std::optional<smithy::Error> nextListCitiesError;
+    std::optional<opal::Error> nextListCitiesError;
 };
 
 enum class TransportKind { kLoopback, kSocket };
@@ -222,14 +222,14 @@ class WeatherIntegrationTest : public ::testing::TestWithParam<TransportKind> {
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<WeatherServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -242,7 +242,7 @@ class WeatherIntegrationTest : public ::testing::TestWithParam<TransportKind> {
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<WeatherServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<WeatherClient> client_;
 };
 
@@ -405,13 +405,13 @@ TEST_P(WeatherIntegrationTest, ListCitiesMaximalRoundTrips) {
 TEST_P(WeatherIntegrationTest, DeleteCityNoSuchResourceMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const NoSuchResource detail = RandomNoSuchResource(rng);
-  smithy::Error error = smithy::Error::Modeled("NoSuchResource", "integration");
+  opal::Error error = opal::Error::Modeled("NoSuchResource", "integration");
   error.set_detail(detail);
   handler_->nextDeleteCityError = error;
   const DeleteCityInput input = RandomDeleteCityInput(rng);
   const auto outcome = client_->DeleteCity(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "NoSuchResource");
   ASSERT_NE(outcome.error().detail<NoSuchResource>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<NoSuchResource>(), detail);
@@ -420,13 +420,13 @@ TEST_P(WeatherIntegrationTest, DeleteCityNoSuchResourceMapsAcrossTheWire) {
 TEST_P(WeatherIntegrationTest, GetCityNoSuchResourceMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const NoSuchResource detail = RandomNoSuchResource(rng);
-  smithy::Error error = smithy::Error::Modeled("NoSuchResource", "integration");
+  opal::Error error = opal::Error::Modeled("NoSuchResource", "integration");
   error.set_detail(detail);
   handler_->nextGetCityError = error;
   const GetCityInput input = RandomGetCityInput(rng);
   const auto outcome = client_->GetCity(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "NoSuchResource");
   ASSERT_NE(outcome.error().detail<NoSuchResource>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<NoSuchResource>(), detail);
@@ -435,13 +435,13 @@ TEST_P(WeatherIntegrationTest, GetCityNoSuchResourceMapsAcrossTheWire) {
 TEST_P(WeatherIntegrationTest, GetForecastNoSuchResourceMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const NoSuchResource detail = RandomNoSuchResource(rng);
-  smithy::Error error = smithy::Error::Modeled("NoSuchResource", "integration");
+  opal::Error error = opal::Error::Modeled("NoSuchResource", "integration");
   error.set_detail(detail);
   handler_->nextGetForecastError = error;
   const GetForecastInput input = RandomGetForecastInput(rng);
   const auto outcome = client_->GetForecast(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "NoSuchResource");
   ASSERT_NE(outcome.error().detail<NoSuchResource>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<NoSuchResource>(), detail);
@@ -450,17 +450,17 @@ TEST_P(WeatherIntegrationTest, GetForecastNoSuchResourceMapsAcrossTheWire) {
 TEST(WeatherIntegrationUnknownMembers, GetCityToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   WeatherServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *WeatherClient::Create(std::move(config));
@@ -476,17 +476,17 @@ TEST(WeatherIntegrationUnknownMembers, GetCityToleratesUnknownResponseMembers) {
 TEST(WeatherIntegrationUnknownMembers, GetCurrentTimeToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   WeatherServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *WeatherClient::Create(std::move(config));
@@ -502,17 +502,17 @@ TEST(WeatherIntegrationUnknownMembers, GetCurrentTimeToleratesUnknownResponseMem
 TEST(WeatherIntegrationUnknownMembers, GetForecastToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   WeatherServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *WeatherClient::Create(std::move(config));
@@ -528,17 +528,17 @@ TEST(WeatherIntegrationUnknownMembers, GetForecastToleratesUnknownResponseMember
 TEST(WeatherIntegrationUnknownMembers, GetReportToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   WeatherServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *WeatherClient::Create(std::move(config));
@@ -554,17 +554,17 @@ TEST(WeatherIntegrationUnknownMembers, GetReportToleratesUnknownResponseMembers)
 TEST(WeatherIntegrationUnknownMembers, ListCitiesToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   WeatherServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *WeatherClient::Create(std::move(config));

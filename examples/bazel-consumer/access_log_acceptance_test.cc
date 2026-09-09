@@ -59,15 +59,15 @@ struct LogLine {
   std::size_t response_bytes = 0;
   bool handler_threw = false;
   std::string client;
-  smithy::http::DerivedClient::Source client_source = smithy::http::DerivedClient::Source::kUnknown;
+  opal::http::DerivedClient::Source client_source = opal::http::DerivedClient::Source::kUnknown;
 };
 
 class AccessLog {
  public:
-  void Write(const smithy::server::RequestObservation& o) {
+  void Write(const opal::server::RequestObservation& o) {
     const std::lock_guard<std::mutex> lock(mutex_);
     lines_.push_back(
-        LogLine{.json = smithy::server::FormatAccessLog(o, {{"service_name", "todo-service"}}),
+        LogLine{.json = opal::server::FormatAccessLog(o, {{"service_name", "todo-service"}}),
                 .method = o.method,
                 .operation = o.operation,
                 .status = o.status,
@@ -110,16 +110,16 @@ class RecordingLimiter {
 
 class ThrowingOnDemandHandler final : public TodoHandler {
  public:
-  smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     if (input.title == "boom") {
       throw std::runtime_error("handler exploded");
     }
     return AddTaskOutput{.taskId = "task-1", .title = input.title};
   }
 
-  smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput&,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput&,
+                                       const opal::server::RequestContext&) override {
     return GetTaskOutput{.taskId = "task-1", .title = "stored"};
   }
 };
@@ -135,28 +135,28 @@ class AccessLogAcceptanceTest : public ::testing::Test {
     // The loopback peer is 127.0.0.1, so trusting it makes this connection
     // look like one arriving through a proxy — the topology the derivation
     // exists for.
-    auto trusted = smithy::http::TrustedProxies::Parse({"127.0.0.0/8"});
+    auto trusted = opal::http::TrustedProxies::Parse({"127.0.0.0/8"});
     ASSERT_TRUE(trusted.ok()) << trusted.error().message();
-    const smithy::http::TrustedProxies observe_trust =
-        observe_trusts_the_proxy ? *trusted : smithy::http::TrustedProxies::None();
+    const opal::http::TrustedProxies observe_trust =
+        observe_trusts_the_proxy ? *trusted : opal::http::TrustedProxies::None();
 
     log_ = std::make_shared<AccessLog>();
     limiter_ = std::make_shared<RecordingLimiter>(kBudget);
     server_ = std::make_unique<TodoServer>(std::make_shared<ThrowingOnDemandHandler>());
-    transport_ = std::make_unique<smithy::http::BeastServerTransport>(
-        smithy::http::BeastServerTransport::Options{.threads = 1, .handler_threads = 2});
+    transport_ = std::make_unique<opal::http::BeastServerTransport>(
+        opal::http::BeastServerTransport::Options{.threads = 1, .handler_threads = 2});
 
     auto log = log_;
     auto limiter = limiter_;
     ASSERT_TRUE(
         transport_
-            ->Start(smithy::server::Chain(
+            ->Start(opal::server::Chain(
                 {// Outermost, so a rejected request is still logged with the
                  // client it was rejected for.
-                 smithy::server::Observe(
-                     [log](const smithy::server::RequestObservation& o) { log->Write(o); }, nullptr,
+                 opal::server::Observe(
+                     [log](const opal::server::RequestObservation& o) { log->Write(o); }, nullptr,
                      nullptr, observe_trust),
-                 smithy::server::PerClientRateLimit(
+                 opal::server::PerClientRateLimit(
                      [limiter](const std::string& client) { return limiter->Allow(client); },
                      *trusted, std::chrono::seconds(1))},
                 server_->Handler()))
@@ -167,9 +167,9 @@ class AccessLogAcceptanceTest : public ::testing::Test {
 
   // A request carrying an x-forwarded-for, the way one arrives through a
   // proxy. The client is the header's entry; the peer is the proxy.
-  smithy::Outcome<smithy::http::HttpResponse> SendForwarded(const std::string& body) {
-    smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
-    smithy::http::HttpRequest request;
+  opal::Outcome<opal::http::HttpResponse> SendForwarded(const std::string& body) {
+    opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
+    opal::http::HttpRequest request;
     request.method = "POST";
     request.target = "/tasks";
     request.headers.Set("content-type", "application/json");
@@ -184,7 +184,7 @@ class AccessLogAcceptanceTest : public ::testing::Test {
   std::shared_ptr<AccessLog> log_;
   std::shared_ptr<RecordingLimiter> limiter_;
   std::unique_ptr<TodoServer> server_;
-  std::unique_ptr<smithy::http::BeastServerTransport> transport_;
+  std::unique_ptr<opal::http::BeastServerTransport> transport_;
 };
 
 TEST_F(AccessLogAcceptanceTest, TheLoggedClientIsTheBucketTheLimiterKeyedOn) {
@@ -207,7 +207,7 @@ TEST_F(AccessLogAcceptanceTest, TheLoggedClientIsTheBucketTheLimiterKeyedOn) {
   // Not the peer, which is what the raw header or an unconfigured Observe
   // would have reported.
   EXPECT_NE(lines[0].client, "127.0.0.1");
-  EXPECT_EQ(lines[0].client_source, smithy::http::DerivedClient::Source::kForwarded);
+  EXPECT_EQ(lines[0].client_source, opal::http::DerivedClient::Source::kForwarded);
 }
 
 TEST_F(AccessLogAcceptanceTest, ARejectionIsLoggedWithTheClientItWasRejectedFor) {
@@ -334,7 +334,7 @@ TEST_F(MisconfiguredAccessLogTest, ObserveWithoutTheTrustBoundaryLogsTheProxy) {
   // TrustedProxies::None() is the deliberate direct-connect statement, so the
   // peer IS the client and the header is ignored wholly — correct behavior
   // for that configuration, and the wrong configuration for this deployment.
-  EXPECT_EQ(lines[0].client_source, smithy::http::DerivedClient::Source::kUntrustedHeaderIgnored);
+  EXPECT_EQ(lines[0].client_source, opal::http::DerivedClient::Source::kUntrustedHeaderIgnored);
 }
 
 }  // namespace

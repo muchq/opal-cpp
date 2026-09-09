@@ -187,7 +187,7 @@ class HttpRedirectCodeGenTest {
     // runtime here, so the guard is emitted around the body write rather than
     // decided at generation time.
     assertTrue(build.contains("if (helpers::StatusAllowsContent(response.status)) {"), build);
-    assertTrue(build.contains("response.body = smithy::json::Encode("), build);
+    assertTrue(build.contains("response.body = opal::json::Encode("), build);
   }
 
   @Test
@@ -200,7 +200,7 @@ class HttpRedirectCodeGenTest {
     // the header binding still lands.
     assertTrue(build.contains("response.status = 204;"), build);
     assertTrue(build.contains("response.headers.Set(\"x-erased\""), build);
-    assertFalse(build.contains("response.body = smithy::json::Encode("), build);
+    assertFalse(build.contains("response.body = opal::json::Encode("), build);
     assertFalse(
         build.contains("response.headers.Set(\"content-type\", \"application/json\");"), build);
   }
@@ -229,7 +229,7 @@ class HttpRedirectCodeGenTest {
     String build =
         function(generate(modeled).expectFileString("/src/server.cc"), "BuildEraseResponse");
     assertTrue(build.contains("response.status = 205;"), build);
-    assertFalse(build.contains("response.body = smithy::json::Encode("), build);
+    assertFalse(build.contains("response.body = opal::json::Encode("), build);
 
     // And the runtime predicate the @httpResponseCode path consults.
     String server = generate(DYNAMIC_MODEL).expectFileString("/src/server.cc");
@@ -249,7 +249,7 @@ class HttpRedirectCodeGenTest {
         function(generate(model).expectFileString("/src/server.cc"), "BuildEraseResponse");
 
     assertTrue(build.contains("response.status = 200;"), build);
-    assertTrue(build.contains("response.body = smithy::json::Encode("), build);
+    assertTrue(build.contains("response.body = opal::json::Encode("), build);
     assertTrue(
         build.contains("response.headers.Set(\"content-type\", \"application/json\");"), build);
   }

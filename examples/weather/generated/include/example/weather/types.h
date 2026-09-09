@@ -28,7 +28,7 @@ struct DeleteCityInput {
     out += sep;
     sep = ", ";
     out += ".cityId = ";
-    smithy::DebugAppend(out, this->cityId);
+    opal::DebugAppend(out, this->cityId);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -68,7 +68,7 @@ struct NoSuchResource {
     out += sep;
     sep = ", ";
     out += ".resourceType = ";
-    smithy::DebugAppend(out, this->resourceType);
+    opal::DebugAppend(out, this->resourceType);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -91,7 +91,7 @@ struct GetForecastInput {
     out += sep;
     sep = ", ";
     out += ".cityId = ";
-    smithy::DebugAppend(out, this->cityId);
+    opal::DebugAppend(out, this->cityId);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -115,7 +115,7 @@ struct GetForecastOutput {
       out += sep;
       sep = ", ";
       out += ".chanceOfRain = ";
-      smithy::DebugAppend(out, *this->chanceOfRain);
+      opal::DebugAppend(out, *this->chanceOfRain);
     }
     out += '}';
   }
@@ -139,7 +139,7 @@ struct GetCityInput {
     out += sep;
     sep = ", ";
     out += ".cityId = ";
-    smithy::DebugAppend(out, this->cityId);
+    opal::DebugAppend(out, this->cityId);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -163,11 +163,11 @@ struct CityCoordinates {
     out += sep;
     sep = ", ";
     out += ".latitude = ";
-    smithy::DebugAppend(out, this->latitude);
+    opal::DebugAppend(out, this->latitude);
     out += sep;
     sep = ", ";
     out += ".longitude = ";
-    smithy::DebugAppend(out, this->longitude);
+    opal::DebugAppend(out, this->longitude);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -191,11 +191,11 @@ struct GetCityOutput {
     out += sep;
     sep = ", ";
     out += ".name = ";
-    smithy::DebugAppend(out, this->name);
+    opal::DebugAppend(out, this->name);
     out += sep;
     sep = ", ";
     out += ".coordinates = ";
-    smithy::DebugAppend(out, this->coordinates);
+    opal::DebugAppend(out, this->coordinates);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -220,13 +220,13 @@ struct ListCitiesInput {
       out += sep;
       sep = ", ";
       out += ".nextToken = ";
-      smithy::DebugAppend(out, *this->nextToken);
+      opal::DebugAppend(out, *this->nextToken);
     }
     if (this->pageSize.has_value()) {
       out += sep;
       sep = ", ";
       out += ".pageSize = ";
-      smithy::DebugAppend(out, *this->pageSize);
+      opal::DebugAppend(out, *this->pageSize);
     }
     out += '}';
   }
@@ -251,11 +251,11 @@ struct CitySummary {
     out += sep;
     sep = ", ";
     out += ".cityId = ";
-    smithy::DebugAppend(out, this->cityId);
+    opal::DebugAppend(out, this->cityId);
     out += sep;
     sep = ", ";
     out += ".name = ";
-    smithy::DebugAppend(out, this->name);
+    opal::DebugAppend(out, this->name);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -280,12 +280,12 @@ struct ListCitiesOutput {
       out += sep;
       sep = ", ";
       out += ".nextToken = ";
-      smithy::DebugAppend(out, *this->nextToken);
+      opal::DebugAppend(out, *this->nextToken);
     }
     out += sep;
     sep = ", ";
     out += ".items = ";
-    smithy::DebugAppend(out, this->items);
+    opal::DebugAppend(out, this->items);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -315,7 +315,7 @@ struct GetCurrentTimeInput {
 
 
 struct GetCurrentTimeOutput {
-  smithy::Timestamp time{};
+  opal::Timestamp time{};
 
   /// Debug rendering for logs and tests — for humans, never parse it.
   void AppendDebugTo(std::string& out) const {
@@ -324,7 +324,7 @@ struct GetCurrentTimeOutput {
     out += sep;
     sep = ", ";
     out += ".time = ";
-    smithy::DebugAppend(out, this->time);
+    opal::DebugAppend(out, this->time);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -347,7 +347,7 @@ struct GetReportInput {
     out += sep;
     sep = ", ";
     out += ".reportPath = ";
-    smithy::DebugAppend(out, this->reportPath);
+    opal::DebugAppend(out, this->reportPath);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -371,11 +371,11 @@ struct GetReportOutput {
     out += sep;
     sep = ", ";
     out += ".path = ";
-    smithy::DebugAppend(out, this->path);
+    opal::DebugAppend(out, this->path);
     out += sep;
     sep = ", ";
     out += ".sizeBytes = ";
-    smithy::DebugAppend(out, this->sizeBytes);
+    opal::DebugAppend(out, this->sizeBytes);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -397,7 +397,7 @@ template <>
 struct std::hash<example::weather::DeleteCityInput> {
   std::size_t operator()(const example::weather::DeleteCityInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.cityId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.cityId));
     return seed;
   }
 };
@@ -411,7 +411,7 @@ template <>
 struct std::hash<example::weather::NoSuchResource> {
   std::size_t operator()(const example::weather::NoSuchResource& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.resourceType));
+    seed = opal::HashCombine(seed, opal::HashValue(value.resourceType));
     return seed;
   }
 };
@@ -420,7 +420,7 @@ template <>
 struct std::hash<example::weather::GetForecastInput> {
   std::size_t operator()(const example::weather::GetForecastInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.cityId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.cityId));
     return seed;
   }
 };
@@ -429,7 +429,7 @@ template <>
 struct std::hash<example::weather::GetForecastOutput> {
   std::size_t operator()(const example::weather::GetForecastOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.chanceOfRain));
+    seed = opal::HashCombine(seed, opal::HashValue(value.chanceOfRain));
     return seed;
   }
 };
@@ -438,7 +438,7 @@ template <>
 struct std::hash<example::weather::GetCityInput> {
   std::size_t operator()(const example::weather::GetCityInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.cityId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.cityId));
     return seed;
   }
 };
@@ -447,8 +447,8 @@ template <>
 struct std::hash<example::weather::CityCoordinates> {
   std::size_t operator()(const example::weather::CityCoordinates& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.latitude));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.longitude));
+    seed = opal::HashCombine(seed, opal::HashValue(value.latitude));
+    seed = opal::HashCombine(seed, opal::HashValue(value.longitude));
     return seed;
   }
 };
@@ -457,8 +457,8 @@ template <>
 struct std::hash<example::weather::GetCityOutput> {
   std::size_t operator()(const example::weather::GetCityOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.name));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.coordinates));
+    seed = opal::HashCombine(seed, opal::HashValue(value.name));
+    seed = opal::HashCombine(seed, opal::HashValue(value.coordinates));
     return seed;
   }
 };
@@ -467,8 +467,8 @@ template <>
 struct std::hash<example::weather::ListCitiesInput> {
   std::size_t operator()(const example::weather::ListCitiesInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.nextToken));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.pageSize));
+    seed = opal::HashCombine(seed, opal::HashValue(value.nextToken));
+    seed = opal::HashCombine(seed, opal::HashValue(value.pageSize));
     return seed;
   }
 };
@@ -477,8 +477,8 @@ template <>
 struct std::hash<example::weather::CitySummary> {
   std::size_t operator()(const example::weather::CitySummary& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.cityId));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.name));
+    seed = opal::HashCombine(seed, opal::HashValue(value.cityId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.name));
     return seed;
   }
 };
@@ -487,8 +487,8 @@ template <>
 struct std::hash<example::weather::ListCitiesOutput> {
   std::size_t operator()(const example::weather::ListCitiesOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.nextToken));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.items));
+    seed = opal::HashCombine(seed, opal::HashValue(value.nextToken));
+    seed = opal::HashCombine(seed, opal::HashValue(value.items));
     return seed;
   }
 };
@@ -502,7 +502,7 @@ template <>
 struct std::hash<example::weather::GetCurrentTimeOutput> {
   std::size_t operator()(const example::weather::GetCurrentTimeOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.time));
+    seed = opal::HashCombine(seed, opal::HashValue(value.time));
     return seed;
   }
 };
@@ -511,7 +511,7 @@ template <>
 struct std::hash<example::weather::GetReportInput> {
   std::size_t operator()(const example::weather::GetReportInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.reportPath));
+    seed = opal::HashCombine(seed, opal::HashValue(value.reportPath));
     return seed;
   }
 };
@@ -520,8 +520,8 @@ template <>
 struct std::hash<example::weather::GetReportOutput> {
   std::size_t operator()(const example::weather::GetReportOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.path));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sizeBytes));
+    seed = opal::HashCombine(seed, opal::HashValue(value.path));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sizeBytes));
     return seed;
   }
 };

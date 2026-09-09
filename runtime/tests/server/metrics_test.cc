@@ -23,7 +23,7 @@
 
 #include "smithy/server/middleware.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 using std::chrono::microseconds;
@@ -1491,4 +1491,4 @@ TEST(MetricsRegistryDeathTest, ANegativeCounterIncrementAborts) {
 }
 
 }  // namespace
-}  // namespace smithy::server
+}  // namespace opal::server

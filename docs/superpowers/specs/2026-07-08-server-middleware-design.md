@@ -102,7 +102,7 @@ Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
 ## Composition order (documented default)
 
 ```cpp
-transport.Start(smithy::server::Chain(
+transport.Start(opal::server::Chain(
     {Guard(admit, TooManyRequests()),   // outermost: shed load first
      Observe(on_complete, on_start),    // observes everything admitted, incl. health
      HealthEndpoint()},                 // liveness, visible in metrics

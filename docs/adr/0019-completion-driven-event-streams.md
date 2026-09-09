@@ -6,7 +6,7 @@ stay blocking — see Non-goals).
 Implemented: `WebSocket::{ReceiveAsync, SendAsync, SupportsAsync}` (native
 on the Beast sessions and `InMemoryWebSocketPair`),
 `BeastServerTransport::Options::on_websocket_session`,
-`smithy::eventstream::AsyncEventStream<Tx, Rx>` + `smithy::eventstream::Detached`,
+`opal::eventstream::AsyncEventStream<Tx, Rx>` + `opal::eventstream::Detached`,
 `EventStreamHandle::{SendAsync, SupportsAsync}`,
 `SessionRegistry Options::async_delivery`,
 `WebSocketRouter::{AddSession, ServeSession}` (issue #118, the shared-seam
@@ -64,7 +64,7 @@ application-authored. The borrowed seam and the generated serve path are
 byte-for-byte untouched.
 
 **A coroutine adapter over the primitives.**
-`smithy::eventstream::AsyncEventStream<Tx, Rx>` owns the session
+`opal::eventstream::AsyncEventStream<Tx, Rx>` owns the session
 (`shared_ptr<WebSocket>`) plus the two codecs and exposes awaitables:
 `co_await stream.Receive()` → `Outcome<std::optional<Rx>>` (nullopt is the
 clean end; a decode failure or received exception is terminal and closes,
@@ -74,7 +74,7 @@ exactly like `EventStream::Receive`), `co_await stream.Send(event)` →
 sends from other threads and the registry compose unchanged. Coroutines
 resume on the completion context: an async handler must not block there;
 blocking work belongs on the application's own threads, reached through a
-handle. `smithy::eventstream::Detached` is the session-loop return type — a
+handle. `opal::eventstream::Detached` is the session-loop return type — a
 fire-and-forget coroutine whose unhandled exceptions are contained to a log
 line, the transport's containment posture. No general task/executor
 framework ships: one stream type, two awaitables, one detached launcher is

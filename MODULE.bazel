@@ -1,7 +1,7 @@
 # The bzlmod module version stays 0.0.0 until the module is published to the
 # Bazel Central Registry (deferred, PLAN Phase 6); consumers override the source
 # with git_override/local_path_override, which ignores this value. The product
-# version consumers actually observe is smithy::Version() / the client
+# version consumers actually observe is opal::Version() / the client
 # User-Agent ("0.2.0"). See docs/versioning.md.
 module(
     name = "smithy_cpp",

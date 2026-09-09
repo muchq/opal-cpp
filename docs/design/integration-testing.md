@@ -9,8 +9,8 @@ generated client calls its own generated server through real transports.
 
 The generated fixture is parameterized over two transports with identical test bodies:
 
-- **Loopback** — in-memory `smithy::http::Loopback`; fast, deterministic, sanitizer-friendly.
-- **Socket** — `smithy::http::SocketHttpServer` bound to an ephemeral port on 127.0.0.1 with the
+- **Loopback** — in-memory `opal::http::Loopback`; fast, deterministic, sanitizer-friendly.
+- **Socket** — `opal::http::SocketHttpServer` bound to an ephemeral port on 127.0.0.1 with the
   client pointed at it; catches transport/framing bugs the loopback can't.
 
 A generated `ScriptedHandler` records the input each operation received and answers with a

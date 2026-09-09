@@ -9,7 +9,7 @@
 #include "smithy/core/print.h"
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The event envelope (ADR-0016): the ONE place the header convention that
 // puts typed events and exceptions onto event-stream messages lives.
@@ -74,6 +74,6 @@ Message MakeExceptionMessage(std::string_view exception_type, std::string_view c
 // wrong wire type is an error.
 Outcome<EventEnvelope> ParseEnvelope(const Message& message);
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_ENVELOPE_H_

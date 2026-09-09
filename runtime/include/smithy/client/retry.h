@@ -11,7 +11,7 @@
 #include "smithy/http/message.h"
 #include "smithy/http/transport.h"
 
-namespace smithy {
+namespace opal {
 
 // Retry configuration for generated clients: full-jitter exponential backoff
 // (retry n waits uniform(0, min(max_backoff, initial_backoff * 2^(n-1)))).
@@ -50,6 +50,6 @@ inline Outcome<http::HttpResponse> SendWithRetries(http::HttpClient& transport,
   return SendWithRetries(transport, request, policy, {});
 }
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CLIENT_RETRY_H_

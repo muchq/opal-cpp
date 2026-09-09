@@ -45,11 +45,11 @@ OrderCoffeeOutput MinimalOrderCoffeeOutput() {
 
 class SmokeHandler : public CafeHandler {
   public:
-    smithy::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetOrderOutput();
     }
-    smithy::Outcome<OrderCoffeeOutput> OrderCoffee(const OrderCoffeeInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OrderCoffeeOutput> OrderCoffee(const OrderCoffeeInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalOrderCoffeeOutput();
     }
@@ -57,9 +57,9 @@ class SmokeHandler : public CafeHandler {
 
 CafeClient MakeClient(std::shared_ptr<CafeHandler> handler) {
   CafeServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -95,9 +95,9 @@ TEST(CafeSmokeTest, OrderCoffeeRoundTrips) {
 TEST(CafeSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("OrderNotFound", "smoke");
+        opal::Error error = opal::Error::Modeled("OrderNotFound", "smoke");
             auto detail = [] {
           OrderNotFound v{};
           v.orderId = "0";
@@ -116,7 +116,7 @@ TEST(CafeSmokeTest, ModeledErrorsMapAcrossTheWire) {
   }();
   const auto outcome = client.GetOrder(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "OrderNotFound");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<OrderNotFound>(), nullptr);

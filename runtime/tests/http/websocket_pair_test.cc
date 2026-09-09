@@ -21,7 +21,7 @@
 #include "smithy/eventstream/frame.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 using eventstream::Message;
@@ -371,4 +371,4 @@ TEST(WebSocketPairTimeoutTest, EveryImplementorAnswersTheDeadlineItself) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

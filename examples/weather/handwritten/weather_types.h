@@ -62,24 +62,24 @@ struct GetForecastOutput {
 };
 
 struct GetCurrentTimeOutput {
-  smithy::Timestamp time;
+  opal::Timestamp time;
 
   friend bool operator==(const GetCurrentTimeOutput&, const GetCurrentTimeOutput&) = default;
 };
 
 // Document serde, one pair per structure — the shape of code the generator
 // will emit. Deserializers reject missing @required members.
-smithy::Document SerializeGetCityOutput(const GetCityOutput& value);
-smithy::Outcome<GetCityOutput> DeserializeGetCityOutput(const smithy::Document& doc);
+opal::Document SerializeGetCityOutput(const GetCityOutput& value);
+opal::Outcome<GetCityOutput> DeserializeGetCityOutput(const opal::Document& doc);
 
-smithy::Document SerializeListCitiesOutput(const ListCitiesOutput& value);
-smithy::Outcome<ListCitiesOutput> DeserializeListCitiesOutput(const smithy::Document& doc);
+opal::Document SerializeListCitiesOutput(const ListCitiesOutput& value);
+opal::Outcome<ListCitiesOutput> DeserializeListCitiesOutput(const opal::Document& doc);
 
-smithy::Document SerializeGetForecastOutput(const GetForecastOutput& value);
-smithy::Outcome<GetForecastOutput> DeserializeGetForecastOutput(const smithy::Document& doc);
+opal::Document SerializeGetForecastOutput(const GetForecastOutput& value);
+opal::Outcome<GetForecastOutput> DeserializeGetForecastOutput(const opal::Document& doc);
 
-smithy::Document SerializeGetCurrentTimeOutput(const GetCurrentTimeOutput& value);
-smithy::Outcome<GetCurrentTimeOutput> DeserializeGetCurrentTimeOutput(const smithy::Document& doc);
+opal::Document SerializeGetCurrentTimeOutput(const GetCurrentTimeOutput& value);
+opal::Outcome<GetCurrentTimeOutput> DeserializeGetCurrentTimeOutput(const opal::Document& doc);
 
 // Modeled error code shared by client and server ("NoSuchResource" per model).
 inline constexpr char kNoSuchResourceCode[] = "NoSuchResource";

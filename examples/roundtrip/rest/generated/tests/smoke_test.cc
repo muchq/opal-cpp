@@ -41,15 +41,15 @@ UploadAttachmentOutput MinimalUploadAttachmentOutput() {
 
 class SmokeHandler : public RoundTripRestHandler {
   public:
-    smithy::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalDescribeSinkOutput();
     }
-    smithy::Outcome<PutSinkOutput> PutSink(const PutSinkInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutSinkOutput> PutSink(const PutSinkInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalPutSinkOutput();
     }
-    smithy::Outcome<UploadAttachmentOutput> UploadAttachment(const UploadAttachmentInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<UploadAttachmentOutput> UploadAttachment(const UploadAttachmentInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalUploadAttachmentOutput();
     }
@@ -57,9 +57,9 @@ class SmokeHandler : public RoundTripRestHandler {
 
 RoundTripRestClient MakeClient(std::shared_ptr<RoundTripRestHandler> handler) {
   RoundTripRestServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -114,9 +114,9 @@ TEST(RoundTripRestSmokeTest, UploadAttachmentRoundTrips) {
 TEST(RoundTripRestSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("SinkNotFound", "smoke");
+        opal::Error error = opal::Error::Modeled("SinkNotFound", "smoke");
             auto detail = [] {
           SinkNotFound v{};
           return v;
@@ -137,7 +137,7 @@ TEST(RoundTripRestSmokeTest, ModeledErrorsMapAcrossTheWire) {
   input.sinkId = "smoke";
   const auto outcome = client.DescribeSink(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkNotFound");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<SinkNotFound>(), nullptr);

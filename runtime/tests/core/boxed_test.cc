@@ -1,4 +1,4 @@
-// smithy::Boxed: value-semantic heap indirection for recursive generated
+// opal::Boxed: value-semantic heap indirection for recursive generated
 // members — deep copy, deep equality, and compilability with the mutually
 // recursive struct shapes the generator emits.
 
@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace smithy {
+namespace opal {
 namespace {
 
 // The shape the generator emits for mutual recursion: forward-declared
@@ -94,4 +94,4 @@ TEST(BoxedTest, ListRecursionComparesStructurally) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

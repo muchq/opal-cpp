@@ -6,7 +6,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/core/timestamp.h"
 
-namespace smithy {
+namespace opal {
 
 // Helpers used by generated deserializers to read protocol-shaped Document
 // nodes back into typed values. They are wire-format tolerant: a JSON decode
@@ -35,6 +35,6 @@ Outcome<float> FloatFromDouble(double value);
 std::string FormatDouble(double value);
 std::string FormatFloat(float value);
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_DOCUMENT_SERDE_H_

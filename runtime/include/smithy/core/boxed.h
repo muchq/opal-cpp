@@ -7,7 +7,7 @@
 
 #include "smithy/core/print.h"
 
-namespace smithy {
+namespace opal {
 
 // Value-semantic heap indirection for recursive generated members (a
 // structure member whose target refers back to its container). Copy is a
@@ -58,6 +58,6 @@ class Boxed {
   std::unique_ptr<T> value_;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_BOXED_H_

@@ -31,7 +31,7 @@ struct LeaveNotice {
       out += sep;
       sep = ", ";
       out += ".reason = ";
-      smithy::DebugAppend(out, *this->reason);
+      opal::DebugAppend(out, *this->reason);
     }
     out += '}';
   }
@@ -56,12 +56,12 @@ struct ChatMessage {
     out += sep;
     sep = ", ";
     out += ".text = ";
-    smithy::DebugAppend(out, this->text);
+    opal::DebugAppend(out, this->text);
     if (this->sender.has_value()) {
       out += sep;
       sep = ", ";
       out += ".sender = ";
-      smithy::DebugAppend(out, *this->sender);
+      opal::DebugAppend(out, *this->sender);
     }
     out += '}';
   }
@@ -129,11 +129,11 @@ class ChatEvents {
       switch (value_.index()) {
         case 1:
           out += "message = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         case 2:
           out += "leave = ";
-          smithy::DebugAppend(out, std::get<2>(value_));
+          opal::DebugAppend(out, std::get<2>(value_));
           break;
         default:
           break;
@@ -152,7 +152,7 @@ class ChatEvents {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("ChatEvents", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("ChatEvents", requested, case_name());
       }
     }
 
@@ -172,18 +172,18 @@ struct ConverseInput {
     out += sep;
     sep = ", ";
     out += ".room = ";
-    smithy::DebugAppend(out, this->room);
+    opal::DebugAppend(out, this->room);
     if (this->nickname.has_value()) {
       out += sep;
       sep = ", ";
       out += ".nickname = ";
-      smithy::DebugAppend(out, *this->nickname);
+      opal::DebugAppend(out, *this->nickname);
     }
     if (this->events.has_value()) {
       out += sep;
       sep = ", ";
       out += ".events = ";
-      smithy::DebugAppend(out, *this->events);
+      opal::DebugAppend(out, *this->events);
     }
     out += '}';
   }
@@ -207,7 +207,7 @@ struct MemberJoined {
     out += sep;
     sep = ", ";
     out += ".member = ";
-    smithy::DebugAppend(out, this->member);
+    opal::DebugAppend(out, this->member);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -230,7 +230,7 @@ struct MemberLeft {
     out += sep;
     sep = ", ";
     out += ".member = ";
-    smithy::DebugAppend(out, this->member);
+    opal::DebugAppend(out, this->member);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -309,15 +309,15 @@ class RoomEvents {
       switch (value_.index()) {
         case 1:
           out += "message = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         case 2:
           out += "joined = ";
-          smithy::DebugAppend(out, std::get<2>(value_));
+          opal::DebugAppend(out, std::get<2>(value_));
           break;
         case 3:
           out += "left = ";
-          smithy::DebugAppend(out, std::get<3>(value_));
+          opal::DebugAppend(out, std::get<3>(value_));
           break;
         default:
           break;
@@ -336,7 +336,7 @@ class RoomEvents {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("RoomEvents", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("RoomEvents", requested, case_name());
       }
     }
 
@@ -355,7 +355,7 @@ struct ConverseOutput {
       out += sep;
       sep = ", ";
       out += ".events = ";
-      smithy::DebugAppend(out, *this->events);
+      opal::DebugAppend(out, *this->events);
     }
     out += '}';
   }
@@ -383,12 +383,12 @@ struct Kicked {
       out += sep;
       sep = ", ";
       out += ".message = ";
-      smithy::DebugAppend(out, *this->message);
+      opal::DebugAppend(out, *this->message);
     }
     out += sep;
     sep = ", ";
     out += ".by = ";
-    smithy::DebugAppend(out, this->by);
+    opal::DebugAppend(out, this->by);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -428,11 +428,11 @@ struct RoomSummary {
     out += sep;
     sep = ", ";
     out += ".name = ";
-    smithy::DebugAppend(out, this->name);
+    opal::DebugAppend(out, this->name);
     out += sep;
     sep = ", ";
     out += ".members = ";
-    smithy::DebugAppend(out, this->members);
+    opal::DebugAppend(out, this->members);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -455,7 +455,7 @@ struct ListRoomsOutput {
     out += sep;
     sep = ", ";
     out += ".rooms = ";
-    smithy::DebugAppend(out, this->rooms);
+    opal::DebugAppend(out, this->rooms);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -478,7 +478,7 @@ struct WatchInput {
     out += sep;
     sep = ", ";
     out += ".room = ";
-    smithy::DebugAppend(out, this->room);
+    opal::DebugAppend(out, this->room);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -502,7 +502,7 @@ struct WatchOutput {
       out += sep;
       sep = ", ";
       out += ".events = ";
-      smithy::DebugAppend(out, *this->events);
+      opal::DebugAppend(out, *this->events);
     }
     out += '}';
   }
@@ -525,7 +525,7 @@ template <>
 struct std::hash<example::chat::LeaveNotice> {
   std::size_t operator()(const example::chat::LeaveNotice& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.reason));
+    seed = opal::HashCombine(seed, opal::HashValue(value.reason));
     return seed;
   }
 };
@@ -534,8 +534,8 @@ template <>
 struct std::hash<example::chat::ChatMessage> {
   std::size_t operator()(const example::chat::ChatMessage& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.text));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sender));
+    seed = opal::HashCombine(seed, opal::HashValue(value.text));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sender));
     return seed;
   }
 };
@@ -544,8 +544,8 @@ template <>
 struct std::hash<example::chat::ChatEvents> {
   std::size_t operator()(const example::chat::ChatEvents& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -553,9 +553,9 @@ template <>
 struct std::hash<example::chat::ConverseInput> {
   std::size_t operator()(const example::chat::ConverseInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.room));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.nickname));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.events));
+    seed = opal::HashCombine(seed, opal::HashValue(value.room));
+    seed = opal::HashCombine(seed, opal::HashValue(value.nickname));
+    seed = opal::HashCombine(seed, opal::HashValue(value.events));
     return seed;
   }
 };
@@ -564,7 +564,7 @@ template <>
 struct std::hash<example::chat::MemberJoined> {
   std::size_t operator()(const example::chat::MemberJoined& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.member));
+    seed = opal::HashCombine(seed, opal::HashValue(value.member));
     return seed;
   }
 };
@@ -573,7 +573,7 @@ template <>
 struct std::hash<example::chat::MemberLeft> {
   std::size_t operator()(const example::chat::MemberLeft& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.member));
+    seed = opal::HashCombine(seed, opal::HashValue(value.member));
     return seed;
   }
 };
@@ -582,8 +582,8 @@ template <>
 struct std::hash<example::chat::RoomEvents> {
   std::size_t operator()(const example::chat::RoomEvents& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -591,7 +591,7 @@ template <>
 struct std::hash<example::chat::ConverseOutput> {
   std::size_t operator()(const example::chat::ConverseOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.events));
+    seed = opal::HashCombine(seed, opal::HashValue(value.events));
     return seed;
   }
 };
@@ -600,8 +600,8 @@ template <>
 struct std::hash<example::chat::Kicked> {
   std::size_t operator()(const example::chat::Kicked& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.by));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.by));
     return seed;
   }
 };
@@ -615,8 +615,8 @@ template <>
 struct std::hash<example::chat::RoomSummary> {
   std::size_t operator()(const example::chat::RoomSummary& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.name));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.members));
+    seed = opal::HashCombine(seed, opal::HashValue(value.name));
+    seed = opal::HashCombine(seed, opal::HashValue(value.members));
     return seed;
   }
 };
@@ -625,7 +625,7 @@ template <>
 struct std::hash<example::chat::ListRoomsOutput> {
   std::size_t operator()(const example::chat::ListRoomsOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.rooms));
+    seed = opal::HashCombine(seed, opal::HashValue(value.rooms));
     return seed;
   }
 };
@@ -634,7 +634,7 @@ template <>
 struct std::hash<example::chat::WatchInput> {
   std::size_t operator()(const example::chat::WatchInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.room));
+    seed = opal::HashCombine(seed, opal::HashValue(value.room));
     return seed;
   }
 };
@@ -643,7 +643,7 @@ template <>
 struct std::hash<example::chat::WatchOutput> {
   std::size_t operator()(const example::chat::WatchOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.events));
+    seed = opal::HashCombine(seed, opal::HashValue(value.events));
     return seed;
   }
 };

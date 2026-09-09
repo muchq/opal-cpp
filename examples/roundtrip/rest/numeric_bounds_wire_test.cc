@@ -32,16 +32,16 @@ namespace {
 
 // --- Direct serde boundary: hostile Documents into the generated parser. ---
 
-smithy::Document SinkDoc(const char* member, smithy::Document value) {
-  smithy::DocumentMap map;
-  map.emplace("name", smithy::Document(std::string("n")));
+opal::Document SinkDoc(const char* member, opal::Document value) {
+  opal::DocumentMap map;
+  map.emplace("name", opal::Document(std::string("n")));
   map.emplace(member, std::move(value));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
 TEST(NumericBoundsSerdeTest, IntEnumBeyondInt32FailsInsteadOfAliasing) {
   // 2^32+2 truncates to 2 (a valid Weight) under the old cast.
-  auto sink = DeserializeKitchenSink(SinkDoc("weight", smithy::Document(std::int64_t{4294967298})));
+  auto sink = DeserializeKitchenSink(SinkDoc("weight", opal::Document(std::int64_t{4294967298})));
   ASSERT_FALSE(sink.ok());
   EXPECT_EQ(sink.error().message(), "KitchenSink.weight: value out of range");
 }
@@ -50,14 +50,14 @@ TEST(NumericBoundsSerdeTest, IntEnumKeepsUnknownInRangeValues) {
   // Model evolution: a value the client's model doesn't know yet still
   // parses (matching string enums' unknown handling); only servers reject
   // it, via validation.
-  auto sink = DeserializeKitchenSink(SinkDoc("weight", smithy::Document(std::int64_t{7})));
+  auto sink = DeserializeKitchenSink(SinkDoc("weight", opal::Document(std::int64_t{7})));
   ASSERT_TRUE(sink.ok()) << sink.error().message();
   ASSERT_TRUE(sink->weight.has_value());
   EXPECT_EQ(*sink->weight, static_cast<Weight>(7));
 }
 
 TEST(NumericBoundsSerdeTest, FloatBeyondRangeFailsInsteadOfUb) {
-  auto sink = DeserializeKitchenSink(SinkDoc("ratio", smithy::Document(1e300)));
+  auto sink = DeserializeKitchenSink(SinkDoc("ratio", opal::Document(1e300)));
   ASSERT_FALSE(sink.ok());
   EXPECT_EQ(sink.error().message(), "KitchenSink.ratio: value out of range");
 }
@@ -65,18 +65,18 @@ TEST(NumericBoundsSerdeTest, FloatBeyondRangeFailsInsteadOfUb) {
 TEST(NumericBoundsSerdeTest, FloatEdgeAndNonFiniteValuesStillParse) {
   // The exact float maximum is in range...
   const double float_max = static_cast<double>(std::numeric_limits<float>::max());
-  auto edge = DeserializeKitchenSink(SinkDoc("ratio", smithy::Document(float_max)));
+  auto edge = DeserializeKitchenSink(SinkDoc("ratio", opal::Document(float_max)));
   ASSERT_TRUE(edge.ok()) << edge.error().message();
   EXPECT_EQ(*edge->ratio, std::numeric_limits<float>::max());
   // ...as is what a peer's shortest-round-trip printer (or our own
   // FormatFloat) puts on the wire for float max — a double slightly above
   // FLT_MAX that still rounds back to it.
-  auto shortest = DeserializeKitchenSink(SinkDoc("ratio", smithy::Document(3.4028235e38)));
+  auto shortest = DeserializeKitchenSink(SinkDoc("ratio", opal::Document(3.4028235e38)));
   ASSERT_TRUE(shortest.ok()) << shortest.error().message();
   EXPECT_EQ(*shortest->ratio, std::numeric_limits<float>::max());
   // ...and the Smithy non-finite spellings narrow losslessly, never caught
   // in the overflow net.
-  auto inf = DeserializeKitchenSink(SinkDoc("ratio", smithy::Document(std::string("-Infinity"))));
+  auto inf = DeserializeKitchenSink(SinkDoc("ratio", opal::Document(std::string("-Infinity"))));
   ASSERT_TRUE(inf.ok()) << inf.error().message();
   EXPECT_TRUE(std::isinf(*inf->ratio));
   EXPECT_LT(*inf->ratio, 0.0F);
@@ -86,19 +86,19 @@ TEST(NumericBoundsSerdeTest, FloatEdgeAndNonFiniteValuesStillParse) {
 
 class RecordingHandler : public RoundTripRestHandler {
  public:
-  smithy::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput&,
-                                                   const smithy::server::RequestContext&) override {
+  opal::Outcome<DescribeSinkOutput> DescribeSink(const DescribeSinkInput&,
+                                                 const opal::server::RequestContext&) override {
     ++calls;
     return DescribeSinkOutput{};
   }
-  smithy::Outcome<PutSinkOutput> PutSink(const PutSinkInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<PutSinkOutput> PutSink(const PutSinkInput& input,
+                                       const opal::server::RequestContext&) override {
     ++calls;
     last_sink = input.sink;
     return PutSinkOutput{.sinkId = "s1"};
   }
-  smithy::Outcome<UploadAttachmentOutput> UploadAttachment(
-      const UploadAttachmentInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<UploadAttachmentOutput> UploadAttachment(
+      const UploadAttachmentInput&, const opal::server::RequestContext&) override {
     ++calls;
     return UploadAttachmentOutput{};
   }
@@ -108,8 +108,8 @@ class RecordingHandler : public RoundTripRestHandler {
 
 class NumericBoundsServerTest : public testing::Test {
  protected:
-  smithy::http::HttpResponse PutSinkBody(const std::string& body) {
-    smithy::http::HttpRequest request;
+  opal::http::HttpResponse PutSinkBody(const std::string& body) {
+    opal::http::HttpRequest request;
     request.method = "PUT";
     request.target = "/sinks/s1?limit=5";
     request.headers.Set("content-type", "application/json");
@@ -141,9 +141,9 @@ TEST_F(NumericBoundsServerTest, UnknownIntEnumValueFailsValidationWithTheSuiteMe
   EXPECT_EQ(response.status, 400) << response.body;
   EXPECT_EQ(response.headers.Get("x-error-type").value_or("<missing>"), "ValidationException");
   EXPECT_EQ(handler_->calls, 0);
-  auto body = smithy::json::Decode(response.body);
+  auto body = opal::json::Decode(response.body);
   ASSERT_TRUE(body.ok()) << response.body;
-  const smithy::Document* field_list = body->Find("fieldList");
+  const opal::Document* field_list = body->Find("fieldList");
   ASSERT_NE(field_list, nullptr) << response.body;
   ASSERT_EQ(field_list->as_list().size(), 1u) << response.body;
   const auto& failure = field_list->as_list()[0];
@@ -165,12 +165,12 @@ TEST_F(NumericBoundsServerTest, ValidValuesReachTheHandlerIntact) {
 // --- Client over the wire: hostile server responses into the generated
 // client. ---
 
-class CannedTransport final : public smithy::http::HttpClient {
+class CannedTransport final : public opal::http::HttpClient {
  public:
   explicit CannedTransport(std::string body) : body_(std::move(body)) {}
 
-  smithy::Outcome<smithy::http::HttpResponse> Send(const smithy::http::HttpRequest&) override {
-    smithy::http::HttpResponse response{200, {}, body_};
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest&) override {
+    opal::http::HttpResponse response{200, {}, body_};
     response.headers.Set("content-type", "application/json");
     return response;
   }
@@ -179,8 +179,8 @@ class CannedTransport final : public smithy::http::HttpClient {
   std::string body_;
 };
 
-smithy::Outcome<DescribeSinkOutput> Describe(const std::string& body) {
-  smithy::ClientConfig config;
+opal::Outcome<DescribeSinkOutput> Describe(const std::string& body) {
+  opal::ClientConfig config;
   config.http_client = std::make_shared<CannedTransport>(body);
   auto client = RoundTripRestClient::Create(std::move(config));
   if (!client.ok()) {

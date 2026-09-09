@@ -14,7 +14,7 @@
 #include "smithy/core/print.h"
 #include "smithy/core/timestamp.h"
 
-namespace smithy {
+namespace opal {
 
 class Document;
 using DocumentList = std::vector<Document>;
@@ -117,6 +117,6 @@ class Document {
   Value value_;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_DOCUMENT_H_

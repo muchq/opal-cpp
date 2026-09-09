@@ -29,29 +29,29 @@ class SmokeHandler : public ChatHandler {
   public:
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalListRoomsOutput();
     }
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> Watch(const WatchInput& input, WatchServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Watch(const WatchInput& input, WatchServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
 };
 
 ChatClient MakeClient(std::shared_ptr<ChatHandler> handler) {
   ChatServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.

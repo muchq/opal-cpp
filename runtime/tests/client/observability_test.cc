@@ -13,22 +13,22 @@
 
 namespace {
 
-smithy::http::HttpRequest MakeRequest() {
-  smithy::http::HttpRequest request;
+opal::http::HttpRequest MakeRequest() {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/books?pageSize=10";
   return request;
 }
 
 TEST(ObserveAttemptsTest, ReportsSuccessfulAttempts) {
-  std::vector<smithy::AttemptObservation> seen;
-  const auto interceptor = smithy::ObserveAttempts(
-      [&seen](const smithy::AttemptObservation& obs) { seen.push_back(obs); });
+  std::vector<opal::AttemptObservation> seen;
+  const auto interceptor =
+      opal::ObserveAttempts([&seen](const opal::AttemptObservation& obs) { seen.push_back(obs); });
 
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 201;
-  interceptor->ReadAfterTransmit(MakeRequest(),
-                                 smithy::Outcome<smithy::http::HttpResponse>(response), 1);
+  interceptor->ReadAfterTransmit(MakeRequest(), opal::Outcome<opal::http::HttpResponse>(response),
+                                 1);
 
   ASSERT_EQ(seen.size(), 1u);
   EXPECT_EQ(seen[0].method, "POST");
@@ -39,14 +39,13 @@ TEST(ObserveAttemptsTest, ReportsSuccessfulAttempts) {
 }
 
 TEST(ObserveAttemptsTest, ReportsTransportErrorsAsStatusMinusOne) {
-  std::vector<smithy::AttemptObservation> seen;
-  const auto interceptor = smithy::ObserveAttempts(
-      [&seen](const smithy::AttemptObservation& obs) { seen.push_back(obs); });
+  std::vector<opal::AttemptObservation> seen;
+  const auto interceptor =
+      opal::ObserveAttempts([&seen](const opal::AttemptObservation& obs) { seen.push_back(obs); });
 
   interceptor->ReadAfterTransmit(
       MakeRequest(),
-      smithy::Outcome<smithy::http::HttpResponse>(smithy::Error::Transport("connection refused")),
-      3);
+      opal::Outcome<opal::http::HttpResponse>(opal::Error::Transport("connection refused")), 3);
 
   ASSERT_EQ(seen.size(), 1u);
   EXPECT_EQ(seen[0].attempt, 3);
@@ -57,30 +56,30 @@ TEST(ObserveAttemptsTest, ReportsTransportErrorsAsStatusMinusOne) {
 TEST(ObserveAttemptsTest, ObservesEveryAttemptOfARetryLoop) {
   int calls = 0;
   const auto interceptor =
-      smithy::ObserveAttempts([&calls](const smithy::AttemptObservation&) { ++calls; });
-  smithy::http::HttpResponse throttled;
+      opal::ObserveAttempts([&calls](const opal::AttemptObservation&) { ++calls; });
+  opal::http::HttpResponse throttled;
   throttled.status = 429;
   for (int attempt = 1; attempt <= 3; ++attempt) {
     interceptor->ReadAfterTransmit(MakeRequest(),
-                                   smithy::Outcome<smithy::http::HttpResponse>(throttled), attempt);
+                                   opal::Outcome<opal::http::HttpResponse>(throttled), attempt);
   }
   EXPECT_EQ(calls, 3);
 }
 
 TEST(PropagateTraceContextTest, StampsAWellFormedTraceparent) {
-  const auto interceptor = smithy::PropagateTraceContext();
+  const auto interceptor = opal::PropagateTraceContext();
   auto request = MakeRequest();
   interceptor->ModifyBeforeTransmit(request, 1);
 
   const auto header = request.headers.Get("traceparent");
   ASSERT_TRUE(header.has_value());
-  const auto parsed = smithy::http::ParseTraceparent(*header);
+  const auto parsed = opal::http::ParseTraceparent(*header);
   ASSERT_TRUE(parsed.has_value()) << *header;
   EXPECT_TRUE(parsed->sampled);
 }
 
 TEST(PropagateTraceContextTest, RespectsAnExistingTraceparent) {
-  const auto interceptor = smithy::PropagateTraceContext();
+  const auto interceptor = opal::PropagateTraceContext();
   auto request = MakeRequest();
   const std::string preset = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01";
   request.headers.Set("traceparent", preset);
@@ -89,12 +88,12 @@ TEST(PropagateTraceContextTest, RespectsAnExistingTraceparent) {
 }
 
 TEST(PropagateTraceContextTest, UsesTheApplicationsCurrentContext) {
-  smithy::http::TraceContext context;
+  opal::http::TraceContext context;
   context.trace_id = "0af7651916cd43dd8448eb211c80319c";
   context.parent_id = "b7ad6b7169203331";
   context.sampled = true;
-  const auto interceptor = smithy::PropagateTraceContext(
-      [context]() -> std::optional<smithy::http::TraceContext> { return context; });
+  const auto interceptor = opal::PropagateTraceContext(
+      [context]() -> std::optional<opal::http::TraceContext> { return context; });
 
   auto request = MakeRequest();
   interceptor->ModifyBeforeTransmit(request, 1);
@@ -103,14 +102,14 @@ TEST(PropagateTraceContextTest, UsesTheApplicationsCurrentContext) {
 }
 
 TEST(PropagateTraceContextTest, FallsBackToAFreshRootWhenTheCallbackHasNoContext) {
-  const auto interceptor = smithy::PropagateTraceContext(
-      []() -> std::optional<smithy::http::TraceContext> { return std::nullopt; });
+  const auto interceptor = opal::PropagateTraceContext(
+      []() -> std::optional<opal::http::TraceContext> { return std::nullopt; });
 
   auto request = MakeRequest();
   interceptor->ModifyBeforeTransmit(request, 1);
   const auto header = request.headers.Get("traceparent");
   ASSERT_TRUE(header.has_value());
-  EXPECT_TRUE(smithy::http::ParseTraceparent(*header).has_value()) << *header;
+  EXPECT_TRUE(opal::http::ParseTraceparent(*header).has_value()) << *header;
 
   // Each attempt without an application context gets its own root.
   auto second = MakeRequest();

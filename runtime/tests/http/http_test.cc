@@ -5,11 +5,11 @@
 #include "smithy/http/message.h"
 #include "smithy/http/uri.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 TEST(HeadersTest, AcceptMatches) {
-  using smithy::http::AcceptMatches;
+  using opal::http::AcceptMatches;
   EXPECT_TRUE(AcceptMatches("application/json", "application/json"));
   EXPECT_TRUE(AcceptMatches("Application/JSON", "application/json"));
   EXPECT_TRUE(AcceptMatches("*/*", "image/jpeg"));
@@ -21,7 +21,7 @@ TEST(HeadersTest, AcceptMatches) {
 }
 
 TEST(HeadersTest, HeaderNameStartsWith) {
-  using smithy::http::HeaderNameStartsWith;
+  using opal::http::HeaderNameStartsWith;
   EXPECT_TRUE(HeaderNameStartsWith("x-foo-abc", "x-foo-"));
   EXPECT_TRUE(HeaderNameStartsWith("X-Foo-Abc", "x-foo-"));
   EXPECT_TRUE(HeaderNameStartsWith("anything", ""));
@@ -288,4 +288,4 @@ TEST(HeadersTest, RequestLineFieldPredicateRejectsSpaceAndControls) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

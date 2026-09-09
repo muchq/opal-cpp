@@ -42,7 +42,7 @@ public final class CppCodegenPlugin implements SmithyBuildPlugin {
   }
 
   /**
-   * Recursive structure members are supported via smithy::Boxed (and lists via std::vector's
+   * Recursive structure members are supported via opal::Boxed (and lists via std::vector's
    * incomplete-element support), but cycles through union members or map values still need
    * representation work; fail generation with a clear message instead of emitting non-compiling
    * code.

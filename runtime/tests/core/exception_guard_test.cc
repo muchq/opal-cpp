@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-namespace smithy::internal {
+namespace opal::internal {
 namespace {
 
 TEST(ContainTest, ReturnsBodyResultWhenNothingThrows) {
@@ -60,4 +60,4 @@ TEST(ContainTest, HandlerFallbackValueIsReturnedOnThrow) {
 #endif
 
 }  // namespace
-}  // namespace smithy::internal
+}  // namespace opal::internal

@@ -98,22 +98,22 @@ struct Rng {
 
 class ScriptedHandler final : public BookstoreHandler {
   public:
-    smithy::Outcome<AddBookOutput> AddBook(const AddBookInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddBookOutput> AddBook(const AddBookInput& input, const opal::server::RequestContext&) override {
       lastAddBook = input;
       if (nextAddBookError.has_value()) return *nextAddBookError;
       return nextAddBookOutput;
     }
     std::optional<AddBookInput> lastAddBook;
     AddBookOutput nextAddBookOutput{};
-    std::optional<smithy::Error> nextAddBookError;
-    smithy::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextAddBookError;
+    opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const opal::server::RequestContext&) override {
       lastGetBook = input;
       if (nextGetBookError.has_value()) return *nextGetBookError;
       return nextGetBookOutput;
     }
     std::optional<GetBookInput> lastGetBook;
     GetBookOutput nextGetBookOutput{};
-    std::optional<smithy::Error> nextGetBookError;
+    std::optional<opal::Error> nextGetBookError;
 };
 
 enum class TransportKind { kLoopback, kSocket };
@@ -123,14 +123,14 @@ class BookstoreIntegrationTest : public ::testing::TestWithParam<TransportKind> 
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<BookstoreServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -143,7 +143,7 @@ class BookstoreIntegrationTest : public ::testing::TestWithParam<TransportKind> 
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<BookstoreServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<BookstoreClient> client_;
 };
 
@@ -206,13 +206,13 @@ TEST_P(BookstoreIntegrationTest, GetBookMaximalRoundTrips) {
 TEST_P(BookstoreIntegrationTest, GetBookBookNotFoundMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const BookNotFound detail = RandomBookNotFound(rng);
-  smithy::Error error = smithy::Error::Modeled("BookNotFound", "integration");
+  opal::Error error = opal::Error::Modeled("BookNotFound", "integration");
   error.set_detail(detail);
   handler_->nextGetBookError = error;
   const GetBookInput input = RandomGetBookInput(rng);
   const auto outcome = client_->GetBook(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "BookNotFound");
   ASSERT_NE(outcome.error().detail<BookNotFound>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<BookNotFound>(), detail);
@@ -221,17 +221,17 @@ TEST_P(BookstoreIntegrationTest, GetBookBookNotFoundMapsAcrossTheWire) {
 TEST(BookstoreIntegrationUnknownMembers, AddBookToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   BookstoreServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *BookstoreClient::Create(std::move(config));
@@ -248,17 +248,17 @@ TEST(BookstoreIntegrationUnknownMembers, AddBookToleratesUnknownResponseMembers)
 TEST(BookstoreIntegrationUnknownMembers, GetBookToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   BookstoreServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *BookstoreClient::Create(std::move(config));

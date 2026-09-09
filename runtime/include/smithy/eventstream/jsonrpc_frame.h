@@ -8,7 +8,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The jsonRpc2 stream wire (ADR-0023): text JSON-RPC 2.0 envelopes end to
 // end, no smithy-specific framing. After the opening request envelope
@@ -79,6 +79,6 @@ JsonRpcStreamFrame DecodeJsonRpcStreamFrame(std::string_view text, const Documen
 // "message":<reason>},"id":<id>,"jsonrpc":"2.0"} (sorted, compact).
 std::string EncodeJsonRpcViolationResponse(int code, std::string_view reason, const Document& id);
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_JSONRPC_FRAME_H_

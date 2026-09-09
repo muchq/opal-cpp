@@ -1,7 +1,7 @@
 # ADR-0015: WebSocket transports carry event-stream messages
 
 **Status:** Accepted (2026-07-19). Phase 8 slice 2 of ADR-0014's plan.
-Implemented: `smithy::http::WebSocket` + `BeastServerTransport` upgrade +
+Implemented: `opal::http::WebSocket` + `BeastServerTransport` upgrade +
 `BeastWebSocketClient` (`//runtime:http_beast`).
 
 ## Context
@@ -29,7 +29,7 @@ modeled errors — is slice 3's, deliberately not decided here.
   incremental decode contract stays load-bearing for the future
   HTTP-body event-stream wire (chunked transfer), which has no message
   boundaries of its own.
-- **One shared session type, `smithy::http::WebSocket`**, for both the
+- **One shared session type, `opal::http::WebSocket`**, for both the
   server-accepted and client-dialed ends: blocking
   `Outcome<std::optional<eventstream::Message>> Receive()` (nullopt is
   the peer's clean close — the stream's natural end, not an error),

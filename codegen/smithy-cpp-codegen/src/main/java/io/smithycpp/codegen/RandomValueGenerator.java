@@ -231,7 +231,7 @@ final class RandomValueGenerator {
   String expression(MemberShape member) {
     Shape target = target(member);
     if (target.getId().toString().equals("smithy.api#Unit")) {
-      return "smithy::Unit{}";
+      return "opal::Unit{}";
     }
     String type = context.cppSymbols().toSymbol(target).getName();
     return switch (target.getType()) {
@@ -287,13 +287,13 @@ final class RandomValueGenerator {
             Math.min(
                 constraint(member, LengthTrait.class).flatMap(LengthTrait::getMax).orElse(min + 8),
                 min + 8);
-        yield "smithy::Blob::FromString(rng.Text(" + min + ", " + Math.max(min, max) + "))";
+        yield "opal::Blob::FromString(rng.Text(" + min + ", " + Math.max(min, max) + "))";
       }
       // Whole seconds survive every timestamp format (http-date has second
       // precision); the range stays http-date friendly (1970..2100).
-      case TIMESTAMP -> "smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000)";
+      case TIMESTAMP -> "opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000)";
       case DOCUMENT ->
-          "smithy::Document(smithy::DocumentMap{{\"key\", smithy::Document(rng.Int(0, 1000))}})";
+          "opal::Document(opal::DocumentMap{{\"key\", opal::Document(rng.Int(0, 1000))}})";
       case STRUCTURE, UNION, LIST, MAP -> builderName(target) + "(rng)";
       default -> throw new CodegenException("cpp-codegen: no random value for " + target.getId());
     };

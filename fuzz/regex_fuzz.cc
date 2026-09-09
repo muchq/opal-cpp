@@ -15,7 +15,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   const std::string_view pattern =
       split == std::string_view::npos ? record : record.substr(0, split);
   const std::string_view text = split == std::string_view::npos ? "" : record.substr(split + 1);
-  auto re = smithy::Regex::Compile(pattern);
+  auto re = opal::Regex::Compile(pattern);
   if (re.ok()) {
     (void)re->Search(text);
     (void)re->Search(pattern);

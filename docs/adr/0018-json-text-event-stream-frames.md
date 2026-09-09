@@ -1,10 +1,10 @@
 # ADR-0018: Negotiated JSON-text event-stream frames — the browser wire
 
 **Status:** Accepted (2026-07-20). Phase 8 follow-on; issue #113.
-Implemented: `smithy::eventstream::EncodeJsonFrame`/`DecodeJsonFrame`
+Implemented: `opal::eventstream::EncodeJsonFrame`/`DecodeJsonFrame`
 (`//runtime:eventstream_json`), subprotocol negotiation on
 `BeastServerTransport` + `BeastWebSocketClient`, and
-`smithy::server::RequireOrigin`.
+`opal::server::RequireOrigin`.
 
 ## Context
 
@@ -92,7 +92,7 @@ exactly the purpose the reservation anticipated.
   generated clients speak binary, and a hand-wired dialer that wants the
   JSON wire can use `BeastWebSocketClient::Options` directly.
 - **Origin checking becomes a composable gate.**
-  `smithy::server::RequireOrigin({"https://example.com", ...})` returns a
+  `opal::server::RequireOrigin({"https://example.com", ...})` returns a
   `websocket_gate` that refuses (403) upgrades whose `Origin` is present
   and not on the allowlist — scheme + host + port exact after
   normalization (ASCII-lowercased scheme/host, default ports resolved).

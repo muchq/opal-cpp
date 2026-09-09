@@ -7,7 +7,7 @@
 
 #include "smithy/core/error.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 constexpr std::size_t kMaxHeaderBytes = std::size_t{64} * 1024;
@@ -126,4 +126,4 @@ Outcome<int> ParseStatusLine(std::string_view line) {
   return status;
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

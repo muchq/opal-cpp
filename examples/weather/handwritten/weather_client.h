@@ -17,25 +17,25 @@ namespace example::weather::handwritten {
 class WeatherClient {
  public:
   // Fails when the endpoint cannot be parsed and no transport is injected.
-  static smithy::Outcome<WeatherClient> Create(smithy::ClientConfig config);
+  static opal::Outcome<WeatherClient> Create(opal::ClientConfig config);
 
-  smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input) const;
-  smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) const;
-  smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) const;
-  smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime() const;
+  opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input) const;
+  opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) const;
+  opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) const;
+  opal::Outcome<GetCurrentTimeOutput> GetCurrentTime() const;
 
  private:
-  WeatherClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport,
+  WeatherClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport,
                 std::string path_prefix)
       : config_(std::move(config)),
         transport_(std::move(transport)),
         path_prefix_(std::move(path_prefix)) {}
 
-  smithy::Outcome<smithy::http::HttpResponse> Send(const std::string& method,
-                                                   const std::string& target) const;
+  opal::Outcome<opal::http::HttpResponse> Send(const std::string& method,
+                                               const std::string& target) const;
 
-  smithy::ClientConfig config_;
-  std::shared_ptr<smithy::http::HttpClient> transport_;
+  opal::ClientConfig config_;
+  std::shared_ptr<opal::http::HttpClient> transport_;
   std::string path_prefix_;
 };
 

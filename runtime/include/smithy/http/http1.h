@@ -9,7 +9,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/http/headers.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // The HTTP/1.1 message reader behind SocketHttpClient/SocketHttpServer,
 // factored out of the socket layer so hostile-input tests and the fuzz
@@ -50,6 +50,6 @@ bool ParseRequestLine(std::string_view line, std::string* method, std::string* t
 // when the line is not HTTP-shaped or the status is implausible.
 Outcome<int> ParseStatusLine(std::string_view line);
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_HTTP1_H_

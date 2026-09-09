@@ -7,7 +7,7 @@
 
 #include "smithy/compression/gzip_test_peer.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 // A body that compresses but not trivially, so slice boundaries land on
@@ -138,4 +138,4 @@ TEST(GzipChunkedFeedTest, GarbageUnderSlicedFeedsIsMalformedNotAHang) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

@@ -110,7 +110,7 @@ TEST(GauntletCompileTest, RecursiveShapesUseValueSemanticBoxes) {
   root.label = "root";
   rest::Node child;
   child.label = "child";
-  root.next = smithy::Boxed<rest::Node>(child);
+  root.next = opal::Boxed<rest::Node>(child);
   root.children = std::vector<rest::Node>{child};
   const rest::Node copy = root;  // deep copy through the box
   EXPECT_EQ(copy, root);
@@ -137,23 +137,23 @@ TEST(GauntletCompileTest, EveryProtocolEmitsTheGauntletShapes) {
 TEST(GauntletCompileTest, StreamingServersExposeAStreamRouter) {
   namespace rest_stream = compile::streaming::rest;
   struct Handler : rest_stream::RelayHandler {
-    smithy::Outcome<smithy::Unit> Converse(
+    opal::Outcome<opal::Unit> Converse(
         const rest_stream::ConverseInput& input,
-        smithy::eventstream::EventStream<rest_stream::ServerEvents, rest_stream::ClientEvents>&
+        opal::eventstream::EventStream<rest_stream::ServerEvents, rest_stream::ClientEvents>&
             stream,
-        const smithy::server::RequestContext&) override {
+        const opal::server::RequestContext&) override {
       rest_stream::MemberJoined joined;
       joined.member = input.room;
       (void)stream.Send(rest_stream::ServerEvents::FromJoined(joined));
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<smithy::Unit> Watch(
+    opal::Outcome<opal::Unit> Watch(
         const rest_stream::WatchInput&,
-        smithy::eventstream::EventStream<rest_stream::ServerEvents, smithy::eventstream::NoEvents>&
+        opal::eventstream::EventStream<rest_stream::ServerEvents, opal::eventstream::NoEvents>&
             stream,
-        const smithy::server::RequestContext&) override {
+        const opal::server::RequestContext&) override {
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
   };
   rest_stream::RelayServer server(std::make_shared<Handler>());

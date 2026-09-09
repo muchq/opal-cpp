@@ -38,9 +38,9 @@ experience assumed. Day 2 (evolving the model) is
 Consolidated in one place — if your API depends on any of these, check here before adopting:
 
 - **`@streaming` blobs are not modeled yet.** A streaming blob payload generates as an
-  ordinary `smithy::Blob`, fully buffered in memory. Event streams, by contrast, are real
+  ordinary `opal::Blob`, fully buffered in memory. Event streams, by contrast, are real
   ([ADR-0016](docs/adr/0016-generated-event-streams.md)): a `@streaming` union operation
-  generates a typed `smithy::eventstream::EventStream` session over WebSocket for all
+  generates a typed `opal::eventstream::EventStream` session over WebSocket for all
   three protocols — `simpleRestJson` and `rpcv2Cbor` ride the event-stream framing codec
   ([ADR-0014](docs/adr/0014-event-stream-framing-first.md)) and `jsonRpc2` streams
   JSON-RPC 2.0 envelopes natively ([ADR-0023](docs/adr/0023-jsonrpc2-event-streams.md)) —

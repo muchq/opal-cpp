@@ -7,7 +7,7 @@
 #include <exception>
 #endif
 
-namespace smithy::internal {
+namespace opal::internal {
 
 // Runs `body()` and returns its result. If `body` throws, `on_throw` is
 // invoked with the exception's what() message — or nullptr for a non-std
@@ -43,6 +43,6 @@ auto Contain(Body&& body, OnThrow&& on_throw) -> decltype(std::forward<Body>(bod
 #endif
 }
 
-}  // namespace smithy::internal
+}  // namespace opal::internal
 
 #endif  // SMITHY_CORE_EXCEPTION_GUARD_H_

@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace smithy {
+namespace opal {
 namespace {
 
 class AttemptObserver final : public Interceptor {
@@ -65,4 +65,4 @@ std::shared_ptr<Interceptor> PropagateTraceContext(
   return std::make_shared<TracePropagator>(std::move(current));
 }
 
-}  // namespace smithy
+}  // namespace opal

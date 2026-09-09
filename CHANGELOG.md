@@ -6,10 +6,35 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ## [Unreleased]
 
+### Breaking
+
+- **The runtime namespace is `opal`, not `smithy`** (#201, ADR-0024; the
+  first of three surfaces). Smithy is the IDL a service is described in, not
+  a property of its JSON codec or its HTTP transport, so `smithy::Outcome`,
+  `smithy::json::Encode` and `smithy::http::BeastServerTransport` are now
+  `opal::Outcome`, `opal::json::Encode` and
+  `opal::http::BeastServerTransport` — every `smithy::` scope in the runtime,
+  in generated code, and in the generated protocol-conformance suites (now
+  `opal::protocoltests::…`, whose headers moved to
+  `include/opal/protocoltests/`). Migration: `smithy::` → `opal::` and
+  `namespace smithy` → `namespace opal` over your tree, with one exclusion.
+  A C++ namespace you derived from your own model's Smithy namespace is
+  yours, not the runtime's, and when that model namespace starts with
+  `smithy.` a blind substitution would rename it too (this repo's rules-test
+  fixture, `smithy.cpp.ruletest` → `smithy::cpp::ruletest`, is one). Keep
+  it, and constrain the substitution to the runtime's scopes:
+  `smithy::http::`, `smithy::json::`, `smithy::cbor::`,
+  `smithy::eventstream::`, `smithy::server::`, `smithy::testing::`,
+  `smithy::protocoltests::`, and the top-level runtime types such as
+  `smithy::Outcome`. Smithy namespaces in `.smithy` files and the
+  `smithy_cpp_*_library` rules name the model and are unchanged. The
+  include root (`smithy/http/transport.h`) and the Bazel module
+  (`@smithy_cpp`) are unchanged here and move in the two PRs that follow.
+
 ### Added
 
 - **A dependency-free Prometheus `/metrics` endpoint** (#91, first work
-  item). `smithy::server::MetricsRegistry` aggregates the existing `Observe`
+  item). `opal::server::MetricsRegistry` aggregates the existing `Observe`
   hooks into the five `http_server_*` families labeled by `service_name`,
   `http_method` and `route`, and `MetricsEndpoint` serves them in the
   text exposition format, which needs no client library and so costs zero new
@@ -87,7 +112,7 @@ policy in [docs/versioning.md](docs/versioning.md).
   separates a contained crash from a deliberate 500, which report identically
   otherwise.
 
-- **A structured access-log formatter** (#203). `smithy::server::FormatAccessLog`
+- **A structured access-log formatter** (#203). `opal::server::FormatAccessLog`
   turns a `RequestObservation` into one line of JSON — a pure function with
   no I/O, no sink, no configuration and no new dependency (`:server` still
   takes only `:core` and `:http`; the JSON is hand-rolled like the Prometheus
@@ -130,7 +155,7 @@ policy in [docs/versioning.md](docs/versioning.md).
   now shares the same check); a `float` member cast the parsed double
   unchecked on both the body and text-binding paths, so a finite wire value
   beyond float range (`1e300`) was undefined behavior per [conv.double] —
-  the new `smithy::FloatFromDouble` rejects it while NaN/±Infinity still
+  the new `opal::FloatFromDouble` rejects it while NaN/±Infinity still
   pass; and
   the jsonRpc2 client truncated `error.code` to `int` *before* its 100–599
   range test, classifying 2^32+404 as HTTP 404 (with 5xx codes wrongly

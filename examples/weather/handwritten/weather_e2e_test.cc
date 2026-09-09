@@ -21,17 +21,17 @@ namespace {
 // Reference handler: two cities, deterministic time.
 class ReferenceHandler final : public WeatherHandler {
  public:
-  smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input) override {
+  opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input) override {
     if (input.cityId == "seattle") {
       return GetCityOutput{"Seattle", CityCoordinates{47.6062, -122.3321}};
     }
     if (input.cityId == "rain city") {  // exercises percent-encoded labels
       return GetCityOutput{"Rain City", CityCoordinates{45.0, -120.0}};
     }
-    return smithy::Error::Modeled(kNoSuchResourceCode, "no city: " + input.cityId);
+    return opal::Error::Modeled(kNoSuchResourceCode, "no city: " + input.cityId);
   }
 
-  smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) override {
+  opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) override {
     ListCitiesOutput out;
     if (!input.nextToken.has_value()) {
       out.items.push_back(CitySummary{"seattle", "Seattle"});
@@ -44,15 +44,15 @@ class ReferenceHandler final : public WeatherHandler {
     return out;
   }
 
-  smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) override {
+  opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) override {
     if (input.cityId != "seattle") {
-      return smithy::Error::Modeled(kNoSuchResourceCode, "no city: " + input.cityId);
+      return opal::Error::Modeled(kNoSuchResourceCode, "no city: " + input.cityId);
     }
     return GetForecastOutput{0.75};
   }
 
-  smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime() override {
-    return GetCurrentTimeOutput{smithy::Timestamp::FromEpochMilliseconds(1398796238500)};
+  opal::Outcome<GetCurrentTimeOutput> GetCurrentTime() override {
+    return GetCurrentTimeOutput{opal::Timestamp::FromEpochMilliseconds(1398796238500)};
   }
 };
 
@@ -62,19 +62,19 @@ class WeatherEndToEndTest : public testing::TestWithParam<Transport> {
  protected:
   void SetUp() override {
     service_ = std::make_unique<WeatherService>(std::make_shared<ReferenceHandler>());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     if (GetParam() == Transport::kLoopback) {
-      auto loopback = std::make_shared<smithy::http::Loopback>();
+      auto loopback = std::make_shared<opal::http::Loopback>();
       ASSERT_TRUE(loopback->Start(service_->Handler()).ok());
       transport_holder_ = loopback;
       config.http_client = loopback;
     } else if (GetParam() == Transport::kSocket) {
-      socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+      socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
       ASSERT_TRUE(socket_server_->Start(service_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
     } else {
 #ifdef SMITHY_E2E_HAVE_BEAST
-      beast_server_ = std::make_unique<smithy::http::BeastServerTransport>();
+      beast_server_ = std::make_unique<opal::http::BeastServerTransport>();
       ASSERT_TRUE(beast_server_->Start(service_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(beast_server_->port());
 #else
@@ -94,10 +94,10 @@ class WeatherEndToEndTest : public testing::TestWithParam<Transport> {
   }
 
   std::unique_ptr<WeatherService> service_;
-  std::shared_ptr<smithy::http::HttpClient> transport_holder_;
-  std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+  std::shared_ptr<opal::http::HttpClient> transport_holder_;
+  std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
 #ifdef SMITHY_E2E_HAVE_BEAST
-  std::unique_ptr<smithy::http::BeastServerTransport> beast_server_;
+  std::unique_ptr<opal::http::BeastServerTransport> beast_server_;
 #endif
   std::unique_ptr<WeatherClient> client_;
 };
@@ -117,7 +117,7 @@ TEST_P(WeatherEndToEndTest, LabelsWithSpacesAreEncodedCorrectly) {
 TEST_P(WeatherEndToEndTest, ModeledErrorsSurfaceWithCodeAndStatus) {
   const auto city = client_->GetCity(GetCityInput{"atlantis"});
   ASSERT_FALSE(city.ok());
-  EXPECT_EQ(city.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(city.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(city.error().code(), kNoSuchResourceCode);
   EXPECT_EQ(city.error().message(), "no city: atlantis");
 }

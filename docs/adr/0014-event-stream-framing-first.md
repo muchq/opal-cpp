@@ -47,7 +47,7 @@ shippable and tested in the house pattern:
    dials the upgraded server and drains real frames through the module
    boundary), the way slice 1 shipped `eventstream_consumer_test` — not
    just in-repo transport tests.
-3. **The streaming API + codegen**: `smithy::EventStream<Tx, Rx>` as a
+3. **The streaming API + codegen**: `opal::EventStream<Tx, Rx>` as a
    blocking sender/receiver pair mirroring the sync unary API (recorded
    here as *direction*: no coroutine surface before 1.0 — a coroutine
    adapter can wrap a blocking pair, not vice versa; backpressure by
@@ -62,9 +62,9 @@ Codec decisions pinned now:
   one of the format's ten wire types (bool true/false collapse into one
   C++ `bool` alternative; timestamps and UUIDs get distinct value types so
   they cannot be confused with `long`/byte-array — the timestamp is the
-  runtime's one `smithy::Timestamp`, so slice-3 generated code trades
+  runtime's one `opal::Timestamp`, so slice-3 generated code trades
   timestamps with headers without a conversion). The payload is a
-  `smithy::Blob` — the framing layer carries protocol bytes, it does not
+  `opal::Blob` — the framing layer carries protocol bytes, it does not
   interpret them.
 - **Hand-rolled, dependency-free:** big-endian packing and CRC32 (the
   IEEE/zlib polynomial) are written out in `frame.cc` like the CBOR

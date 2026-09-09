@@ -9,7 +9,7 @@
 
 #include "smithy/core/base64.h"
 
-namespace smithy {
+namespace opal {
 
 Outcome<Timestamp> TimestampFromDocument(const Document& doc, TimestampFormat format) {
   if (doc.is_timestamp()) {
@@ -89,4 +89,4 @@ std::string FormatFloating(T value) {
 std::string FormatDouble(double value) { return FormatFloating(value); }
 std::string FormatFloat(float value) { return FormatFloating(value); }
 
-}  // namespace smithy
+}  // namespace opal

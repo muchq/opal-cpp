@@ -8,11 +8,11 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/jsonrpc2/client.h"
-#include "smithy/protocoltests/jsonrpc2/server.h"
+#include "opal/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/server.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
 // Generated from smithy.test#httpResponseTests (server cases): a stub
 // handler returns the expected params and the wire response the server
@@ -42,33 +42,33 @@ PutConstrainedOutput MinimalPutConstrainedOutput() {
 
 class RecordingHandler : public JsonRpc2ProtocolHandler {
   public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       lastEchoPayload = input;
       return MinimalEchoPayloadOutput();
     }
     std::optional<EchoPayloadInput> lastEchoPayload;
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const opal::server::RequestContext&) override {
       lastNoArgs = input;
       return MinimalNoArgsOutput();
     }
     std::optional<NoArgsInput> lastNoArgs;
-    smithy::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const opal::server::RequestContext&) override {
       lastPutConstrained = input;
       return MinimalPutConstrainedOutput();
     }
     std::optional<PutConstrainedInput> lastPutConstrained;
 };
 
-smithy::http::HttpRequest MinimalRequestForEchoPayload() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForEchoPayload() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *JsonRpc2ProtocolClient::Create(std::move(config));
@@ -80,9 +80,9 @@ smithy::http::HttpRequest MinimalRequestForEchoPayload() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForNoArgs() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForNoArgs() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *JsonRpc2ProtocolClient::Create(std::move(config));
@@ -100,7 +100,7 @@ smithy::http::HttpRequest MinimalRequestForNoArgs() {
 TEST(JsonRpc2ProtocolServerResponseTest, JsonRpc2BasicResponse) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   EchoPayloadOutput v{};
@@ -117,17 +117,17 @@ TEST(JsonRpc2ProtocolServerResponseTest, JsonRpc2BasicResponse) {
     }
   };
   JsonRpc2ProtocolServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForEchoPayload());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForEchoPayload());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"result\":{\"echo\":\"hello\",\"count\":3,\"nested\":{\"label\":\"n\",\"depth\":2}},\"id\":1}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"result\":{\"echo\":\"hello\",\"count\":3,\"nested\":{\"label\":\"n\",\"depth\":2}},\"id\":1}", response.body));
 }
 
 // An operation with no modeled output answers an empty result object.
 TEST(JsonRpc2ProtocolServerResponseTest, JsonRpc2EmptyResponse) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   NoArgsOutput v{};
@@ -136,19 +136,19 @@ TEST(JsonRpc2ProtocolServerResponseTest, JsonRpc2EmptyResponse) {
     }
   };
   JsonRpc2ProtocolServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForNoArgs());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForNoArgs());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"result\":{},\"id\":1}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"result\":{},\"id\":1}", response.body));
 }
 
 // Modeled errors ride the JSON-RPC error object: code from @httpError, data carries the members plus the fully qualified shape id in __type, message mirrors the detail's message.
 TEST(JsonRpc2ProtocolServerErrorTest, JsonRpc2NotFoundError) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       (void)input;
-      smithy::Error error = smithy::Error::Modeled("NotFoundError", "");
+      opal::Error error = opal::Error::Modeled("NotFoundError", "");
       error.set_detail([] {
   NotFoundError v{};
   v.message = "no such sink";
@@ -159,19 +159,19 @@ TEST(JsonRpc2ProtocolServerErrorTest, JsonRpc2NotFoundError) {
     }
   };
   JsonRpc2ProtocolServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForEchoPayload());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForEchoPayload());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":404,\"message\":\"no such sink\",\"data\":{\"__type\":\"smithy.cpp.protocoltests.jsonrpc2#NotFoundError\",\"message\":\"no such sink\",\"resourceType\":\"Sink\"}},\"id\":1}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":404,\"message\":\"no such sink\",\"data\":{\"__type\":\"smithy.cpp.protocoltests.jsonrpc2#NotFoundError\",\"message\":\"no such sink\",\"resourceType\":\"Sink\"}},\"id\":1}", response.body));
 }
 
 // Server-class errors carry their 5xx @httpError status as the JSON-RPC code, marking them retryable client-side.
 TEST(JsonRpc2ProtocolServerErrorTest, JsonRpc2ThrottledError) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       (void)input;
-      smithy::Error error = smithy::Error::Modeled("ThrottledError", "");
+      opal::Error error = opal::Error::Modeled("ThrottledError", "");
       error.set_detail([] {
   ThrottledError v{};
   v.message = "slow down";
@@ -181,10 +181,10 @@ TEST(JsonRpc2ProtocolServerErrorTest, JsonRpc2ThrottledError) {
     }
   };
   JsonRpc2ProtocolServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForEchoPayload());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForEchoPayload());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":503,\"message\":\"slow down\",\"data\":{\"__type\":\"smithy.cpp.protocoltests.jsonrpc2#ThrottledError\",\"message\":\"slow down\"}},\"id\":1}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":503,\"message\":\"slow down\",\"data\":{\"__type\":\"smithy.cpp.protocoltests.jsonrpc2#ThrottledError\",\"message\":\"slow down\"}},\"id\":1}", response.body));
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

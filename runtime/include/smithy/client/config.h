@@ -12,11 +12,11 @@
 #include "smithy/http/transport.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy {
+namespace opal {
 
 // Configuration shared by every generated client.
 //
-//   smithy::ClientConfig cfg;
+//   opal::ClientConfig cfg;
 //   cfg.endpoint = "http://localhost:8080";
 //   WeatherClient client(cfg);
 //
@@ -25,7 +25,7 @@ namespace smithy {
 struct ClientConfig {
   std::string endpoint;
   int request_timeout_ms = 30000;
-  // Mirrors smithy::Version() (runtime/src/core/version.cc), the single source
+  // Mirrors opal::Version() (runtime/src/core/version.cc), the single source
   // of truth for the product version.
   std::string user_agent = "smithy-cpp/0.3.0-dev";
 
@@ -69,11 +69,11 @@ struct ClientConfig {
   // Optional WebSocket dialer override for event-stream operations
   // (ADR-0016), injected the way http_client injects the unary transport —
   // which is also how tests run streams without Beast. When unset, generated
-  // streaming clients dial with smithy::http::BeastWebSocketClient::Dialer()
+  // streaming clients dial with opal::http::BeastWebSocketClient::Dialer()
   // from this config's endpoint and TLS options.
   http::WebSocketDialer websocket_dialer;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CLIENT_CONFIG_H_

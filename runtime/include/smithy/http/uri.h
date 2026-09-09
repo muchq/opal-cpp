@@ -8,7 +8,7 @@
 
 #include "smithy/core/outcome.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // Percent-encodes for a single path segment (httpLabel): every byte outside
 // RFC 3986 "unreserved" is escaped, including '/'.
@@ -68,6 +68,6 @@ struct Endpoint {
 };
 Outcome<Endpoint> ParseEndpoint(std::string_view url);
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_URI_H_

@@ -128,12 +128,12 @@ final class HttpJsonBindingProtocol implements ProtocolGenerator {
 
   @Override
   public String eventPayloadEncode(String docExpr) {
-    return "smithy::Blob::FromString(smithy::json::Encode(" + docExpr + "))";
+    return "opal::Blob::FromString(opal::json::Encode(" + docExpr + "))";
   }
 
   @Override
   public String eventPayloadDecode(String payloadExpr) {
-    return "smithy::json::Decode(" + payloadExpr + ".ToString())";
+    return "opal::json::Decode(" + payloadExpr + ".ToString())";
   }
 
   @Override

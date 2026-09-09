@@ -44,51 +44,51 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   if (doc.ok()) parsed.doc = *std::move(doc);
   const auto type_header = response.headers.Get("x-error-type");
   if (type_header.has_value()) parsed.code = helpers::SanitizeErrorCode(*type_header);
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type == nullptr) type = parsed.doc.Find("code");
     if (parsed.code == "UnknownError" && type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
-    const smithy::Document* text = parsed.doc.Find("message");
+    const opal::Document* text = parsed.doc.Find("message");
     if (text != nullptr && text->is_string()) parsed.message = text->as_string();
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
 // Strict text parsing for label/query/header bindings ([[maybe_unused]]:
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -96,21 +96,21 @@ smithy::Error GenericError(ParsedError parsed) {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
 
-smithy::Error MakeKickedError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeKickedError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("Kicked", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("Kicked", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeKicked(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -122,9 +122,9 @@ smithy::Error MakeKickedError(const smithy::http::HttpResponse& response, Parsed
 // TLS come from the same endpoint the unary transport uses (nothing is
 // configured twice); config.websocket_dialer overrides the Beast dialer the
 // way http_client overrides the unary transport.
-smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> DialStream(const smithy::ClientConfig& config, smithy::http::WebSocketDialRequest request) {
+opal::Outcome<std::shared_ptr<opal::http::WebSocket>> DialStream(const opal::ClientConfig& config, opal::http::WebSocketDialRequest request) {
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     request.host = endpoint->host;
     request.port = endpoint->port;
@@ -133,153 +133,153 @@ smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> DialStream(const smith
   }
   if (config.websocket_dialer) return config.websocket_dialer(request);
   if (request.host.empty()) {
-    return smithy::Error::Validation("ChatClient: config needs an endpoint or a websocket_dialer");
+    return opal::Error::Validation("ChatClient: config needs an endpoint or a websocket_dialer");
   }
-  return smithy::http::BeastWebSocketClient::Dialer()(request);
+  return opal::http::BeastWebSocketClient::Dialer()(request);
 }
 
 // One event per message (ADR-0016): the engaged member's structure is the
 // payload, its member name the :event-type.
-smithy::Outcome<smithy::eventstream::Message> EncodeConverseEvent(const types::ChatEvents& event) {
+opal::Outcome<opal::eventstream::Message> EncodeConverseEvent(const types::ChatEvents& event) {
   if (event.is_message()) {
-    return smithy::eventstream::MakeEventMessage("message", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeChatMessage(event.as_message()))));
+    return opal::eventstream::MakeEventMessage("message", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeChatMessage(event.as_message()))));
   }
   if (event.is_leave()) {
-    return smithy::eventstream::MakeEventMessage("leave", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeLeaveNotice(event.as_leave()))));
+    return opal::eventstream::MakeEventMessage("leave", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeLeaveNotice(event.as_leave()))));
   }
-  return smithy::Error::Validation("ChatEvents: no event member engaged");
+  return opal::Error::Validation("ChatEvents: no event member engaged");
 }
 
-smithy::Outcome<types::RoomEvents> DecodeConverseEvent(const smithy::eventstream::Message& message) {
-  auto envelope = smithy::eventstream::ParseEnvelope(message);
+opal::Outcome<types::RoomEvents> DecodeConverseEvent(const opal::eventstream::Message& message) {
+  auto envelope = opal::eventstream::ParseEnvelope(message);
   if (!envelope) return std::move(envelope).error();
-  if (envelope->kind == smithy::eventstream::EventEnvelope::Kind::kException) {
+  if (envelope->kind == opal::eventstream::EventEnvelope::Kind::kException) {
     // A received exception is terminal (ADR-0016): the EventStream closes the
     // session and surfaces this error, exactly the unary shape.
     ParsedError parsed;
     parsed.code = helpers::SanitizeErrorCode(envelope->type);
-    auto exception_doc = smithy::json::Decode(envelope->payload.ToString());
+    auto exception_doc = opal::json::Decode(envelope->payload.ToString());
     if (exception_doc.ok() && exception_doc->is_map()) {
       parsed.doc = *std::move(exception_doc);
-      const smithy::Document* text = parsed.doc.Find("message");
+      const opal::Document* text = parsed.doc.Find("message");
       if (text != nullptr && text->is_string()) parsed.message = text->as_string();
     }
     // Make<Error>Error's header-patch source; exception messages carry none.
-    smithy::http::HttpResponse response;
+    opal::http::HttpResponse response;
     if (parsed.code == "Kicked") return helpers::MakeKickedError(response, std::move(parsed));
     return helpers::GenericError(std::move(parsed));
   }
   if (envelope->type == "message") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeChatMessage(*doc);
     if (!event) return std::move(event).error();
     return types::RoomEvents::FromMessage(*std::move(event));
   }
   if (envelope->type == "joined") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeMemberJoined(*doc);
     if (!event) return std::move(event).error();
     return types::RoomEvents::FromJoined(*std::move(event));
   }
   if (envelope->type == "left") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeMemberLeft(*doc);
     if (!event) return std::move(event).error();
     return types::RoomEvents::FromLeft(*std::move(event));
   }
-  return smithy::Error::Serialization("Converse: unknown event type: " + envelope->type);
+  return opal::Error::Serialization("Converse: unknown event type: " + envelope->type);
 }
 
-smithy::Outcome<types::RoomEvents> DecodeWatchEvent(const smithy::eventstream::Message& message) {
-  auto envelope = smithy::eventstream::ParseEnvelope(message);
+opal::Outcome<types::RoomEvents> DecodeWatchEvent(const opal::eventstream::Message& message) {
+  auto envelope = opal::eventstream::ParseEnvelope(message);
   if (!envelope) return std::move(envelope).error();
-  if (envelope->kind == smithy::eventstream::EventEnvelope::Kind::kException) {
+  if (envelope->kind == opal::eventstream::EventEnvelope::Kind::kException) {
     // A received exception is terminal (ADR-0016): the EventStream closes the
     // session and surfaces this error, exactly the unary shape.
     ParsedError parsed;
     parsed.code = helpers::SanitizeErrorCode(envelope->type);
-    auto exception_doc = smithy::json::Decode(envelope->payload.ToString());
+    auto exception_doc = opal::json::Decode(envelope->payload.ToString());
     if (exception_doc.ok() && exception_doc->is_map()) {
       parsed.doc = *std::move(exception_doc);
-      const smithy::Document* text = parsed.doc.Find("message");
+      const opal::Document* text = parsed.doc.Find("message");
       if (text != nullptr && text->is_string()) parsed.message = text->as_string();
     }
     return helpers::GenericError(std::move(parsed));
   }
   if (envelope->type == "message") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeChatMessage(*doc);
     if (!event) return std::move(event).error();
     return types::RoomEvents::FromMessage(*std::move(event));
   }
   if (envelope->type == "joined") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeMemberJoined(*doc);
     if (!event) return std::move(event).error();
     return types::RoomEvents::FromJoined(*std::move(event));
   }
   if (envelope->type == "left") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeMemberLeft(*doc);
     if (!event) return std::move(event).error();
     return types::RoomEvents::FromLeft(*std::move(event));
   }
-  return smithy::Error::Serialization("Watch: unknown event type: " + envelope->type);
+  return opal::Error::Serialization("Watch: unknown event type: " + envelope->type);
 }
 
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<ChatClient> ChatClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<ChatClient> ChatClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("ChatClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("ChatClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("ChatClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("ChatClient: config needs an endpoint or an http_client");
   }
   return ChatClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-ChatClient::ChatClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+ChatClient::ChatClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> ChatClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> ChatClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   request.headers.Set("user-agent", config_.user_agent);
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<ConverseClientStream> ChatClient::Converse(const ConverseInput& input) const {
+opal::Outcome<ConverseClientStream> ChatClient::Converse(const ConverseInput& input) const {
   std::string target = path_prefix_;
   target += "/rooms";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.room);
+  target += opal::http::EncodePathSegment(input.room);
   target += "/converse";
-  smithy::http::WebSocketDialRequest request;
+  opal::http::WebSocketDialRequest request;
   request.target = std::move(target);
   if (input.nickname.has_value()) {
     request.headers.Set("x-chat-nickname", (*input.nickname));
@@ -290,28 +290,28 @@ smithy::Outcome<ConverseClientStream> ChatClient::Converse(const ConverseInput& 
   return ConverseClientStream(*std::move(socket), helpers::EncodeConverseEvent, helpers::DecodeConverseEvent);
 }
 
-smithy::Outcome<ListRoomsOutput> ChatClient::ListRooms(const ListRoomsInput& input) const {
+opal::Outcome<ListRoomsOutput> ChatClient::ListRooms(const ListRoomsInput& input) const {
   (void)input;
   std::string target = path_prefix_;
   target += "/rooms";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeListRoomsOutput(*body_doc);
 }
 
-smithy::Outcome<WatchClientStream> ChatClient::Watch(const WatchInput& input) const {
+opal::Outcome<WatchClientStream> ChatClient::Watch(const WatchInput& input) const {
   std::string target = path_prefix_;
   target += "/rooms";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.room);
+  target += opal::http::EncodePathSegment(input.room);
   target += "/watch";
-  smithy::http::WebSocketDialRequest request;
+  opal::http::WebSocketDialRequest request;
   request.target = std::move(target);
   request.headers.Set("user-agent", config_.user_agent);
   auto socket = helpers::DialStream(config_, std::move(request));

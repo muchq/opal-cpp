@@ -8,11 +8,11 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/jsonrpc2/client.h"
-#include "smithy/protocoltests/jsonrpc2/server.h"
+#include "opal/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/server.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
 // Generated from smithy.test#httpRequestTests (server cases): the wire
 // request is routed into the generated server and the parsed input is
@@ -42,24 +42,24 @@ PutConstrainedOutput MinimalPutConstrainedOutput() {
 
 class RecordingHandler : public JsonRpc2ProtocolHandler {
   public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       lastEchoPayload = input;
       return MinimalEchoPayloadOutput();
     }
     std::optional<EchoPayloadInput> lastEchoPayload;
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const opal::server::RequestContext&) override {
       lastNoArgs = input;
       return MinimalNoArgsOutput();
     }
     std::optional<NoArgsInput> lastNoArgs;
-    smithy::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const opal::server::RequestContext&) override {
       lastPutConstrained = input;
       return MinimalPutConstrainedOutput();
     }
@@ -72,13 +72,13 @@ class RecordingHandler : public JsonRpc2ProtocolHandler {
 TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2BasicRequest) {
   auto handler = std::make_shared<RecordingHandler>();
   JsonRpc2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("accept", "application/json");
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"string\":\"hello\",\"renamed\":\"other\",\"integer\":42,\"boolean\":true,\"double\":3.5}}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastEchoPayload.has_value()) << response.status << " " << response.body;
   const EchoPayloadInput expected = [] {
   EchoPayloadInput v{};
@@ -96,11 +96,11 @@ TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2BasicRequest) {
 TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2AggregatesRequest) {
   auto handler = std::make_shared<RecordingHandler>();
   JsonRpc2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"names\":[\"a\",\"b\"],\"attributes\":{\"k\":\"v\"},\"nested\":{\"label\":\"n\",\"depth\":2}}}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastEchoPayload.has_value()) << response.status << " " << response.body;
   const EchoPayloadInput expected = [] {
   EchoPayloadInput v{};
@@ -121,16 +121,16 @@ TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2AggregatesRequest) {
 TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2TimestampsRequest) {
   auto handler = std::make_shared<RecordingHandler>();
   JsonRpc2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"timestamp\":1515531081,\"dateTime\":\"2018-01-09T20:51:21Z\"}}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastEchoPayload.has_value()) << response.status << " " << response.body;
   const EchoPayloadInput expected = [] {
   EchoPayloadInput v{};
-  v.timestamp = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
-  v.dateTime = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  v.timestamp = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  v.dateTime = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
   return v;
 }();
   EXPECT_EQ(*handler->lastEchoPayload, expected);
@@ -140,13 +140,13 @@ TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2TimestampsRequest) {
 TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2NoParamsRequest) {
   auto handler = std::make_shared<RecordingHandler>();
   JsonRpc2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("accept", "application/json");
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"NoArgs\",\"id\":1}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastNoArgs.has_value()) << response.status << " " << response.body;
   const NoArgsInput expected = [] {
   NoArgsInput v{};
@@ -159,12 +159,12 @@ TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2NoParamsRequest) {
 TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2ServerIgnoresParamsForNoArgs) {
   auto handler = std::make_shared<RecordingHandler>();
   JsonRpc2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"NoArgs\",\"id\":1,\"params\":{\"unexpected\":true}}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastNoArgs.has_value()) << response.status << " " << response.body;
   const NoArgsInput expected = [] {
   NoArgsInput v{};
@@ -177,11 +177,11 @@ TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2ServerIgnoresParamsForNoArgs) {
 TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2ConstrainedRequest) {
   auto handler = std::make_shared<RecordingHandler>();
   JsonRpc2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"PutConstrained\",\"id\":1,\"params\":{\"name\":\"ok\",\"limit\":10}}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastPutConstrained.has_value()) << response.status << " " << response.body;
   const PutConstrainedInput expected = [] {
   PutConstrainedInput v{};
@@ -192,4 +192,4 @@ TEST(JsonRpc2ProtocolServerRequestTest, JsonRpc2ConstrainedRequest) {
   EXPECT_EQ(*handler->lastPutConstrained, expected);
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // A valid trust boundary or a fatal test failure: the parse-error path is
@@ -355,4 +355,4 @@ TEST(ClientAddressTest, AnEmptyPeerDerivesEmpty) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

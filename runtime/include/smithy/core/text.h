@@ -4,12 +4,12 @@
 #include <cstddef>
 #include <string_view>
 
-namespace smithy {
+namespace opal {
 
 // Number of Unicode code points in UTF-8 text (Smithy @length counts code
 // points for strings, not bytes). Invalid bytes count as one code point each.
 std::size_t Utf8CodePointCount(std::string_view text);
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_TEXT_H_

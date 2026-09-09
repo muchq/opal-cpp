@@ -272,20 +272,20 @@ error — no exceptions):
 ```cpp
 class InMemoryHandler final : public TodoHandler {
  public:
-  smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     const std::lock_guard<std::mutex> lock(mu_);
     const std::string id = "task-" + std::to_string(next_id_++);
     titles_[id] = input.title;
     return AddTaskOutput{.taskId = id, .title = input.title};
   }
 
-  smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     const std::lock_guard<std::mutex> lock(mu_);
     const auto it = titles_.find(input.taskId);
     if (it == titles_.end()) {
-      smithy::Error error = smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+      opal::Error error = opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
       error.set_detail(NoSuchTask{.message = "no task: " + input.taskId});
       return error;  // the server turns this into the modeled 404
     }
@@ -309,9 +309,9 @@ socket) exactly like
 
 ```cpp
 TodoServer server(std::make_shared<InMemoryHandler>());
-auto loopback = std::make_shared<smithy::http::Loopback>();
+auto loopback = std::make_shared<opal::http::Loopback>();
 (void)loopback->Start(server.Handler());
-smithy::ClientConfig config;
+opal::ClientConfig config;
 config.http_client = loopback;
 // Create returns an Outcome; value_or_die unwraps it, and on failure dies
 // with this context plus the error's code and message.
@@ -334,7 +334,7 @@ server does on your behalf.
 bazel test //...
 ```
 
-For production serving, plug `server.Handler()` into `smithy::http::BeastServerTransport`
+For production serving, plug `server.Handler()` into `opal::http::BeastServerTransport`
 (`@smithy_cpp//runtime:http_beast`, ADR-0006) — the
 [Serving lifecycle](production-guide.md#serving-lifecycle) walkthrough and its compiled example
 ([`examples/simplerestjson/serve_main.cc`](../examples/simplerestjson/serve_main.cc)) wire

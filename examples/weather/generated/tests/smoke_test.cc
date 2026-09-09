@@ -62,27 +62,27 @@ ListCitiesOutput MinimalListCitiesOutput() {
 
 class SmokeHandler : public WeatherHandler {
   public:
-    smithy::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalDeleteCityOutput();
     }
-    smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetCityOutput();
     }
-    smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetCurrentTimeOutput();
     }
-    smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetForecastOutput();
     }
-    smithy::Outcome<GetReportOutput> GetReport(const GetReportInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetReportOutput> GetReport(const GetReportInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetReportOutput();
     }
-    smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalListCitiesOutput();
     }
@@ -90,9 +90,9 @@ class SmokeHandler : public WeatherHandler {
 
 WeatherClient MakeClient(std::shared_ptr<WeatherHandler> handler) {
   WeatherServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -178,9 +178,9 @@ TEST(WeatherSmokeTest, ListCitiesRoundTrips) {
 TEST(WeatherSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("NoSuchResource", "smoke");
+        opal::Error error = opal::Error::Modeled("NoSuchResource", "smoke");
             auto detail = [] {
           NoSuchResource v{};
           return v;
@@ -199,7 +199,7 @@ TEST(WeatherSmokeTest, ModeledErrorsMapAcrossTheWire) {
   input.cityId = "smoke";
   const auto outcome = client.DeleteCity(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "NoSuchResource");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<NoSuchResource>(), nullptr);

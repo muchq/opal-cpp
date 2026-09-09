@@ -9,7 +9,7 @@
 
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::testing {
+namespace opal::testing {
 namespace {
 
 TEST(UriPathTest, SplitsTargetAtQuestionMark) {
@@ -79,8 +79,8 @@ TEST(JsonBodyEqualsTest, IgnoresFormattingAndKeyOrder) {
 TEST(CborBodyEqualsTest, ComparesDecodedDocuments) {
   DocumentMap map;
   map.emplace("a", Document(std::int64_t{1}));
-  const std::string bytes = smithy::cbor::Encode(Document(std::move(map))).ToString();
-  const std::string b64 = smithy::Base64Encode(smithy::Blob::FromString(bytes));
+  const std::string bytes = opal::cbor::Encode(Document(std::move(map))).ToString();
+  const std::string b64 = opal::Base64Encode(opal::Blob::FromString(bytes));
   EXPECT_TRUE(CborBodyEqualsBase64(b64, bytes));
   EXPECT_FALSE(CborBodyEqualsBase64(b64, "junk"));
 }
@@ -96,7 +96,7 @@ TEST(MutatingTransportTest, MutatesSuccessfulResponses) {
   auto inner = std::make_shared<CapturingTransport>();
   inner->next_response = {200, {}, "before"};
   MutatingTransport transport(inner,
-                              [](smithy::http::HttpResponse& response) { response.body += "!"; });
+                              [](opal::http::HttpResponse& response) { response.body += "!"; });
   const auto response = transport.Send({});
   ASSERT_TRUE(response.ok());
   EXPECT_EQ(response->body, "before!");
@@ -105,7 +105,7 @@ TEST(MutatingTransportTest, MutatesSuccessfulResponses) {
 TEST(CapturingTransportTest, RecordsAndReplays) {
   CapturingTransport transport;
   transport.next_response = {418, {}, "teapot"};
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "PUT";
   const auto response = transport.Send(request);
   ASSERT_TRUE(response.ok());
@@ -114,4 +114,4 @@ TEST(CapturingTransportTest, RecordsAndReplays) {
 }
 
 }  // namespace
-}  // namespace smithy::testing
+}  // namespace opal::testing

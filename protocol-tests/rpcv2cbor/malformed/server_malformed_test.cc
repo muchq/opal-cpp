@@ -10,108 +10,108 @@
 #include <memory>
 #include <string>
 
+#include "opal/protocoltests/rpcv2cbor/server.h"
 #include "smithy/cbor/cbor.h"
-#include "smithy/protocoltests/rpcv2cbor/server.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::rpcv2cbor {
+namespace opal::protocoltests::rpcv2cbor {
 namespace {
 
 class RecordingHandler : public RpcV2ProtocolHandler {
  public:
-  smithy::Outcome<EmptyInputOutputOutput> EmptyInputOutput(
-      const EmptyInputOutputInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<EmptyInputOutputOutput> EmptyInputOutput(
+      const EmptyInputOutputInput&, const opal::server::RequestContext&) override {
     ++calls;
     return EmptyInputOutputOutput{};
   }
-  smithy::Outcome<Float16Output> Float16(const Float16Input&,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<Float16Output> Float16(const Float16Input&,
+                                       const opal::server::RequestContext&) override {
     ++calls;
     return Float16Output{};
   }
-  smithy::Outcome<FractionalSecondsOutput> FractionalSeconds(
-      const FractionalSecondsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<FractionalSecondsOutput> FractionalSeconds(
+      const FractionalSecondsInput&, const opal::server::RequestContext&) override {
     ++calls;
     return FractionalSecondsOutput{};
   }
-  smithy::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(
-      const GreetingWithErrorsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(
+      const GreetingWithErrorsInput&, const opal::server::RequestContext&) override {
     ++calls;
     return GreetingWithErrorsOutput{};
   }
-  smithy::Outcome<NoInputOutputOutput> NoInputOutput(
-      const NoInputOutputInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<NoInputOutputOutput> NoInputOutput(const NoInputOutputInput&,
+                                                   const opal::server::RequestContext&) override {
     ++calls;
     return NoInputOutputOutput{};
   }
-  smithy::Outcome<OperationWithDefaultsOutput> OperationWithDefaults(
-      const OperationWithDefaultsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<OperationWithDefaultsOutput> OperationWithDefaults(
+      const OperationWithDefaultsInput&, const opal::server::RequestContext&) override {
     ++calls;
     return OperationWithDefaultsOutput{};
   }
-  smithy::Outcome<OptionalInputOutputOutput> OptionalInputOutput(
-      const OptionalInputOutputInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<OptionalInputOutputOutput> OptionalInputOutput(
+      const OptionalInputOutputInput&, const opal::server::RequestContext&) override {
     ++calls;
     return OptionalInputOutputOutput{};
   }
-  smithy::Outcome<RecursiveShapesOutput> RecursiveShapes(
-      const RecursiveShapesInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<RecursiveShapesOutput> RecursiveShapes(
+      const RecursiveShapesInput&, const opal::server::RequestContext&) override {
     ++calls;
     return RecursiveShapesOutput{};
   }
-  smithy::Outcome<RpcV2CborDenseMapsOutput> RpcV2CborDenseMaps(
-      const RpcV2CborDenseMapsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<RpcV2CborDenseMapsOutput> RpcV2CborDenseMaps(
+      const RpcV2CborDenseMapsInput&, const opal::server::RequestContext&) override {
     ++calls;
     return RpcV2CborDenseMapsOutput{};
   }
-  smithy::Outcome<RpcV2CborListsOutput> RpcV2CborLists(
-      const RpcV2CborListsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<RpcV2CborListsOutput> RpcV2CborLists(const RpcV2CborListsInput&,
+                                                     const opal::server::RequestContext&) override {
     ++calls;
     return RpcV2CborListsOutput{};
   }
-  smithy::Outcome<RpcV2CborSparseMapsOutput> RpcV2CborSparseMaps(
-      const RpcV2CborSparseMapsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<RpcV2CborSparseMapsOutput> RpcV2CborSparseMaps(
+      const RpcV2CborSparseMapsInput&, const opal::server::RequestContext&) override {
     ++calls;
     return RpcV2CborSparseMapsOutput{};
   }
-  smithy::Outcome<RpcV2CborUnionsOutput> RpcV2CborUnions(
-      const RpcV2CborUnionsInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<RpcV2CborUnionsOutput> RpcV2CborUnions(
+      const RpcV2CborUnionsInput&, const opal::server::RequestContext&) override {
     ++calls;
     return RpcV2CborUnionsOutput{};
   }
-  smithy::Outcome<SimpleScalarPropertiesOutput> SimpleScalarProperties(
-      const SimpleScalarPropertiesInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<SimpleScalarPropertiesOutput> SimpleScalarProperties(
+      const SimpleScalarPropertiesInput&, const opal::server::RequestContext&) override {
     ++calls;
     return SimpleScalarPropertiesOutput{};
   }
-  smithy::Outcome<SparseNullsOperationOutput> SparseNullsOperation(
-      const SparseNullsOperationInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<SparseNullsOperationOutput> SparseNullsOperation(
+      const SparseNullsOperationInput&, const opal::server::RequestContext&) override {
     ++calls;
     return SparseNullsOperationOutput{};
   }
   int calls = 0;
 };
 
-// ::testing, not testing: inside namespace smithy::*, protocol_test.h's
-// smithy::testing shadows gtest's global namespace for unqualified lookup.
+// ::testing, not testing: inside namespace opal::*, protocol_test.h's
+// opal::testing shadows gtest's global namespace for unqualified lookup.
 class RpcV2CborMalformedTest : public ::testing::Test {
  protected:
-  smithy::http::HttpRequest WellFormedRequest(const std::string& operation) {
-    return smithy::testing::Rpcv2CborRequest("RpcV2Protocol", operation);
+  opal::http::HttpRequest WellFormedRequest(const std::string& operation) {
+    return opal::testing::Rpcv2CborRequest("RpcV2Protocol", operation);
   }
 
-  smithy::http::HttpResponse Send(const smithy::http::HttpRequest& request) {
+  opal::http::HttpResponse Send(const opal::http::HttpRequest& request) {
     return server_.Handler()(request);
   }
 
   // The protocol serializes errors as a CBOR map carrying __type.
-  std::string ErrorTypeOf(const smithy::http::HttpResponse& response) {
+  std::string ErrorTypeOf(const opal::http::HttpResponse& response) {
     EXPECT_EQ(response.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
     EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/cbor");
-    const auto body = smithy::cbor::Decode(Blob::FromString(response.body));
+    const auto body = opal::cbor::Decode(Blob::FromString(response.body));
     EXPECT_TRUE(body.ok());
     if (!body.ok() || !body->is_map()) return "<unparseable>";
-    const smithy::Document* type = body->Find("__type");
+    const opal::Document* type = body->Find("__type");
     return type == nullptr ? "<missing>" : std::string(type->as_string());
   }
 
@@ -180,4 +180,4 @@ TEST_F(RpcV2CborMalformedTest, WrongMethodIs405) {
 }
 
 }  // namespace
-}  // namespace smithy::protocoltests::rpcv2cbor
+}  // namespace opal::protocoltests::rpcv2cbor

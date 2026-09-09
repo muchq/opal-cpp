@@ -49,7 +49,7 @@ class HelperNameCoexistenceTest {
     MockManifest manifest = PluginTestHarness.generate(model, "test.coexist#Svc", "test::coexist");
     String client = manifest.expectFileString("/src/client.cc");
     assertTrue(
-        client.contains("smithy::Error ParseGetError(const smithy::http::HttpResponse&"), client);
+        client.contains("opal::Error ParseGetError(const opal::http::HttpResponse&"), client);
     assertTrue(client.contains("DeserializeGetError(parsed.doc)"), client);
   }
 
@@ -79,7 +79,7 @@ class HelperNameCoexistenceTest {
         """;
     MockManifest manifest = PluginTestHarness.generate(model, "test.coexist#Svc", "test::coexist");
     String server = manifest.expectFileString("/src/server.cc");
-    assertTrue(server.contains("smithy::http::HttpResponse BuildGetResponse("), server);
+    assertTrue(server.contains("opal::http::HttpResponse BuildGetResponse("), server);
     // The full call expression, not just the name — a regressed helper
     // declaration would also contain "SerializeGetResponse(".
     assertTrue(server.contains("SerializeGetResponse((*output.payload))"), server);

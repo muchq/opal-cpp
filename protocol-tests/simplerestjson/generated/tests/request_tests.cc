@@ -8,22 +8,22 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/simplerestjson/client.h"
+#include "opal/protocoltests/simplerestjson/client.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 
 // Generated from smithy.test#httpRequestTests (client cases).
 namespace {
 
 struct Fixture {
-  std::shared_ptr<smithy::testing::CapturingTransport> transport;
+  std::shared_ptr<opal::testing::CapturingTransport> transport;
   PizzaAdminServiceClient client;
 };
 
 Fixture MakeFixture(const std::string& endpoint = "") {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   config.endpoint = endpoint;
@@ -55,11 +55,11 @@ TEST(PizzaAdminServiceRequestTest, AddMenuItem) {
   return v;
 }();
   (void)fixture.client.AddMenuItem(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/restaurant/bobs/menu/item");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/restaurant/bobs/menu/item");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"food\":{\"pizza\":{\"name\":\"margharita\",\"base\":\"T\",\"toppings\":[\"MUSHROOM\",\"TOMATO\"]}},\"price\":9.0}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"food\":{\"pizza\":{\"name\":\"margharita\",\"base\":\"T\",\"toppings\":[\"MUSHROOM\",\"TOMATO\"]}},\"price\":9.0}", request.body));
 }
 
 // tests custom code as a label
@@ -71,9 +71,9 @@ TEST(PizzaAdminServiceRequestTest, CustomCodeInput) {
   return v;
 }();
   (void)fixture.client.CustomCode(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "GET");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/custom-code/399");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/custom-code/399");
   EXPECT_TRUE(request.body.empty()) << request.body;
 }
 
@@ -85,9 +85,9 @@ TEST(PizzaAdminServiceRequestTest, GetEnumInput) {
   return v;
 }();
   (void)fixture.client.GetEnum(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "GET");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/get-enum/v1");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/get-enum/v1");
 }
 
 TEST(PizzaAdminServiceRequestTest, GetIntEnumInput) {
@@ -98,9 +98,9 @@ TEST(PizzaAdminServiceRequestTest, GetIntEnumInput) {
   return v;
 }();
   (void)fixture.client.GetIntEnum(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "GET");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/get-int-enum/1");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/get-int-enum/1");
 }
 
 TEST(PizzaAdminServiceRequestTest, GetMenuRequest) {
@@ -111,9 +111,9 @@ TEST(PizzaAdminServiceRequestTest, GetMenuRequest) {
   return v;
 }();
   (void)fixture.client.GetMenu(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "GET");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/restaurant/uncle%3Amikes/menu");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/restaurant/uncle%3Amikes/menu");
 }
 
 // tests variety of casing scenarios for writing http headers
@@ -128,9 +128,9 @@ TEST(PizzaAdminServiceRequestTest, HeaderEndpointInput) {
   return v;
 }();
   (void)fixture.client.HeaderEndpoint(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/headers");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/headers");
   EXPECT_EQ(request.headers.Get("X-Capitalized-Header").value_or("<missing>"), "Capitalized_value");
   EXPECT_EQ(request.headers.Get("X-UPPERCASE-HEADER").value_or("<missing>"), "UPPERCASE_VALUE");
   EXPECT_EQ(request.headers.Get("x-MiXeD-hEaDEr").value_or("<missing>"), "aLLMiXedUP");
@@ -147,10 +147,10 @@ TEST(PizzaAdminServiceRequestTest, HealthGet) {
   return v;
 }();
   (void)fixture.client.Health(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "GET");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/health");
-  EXPECT_TRUE(smithy::testing::QueryContains(request.target, {"query=hello"}));
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/health");
+  EXPECT_TRUE(opal::testing::QueryContains(request.target, {"query=hello"}));
   EXPECT_TRUE(request.body.empty()) << request.body;
 }
 
@@ -163,12 +163,12 @@ TEST(PizzaAdminServiceRequestTest, SimpleRestJsonSomeRequiredHttpPayloadWithDefa
   return v;
 }();
   (void)fixture.client.HttpPayloadRequiredWithDefault(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/httpPayloadRequiredWithDefault");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/httpPayloadRequiredWithDefault");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("\"custom value\"", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("\"custom value\"", request.body));
 }
 
 // Use default value when there is no payload
@@ -180,9 +180,9 @@ TEST(PizzaAdminServiceRequestTest, SimpleRestJsonNoneRequiredHttpPayloadWithDefa
   return v;
 }();
   (void)fixture.client.HttpPayloadRequiredWithDefault(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/httpPayloadRequiredWithDefault");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/httpPayloadRequiredWithDefault");
 }
 
 // Pass JSON string value as is if payload provided
@@ -194,12 +194,12 @@ TEST(PizzaAdminServiceRequestTest, SimpleRestJsonSomeHttpPayloadWithDefault) {
   return v;
 }();
   (void)fixture.client.HttpPayloadWithDefault(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/httpPayloadWithDefault");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/httpPayloadWithDefault");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("\"custom value\"", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("\"custom value\"", request.body));
 }
 
 // Use default value when there is no payload
@@ -211,9 +211,9 @@ TEST(PizzaAdminServiceRequestTest, SimpleRestJsonNoneHttpPayloadWithDefault) {
   return v;
 }();
   (void)fixture.client.HttpPayloadWithDefault(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/httpPayloadWithDefault");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/httpPayloadWithDefault");
 }
 
 // Pass a known tagged union value in an open union
@@ -225,12 +225,12 @@ TEST(PizzaAdminServiceRequestTest, OpenUnionsKnownTaggedUnionCase) {
   return v;
 }();
   (void)fixture.client.OpenUnions(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/openUnions");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/openUnions");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"tagged\": {\"str\": \"string value\"}}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"tagged\": {\"str\": \"string value\"}}", request.body));
 }
 
 // Pass an unknown tagged union value in an open union
@@ -239,23 +239,23 @@ TEST(PizzaAdminServiceRequestTest, OpenUnionsUnknownTaggedUnionCase) {
   const OpenUnionsInput input = [] {
   OpenUnionsInput v{};
   v.data = OpenUnionsPayload::FromTagged(OpenTaggedUnion::FromOther([] {
-  smithy::DocumentMap map;
+  opal::DocumentMap map;
   map.emplace("whatisthis", [] {
-  smithy::DocumentMap map;
-  map.emplace("nested", smithy::Document(std::string("something different")));
-  return smithy::Document(std::move(map));
+  opal::DocumentMap map;
+  map.emplace("nested", opal::Document(std::string("something different")));
+  return opal::Document(std::move(map));
 }());
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }()));
   return v;
 }();
   (void)fixture.client.OpenUnions(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/openUnions");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/openUnions");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"tagged\": {\"whatisthis\": {\"nested\": \"something different\"}}}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"tagged\": {\"whatisthis\": {\"nested\": \"something different\"}}}", request.body));
 }
 
 // Pass a known discriminated union value in an open union
@@ -271,12 +271,12 @@ TEST(PizzaAdminServiceRequestTest, OpenUnionsKnownDiscriminatedUnionCase) {
   return v;
 }();
   (void)fixture.client.OpenUnions(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/openUnions");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/openUnions");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"smol\", \"content\": \"some string\"}}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"smol\", \"content\": \"some string\"}}", request.body));
 }
 
 // Pass an unknown discriminated union value in an open union
@@ -285,20 +285,20 @@ TEST(PizzaAdminServiceRequestTest, OpenUnionsUnknownDiscriminatedUnionCase) {
   const OpenUnionsInput input = [] {
   OpenUnionsInput v{};
   v.data = OpenUnionsPayload::FromDiscriminated(OpenDiscriminatedUnion::FromOther([] {
-  smithy::DocumentMap map;
-  map.emplace("key", smithy::Document(std::string("mysterious_and_important")));
-  map.emplace("extras", smithy::Document(std::int64_t{42}));
-  return smithy::Document(std::move(map));
+  opal::DocumentMap map;
+  map.emplace("key", opal::Document(std::string("mysterious_and_important")));
+  map.emplace("extras", opal::Document(std::int64_t{42}));
+  return opal::Document(std::move(map));
 }()));
   return v;
 }();
   (void)fixture.client.OpenUnions(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "PUT");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/openUnions");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/openUnions");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"mysterious_and_important\", \"extras\": 42}}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"mysterious_and_important\", \"extras\": 42}}", request.body));
 }
 
 TEST(PizzaAdminServiceRequestTest, PreserveKeyOrderRequest) {
@@ -307,23 +307,23 @@ TEST(PizzaAdminServiceRequestTest, PreserveKeyOrderRequest) {
   PreserveOrderInput v{};
   v.map = std::map<std::string, std::int32_t>{{"a", 1}, {"d", 2}, {"e", 3}, {"b", 4}};
   v.document = [] {
-  smithy::DocumentMap map;
-  map.emplace("foo", smithy::Document(std::int64_t{1}));
-  map.emplace("a", smithy::Document(std::string("b")));
+  opal::DocumentMap map;
+  map.emplace("foo", opal::Document(std::int64_t{1}));
+  map.emplace("a", opal::Document(std::string("b")));
   map.emplace("c", [] {
-  smithy::DocumentList list;
-  return smithy::Document(std::move(list));
+  opal::DocumentList list;
+  return opal::Document(std::move(list));
 }());
-  map.emplace("bar", smithy::Document(nullptr));
-  return smithy::Document(std::move(map));
+  map.emplace("bar", opal::Document(nullptr));
+  return opal::Document(std::move(map));
 }();
   return v;
 }();
   (void)fixture.client.PreserveOrder(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/preserveKeyOrder");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"map\":{\"a\":1,\"d\":2,\"e\":3,\"b\":4},\"document\":{\"foo\":1,\"a\":\"b\",\"c\":[],\"bar\":null}}", request.body));
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/preserveKeyOrder");
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"map\":{\"a\":1,\"d\":2,\"e\":3,\"b\":4},\"document\":{\"foo\":1,\"a\":\"b\",\"c\":[],\"bar\":null}}", request.body));
 }
 
 TEST(PizzaAdminServiceRequestTest, RoundTripRequest) {
@@ -337,12 +337,12 @@ TEST(PizzaAdminServiceRequestTest, RoundTripRequest) {
   return v;
 }();
   (void)fixture.client.RoundTrip(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/roundTrip/thelabel");
-  EXPECT_TRUE(smithy::testing::QueryContains(request.target, {"query=the query"}));
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/roundTrip/thelabel");
+  EXPECT_TRUE(opal::testing::QueryContains(request.target, {"query=the query"}));
   EXPECT_EQ(request.headers.Get("HEADER").value_or("<missing>"), "the header");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"body\":\"the body\"}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"body\":\"the body\"}", request.body));
 }
 
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

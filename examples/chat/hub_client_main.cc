@@ -39,9 +39,7 @@ namespace {
 // One line out, flushed — the shell test reads these through a pipe.
 void Emit(const std::string& line) { std::cout << line << "\n" << std::flush; }
 
-void EmitError(const smithy::Error& error) {
-  Emit("error " + error.code() + ": " + error.message());
-}
+void EmitError(const opal::Error& error) { Emit("error " + error.code() + ": " + error.message()); }
 
 void PrintEvent(const example::chat::RoomEvents& event) {
   if (event.is_joined()) {
@@ -81,7 +79,7 @@ int Run(int argc, char** argv) {
   const std::string room = argv[2];
   const std::string name = argv[3];
 
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
   config.endpoint = "http://127.0.0.1:" + std::to_string(port);
   auto client = example::chat::ChatClient::Create(std::move(config));

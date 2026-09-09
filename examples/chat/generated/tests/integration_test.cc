@@ -169,25 +169,25 @@ class ScriptedHandler final : public ChatHandler {
   public:
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const opal::server::RequestContext&) override {
       lastListRooms = input;
       if (nextListRoomsError.has_value()) return *nextListRoomsError;
       return nextListRoomsOutput;
     }
     std::optional<ListRoomsInput> lastListRooms;
     ListRoomsOutput nextListRoomsOutput{};
-    std::optional<smithy::Error> nextListRoomsError;
+    std::optional<opal::Error> nextListRoomsError;
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> Watch(const WatchInput& input, WatchServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Watch(const WatchInput& input, WatchServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
 };
 
@@ -198,14 +198,14 @@ class ChatIntegrationTest : public ::testing::TestWithParam<TransportKind> {
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<ChatServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -218,7 +218,7 @@ class ChatIntegrationTest : public ::testing::TestWithParam<TransportKind> {
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<ChatServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<ChatClient> client_;
 };
 
@@ -251,17 +251,17 @@ TEST_P(ChatIntegrationTest, ListRoomsMaximalRoundTrips) {
 TEST(ChatIntegrationUnknownMembers, ListRoomsToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   ChatServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *ChatClient::Create(std::move(config));

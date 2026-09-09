@@ -5,7 +5,7 @@
 
 #include "smithy/http/uri.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 http::HttpResponse MakeErrorResponse(int status, std::string_view code, std::string_view message) {
   http::HttpResponse response;
@@ -199,4 +199,4 @@ http::HttpResponse Router::Route(const http::HttpRequest& request) const {
   return response;
 }
 
-}  // namespace smithy::server
+}  // namespace opal::server

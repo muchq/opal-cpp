@@ -5,7 +5,7 @@
 #include <random>
 #include <string_view>
 
-namespace smithy {
+namespace opal {
 
 std::string GenerateUuidV4() {
   thread_local std::mt19937_64 generator = [] {
@@ -39,4 +39,4 @@ std::string GenerateUuidV4() {
   return out;
 }
 
-}  // namespace smithy
+}  // namespace opal

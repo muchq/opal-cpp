@@ -176,7 +176,7 @@ final class IntegrationTestGenerator {
       w.closeBlock("}");
       w.write("std::optional<$L> last$L;", typeName(input(operation)), op);
       w.write("$L next$LOutput{};", typeName(output(operation)), op);
-      w.write("std::optional<smithy::Error> next$LError;", op);
+      w.write("std::optional<opal::Error> next$LError;", op);
     }
     w.dedent();
     w.closeBlock("};");
@@ -192,15 +192,15 @@ final class IntegrationTestGenerator {
     w.openBlock("void SetUp() override {");
     w.write("handler_ = std::make_shared<ScriptedHandler>();");
     w.write("server_ = std::make_unique<$LServer>(handler_);", name);
-    w.write("smithy::ClientConfig config;");
+    w.write("opal::ClientConfig config;");
     w.write("config.retry.max_attempts = 1;  // wire-exact tests: no retries");
     w.openBlock("if (GetParam() == TransportKind::kLoopback) {");
-    w.write("auto loopback = std::make_shared<smithy::http::Loopback>();");
+    w.write("auto loopback = std::make_shared<opal::http::Loopback>();");
     w.write("ASSERT_TRUE(loopback->Start(server_->Handler()).ok());");
     w.write("config.http_client = loopback;");
     w.closeBlock("} else {");
     w.indent();
-    w.write("socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();");
+    w.write("socket_server_ = std::make_unique<opal::http::SocketHttpServer>();");
     w.write("ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());");
     w.write("config.endpoint = \"http://127.0.0.1:\" + std::to_string(socket_server_->port());");
     w.closeBlock("}");
@@ -213,7 +213,7 @@ final class IntegrationTestGenerator {
     w.write("");
     w.write("std::shared_ptr<ScriptedHandler> handler_;");
     w.write("std::unique_ptr<$LServer> server_;", name);
-    w.write("std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;");
+    w.write("std::unique_ptr<opal::http::SocketHttpServer> socket_server_;");
     w.write("std::unique_ptr<$LClient> client_;", name);
     w.dedent();
     w.closeBlock("};");
@@ -268,12 +268,12 @@ final class IntegrationTestGenerator {
           "const $L detail = Random$L(rng);",
           errorType,
           SerdeCodeGen.serdeFunctionSuffix(context, error));
-      w.write("smithy::Error error = smithy::Error::Modeled($S, \"integration\");", wireName);
+      w.write("opal::Error error = opal::Error::Modeled($S, \"integration\");", wireName);
       w.write("error.set_detail(detail);");
       w.write("handler_->next$LError = error;", op);
       writeMinimalCall(w, operation);
       w.write("ASSERT_FALSE(outcome.ok());");
-      w.write("EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);");
+      w.write("EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);");
       w.write("EXPECT_EQ(outcome.error().code(), $S);", wireName);
       w.write("ASSERT_NE(outcome.error().detail<$L>(), nullptr);", errorType);
       w.write("EXPECT_EQ(*outcome.error().detail<$L>(), detail);", errorType);
@@ -296,27 +296,27 @@ final class IntegrationTestGenerator {
     w.openBlock("TEST($LIntegrationUnknownMembers, $LToleratesUnknownResponseMembers) {", name, op);
     w.write("auto handler = std::make_shared<ScriptedHandler>();");
     w.write("$LServer server(handler);", name);
-    w.write("auto loopback = std::make_shared<smithy::http::Loopback>();");
+    w.write("auto loopback = std::make_shared<opal::http::Loopback>();");
     w.write("ASSERT_TRUE(loopback->Start(server.Handler()).ok());");
-    w.openBlock("auto inject = [](smithy::http::HttpResponse& response) {");
+    w.openBlock("auto inject = [](opal::http::HttpResponse& response) {");
     if (cbor) {
-      w.write("auto doc = smithy::cbor::Decode(smithy::Blob::FromString(response.body));");
+      w.write("auto doc = opal::cbor::Decode(opal::Blob::FromString(response.body));");
     } else {
-      w.write("auto doc = smithy::json::Decode(response.body);");
+      w.write("auto doc = opal::json::Decode(response.body);");
     }
     w.write("if (!doc.ok() || !doc->is_map()) return;");
     w.write("auto map = doc->as_map();");
-    w.write("map.insert_or_assign(\"smithy_cpp_unknown_member\", smithy::Document(42));");
+    w.write("map.insert_or_assign(\"smithy_cpp_unknown_member\", opal::Document(42));");
     if (cbor) {
-      w.write("response.body = smithy::cbor::Encode(smithy::Document(std::move(map))).ToString();");
+      w.write("response.body = opal::cbor::Encode(opal::Document(std::move(map))).ToString();");
     } else {
-      w.write("response.body = smithy::json::Encode(smithy::Document(std::move(map)));");
+      w.write("response.body = opal::json::Encode(opal::Document(std::move(map)));");
     }
     w.closeBlock("};");
     w.write(
-        "auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, "
+        "auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, "
             + "inject);");
-    w.write("smithy::ClientConfig config;");
+    w.write("opal::ClientConfig config;");
     w.write("config.retry.max_attempts = 1;  // wire-exact tests: no retries");
     w.write("config.http_client = transport;");
     w.write("auto client = *$LClient::Create(std::move(config));", name);

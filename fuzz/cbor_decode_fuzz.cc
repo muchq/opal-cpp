@@ -8,11 +8,10 @@
 #include "smithy/core/blob.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
-  const auto blob =
-      smithy::Blob::FromString(std::string(reinterpret_cast<const char*>(data), size));
-  auto doc = smithy::cbor::Decode(blob);
+  const auto blob = opal::Blob::FromString(std::string(reinterpret_cast<const char*>(data), size));
+  auto doc = opal::cbor::Decode(blob);
   if (doc.ok()) {
-    (void)smithy::cbor::Encode(*doc);
+    (void)opal::cbor::Encode(*doc);
   }
   return 0;
 }

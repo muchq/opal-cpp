@@ -27,34 +27,34 @@ namespace example::weather {
 class ListCitiesPaginator;
 
 /// simpleRestJson client for example.weather#Weather.
-/// Modeled service errors surface as smithy::Error with kind kModeled,
+/// Modeled service errors surface as opal::Error with kind kModeled,
 /// code() set to the error shape name, and the deserialized error
 /// structure attached. Dispatch on them through the per-operation
 /// <Operation>Errors listings below rather than comparing code() text.
 class WeatherClient {
   public:
     /// Fails when the endpoint cannot be parsed and no transport is injected.
-    static smithy::Outcome<WeatherClient> Create(smithy::ClientConfig config);
+    static opal::Outcome<WeatherClient> Create(opal::ClientConfig config);
 
     /// Deletes a city: a 204 No Content operation (the response has no body).
-    smithy::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input) const;
-    smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input) const;
-    smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input = {}) const;
-    smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) const;
+    opal::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input) const;
+    opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input) const;
+    opal::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input = {}) const;
+    opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) const;
     /// Fetches a rendered report by its slash-separated path. The greedy label
     /// keeps embedded slashes: GET /reports/2026/q3/summary routes here with
     /// reportPath = "2026/q3/summary".
-    smithy::Outcome<GetReportOutput> GetReport(const GetReportInput& input) const;
-    smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) const;
+    opal::Outcome<GetReportOutput> GetReport(const GetReportInput& input) const;
+    opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) const;
     /// Pages ListCities until the service stops returning a next token (@paginated).
     ListCitiesPaginator PaginateListCities(ListCitiesInput input) const;
 
   private:
-    WeatherClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix);
-    smithy::Outcome<smithy::http::HttpResponse> Send(smithy::http::HttpRequest request) const;
+    WeatherClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix);
+    opal::Outcome<opal::http::HttpResponse> Send(opal::http::HttpRequest request) const;
 
-    smithy::ClientConfig config_;
-    std::shared_ptr<smithy::http::HttpClient> transport_;
+    opal::ClientConfig config_;
+    std::shared_ptr<opal::http::HttpClient> transport_;
     std::string path_prefix_;
 };
 
@@ -63,12 +63,12 @@ class ListCitiesPaginator {
   public:
     /// The next page, std::nullopt once pagination is complete, or the
     /// first failed call's error (pagination then stops).
-    smithy::Outcome<std::optional<ListCitiesOutput>> Next();
+    opal::Outcome<std::optional<ListCitiesOutput>> Next();
 
     using Page = ListCitiesOutput;
     /// Single-pass range over pages — contract in smithy/client/pagination.h.
-    smithy::PageIterator<ListCitiesPaginator> begin() { return smithy::PageIterator<ListCitiesPaginator>(this); }
-    smithy::PageIterator<ListCitiesPaginator> end() { return {}; }
+    opal::PageIterator<ListCitiesPaginator> begin() { return opal::PageIterator<ListCitiesPaginator>(this); }
+    opal::PageIterator<ListCitiesPaginator> end() { return {}; }
 
   private:
     friend class WeatherClient;
@@ -78,7 +78,7 @@ class ListCitiesPaginator {
     bool done_ = false;
 };
 
-/// The modeled errors of DeleteCity, matched from a smithy::Error so dispatch is
+/// The modeled errors of DeleteCity, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -89,9 +89,9 @@ class DeleteCityErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static DeleteCityErrors FromError(const smithy::Error& error) {
+    static DeleteCityErrors FromError(const opal::Error& error) {
       DeleteCityErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "NoSuchResource") {
         const auto* detail = error.detail<NoSuchResource>();
         result.value_.emplace<1>(detail != nullptr ? *detail : NoSuchResource{});
@@ -130,7 +130,7 @@ class DeleteCityErrors {
       switch (value_.index()) {
         case 1:
           out += "no_such_resource = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -149,14 +149,14 @@ class DeleteCityErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("DeleteCityErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("DeleteCityErrors", requested, case_name());
       }
     }
 
     std::variant<std::monostate, NoSuchResource> value_;
 };
 
-/// The modeled errors of GetCity, matched from a smithy::Error so dispatch is
+/// The modeled errors of GetCity, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -167,9 +167,9 @@ class GetCityErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static GetCityErrors FromError(const smithy::Error& error) {
+    static GetCityErrors FromError(const opal::Error& error) {
       GetCityErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "NoSuchResource") {
         const auto* detail = error.detail<NoSuchResource>();
         result.value_.emplace<1>(detail != nullptr ? *detail : NoSuchResource{});
@@ -208,7 +208,7 @@ class GetCityErrors {
       switch (value_.index()) {
         case 1:
           out += "no_such_resource = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -227,14 +227,14 @@ class GetCityErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("GetCityErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("GetCityErrors", requested, case_name());
       }
     }
 
     std::variant<std::monostate, NoSuchResource> value_;
 };
 
-/// The modeled errors of GetForecast, matched from a smithy::Error so dispatch is
+/// The modeled errors of GetForecast, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -245,9 +245,9 @@ class GetForecastErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static GetForecastErrors FromError(const smithy::Error& error) {
+    static GetForecastErrors FromError(const opal::Error& error) {
       GetForecastErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "NoSuchResource") {
         const auto* detail = error.detail<NoSuchResource>();
         result.value_.emplace<1>(detail != nullptr ? *detail : NoSuchResource{});
@@ -286,7 +286,7 @@ class GetForecastErrors {
       switch (value_.index()) {
         case 1:
           out += "no_such_resource = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -305,7 +305,7 @@ class GetForecastErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("GetForecastErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("GetForecastErrors", requested, case_name());
       }
     }
 
@@ -322,8 +322,8 @@ template <>
 struct std::hash<example::weather::DeleteCityErrors> {
   std::size_t operator()(const example::weather::DeleteCityErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -331,8 +331,8 @@ template <>
 struct std::hash<example::weather::GetCityErrors> {
   std::size_t operator()(const example::weather::GetCityErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -340,8 +340,8 @@ template <>
 struct std::hash<example::weather::GetForecastErrors> {
   std::size_t operator()(const example::weather::GetForecastErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 

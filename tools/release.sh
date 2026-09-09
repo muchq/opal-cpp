@@ -24,7 +24,7 @@ die() {
   exit 1
 }
 
-# smithy::Version()'s literal is the single source of truth; the other two
+# opal::Version()'s literal is the single source of truth; the other two
 # files mirror it (docs/versioning.md).
 read_version() {
   sed -n 's/^std::string_view Version() { return "\(.*\)"; }$/\1/p' "$VERSION_CC"
@@ -119,8 +119,8 @@ current_state_section() {
 ## Current state: $released released, $dev in development
 
 \`v$released\` is the current release; \`main\` develops $dev. The one product version
-consumers observe — \`smithy::Version()\` (\`runtime/src/core/version.cc\`) and the
-client \`User-Agent\` (\`smithy::ClientConfig::user_agent\`) — reports
+consumers observe — \`opal::Version()\` (\`runtime/src/core/version.cc\`) and the
+client \`User-Agent\` (\`opal::ClientConfig::user_agent\`) — reports
 **\`$dev-dev\`** on \`main\` until that tag lands, and the generator's Gradle
 \`version\` (\`codegen/gradle.properties\`) tracks it, since the two ship under one
 tag. The bzlmod **module** version in \`MODULE.bazel\` is a separate identifier

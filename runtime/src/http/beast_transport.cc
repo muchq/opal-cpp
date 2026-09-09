@@ -42,7 +42,7 @@
 #include "smithy/http/server_dispatch.h"
 #include "smithy/http/uri.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 namespace asio = boost::asio;
@@ -1714,7 +1714,7 @@ Outcome<Unit> BeastServerTransport::Start(RequestHandler handler) {
   // load, a bad_alloc — which Contain turns into a transport Error rather
   // than unwinding into the caller. The destructor's Shutdown() joins any
   // threads that did start.
-  return smithy::internal::Contain(
+  return opal::internal::Contain(
       [&]() -> Outcome<Unit> { return StartContained(std::move(handler)); },
       [](const char* what) -> Outcome<Unit> {
         return Error::Transport(std::string("beast: start failed: ") +
@@ -2178,7 +2178,7 @@ Outcome<std::shared_ptr<BeastHttpClient>> BeastHttpClient::FromConfig(const Clie
   // The make_shared (State ctor allocates the io_context) is the throw
   // vector; contain it so no exception crosses the Outcome boundary
   // (ADR-0003).
-  return smithy::internal::Contain(
+  return opal::internal::Contain(
       [&]() -> Outcome<std::shared_ptr<BeastHttpClient>> {
         auto endpoint = ParseEndpoint(config.endpoint);
         if (!endpoint) {
@@ -2204,7 +2204,7 @@ Outcome<HttpResponse> BeastHttpClient::Send(const HttpRequest& request) {
   // all error_code-based, so the residual throw vector is a std::bad_alloc
   // from the sync drive under memory pressure; Contain turns it into a
   // transport Error instead of unwinding into the caller.
-  return smithy::internal::Contain(
+  return opal::internal::Contain(
       [&]() -> Outcome<HttpResponse> { return SendContained(request); },
       [](const char* what) -> Outcome<HttpResponse> {
         return Error::Transport(std::string("beast client: send failed: ") +
@@ -2574,4 +2574,4 @@ WebSocketDialer BeastWebSocketClient::Dialer() {
   };
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

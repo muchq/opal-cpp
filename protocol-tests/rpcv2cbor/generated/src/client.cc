@@ -4,16 +4,16 @@
 #include <string_view>
 #include <utility>
 
+#include "opal/protocoltests/rpcv2cbor/client.h"
+#include "opal/protocoltests/rpcv2cbor/serde.h"
 #include "smithy/cbor/cbor.h"
 #include "smithy/core/blob.h"
 #include "smithy/core/document_serde.h"
 #include "smithy/core/uuid.h"
 #include "smithy/http/socket_transport.h"
 #include "smithy/http/uri.h"
-#include "smithy/protocoltests/rpcv2cbor/client.h"
-#include "smithy/protocoltests/rpcv2cbor/serde.h"
 
-namespace smithy::protocoltests::rpcv2cbor {
+namespace opal::protocoltests::rpcv2cbor {
 
 namespace {
 namespace helpers {
@@ -30,38 +30,38 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::cbor::Decode(smithy::Blob::FromString(response.body));
+  auto doc = opal::cbor::Decode(opal::Blob::FromString(response.body));
   if (doc.ok()) parsed.doc = *std::move(doc);
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type == nullptr) type = parsed.doc.Find("code");
     if (parsed.code == "UnknownError" && type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
-    const smithy::Document* text = parsed.doc.Find("message");
+    const opal::Document* text = parsed.doc.Find("message");
     if (text != nullptr && text->is_string()) parsed.message = text->as_string();
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
-smithy::Error MakeComplexErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeComplexErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("ComplexError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("ComplexError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeComplexError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -69,11 +69,11 @@ smithy::Error MakeComplexErrorError(const smithy::http::HttpResponse& response, 
   return error;
 }
 
-smithy::Error MakeInvalidGreetingError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeInvalidGreetingError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("InvalidGreeting", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("InvalidGreeting", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeInvalidGreeting(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -81,11 +81,11 @@ smithy::Error MakeInvalidGreetingError(const smithy::http::HttpResponse& respons
   return error;
 }
 
-smithy::Error MakeValidationExceptionError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeValidationExceptionError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("ValidationException", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("ValidationException", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeValidationException(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -93,32 +93,32 @@ smithy::Error MakeValidationExceptionError(const smithy::http::HttpResponse& res
   return error;
 }
 
-smithy::Error ParseGreetingWithErrorsError(const smithy::http::HttpResponse& response) {
+opal::Error ParseGreetingWithErrorsError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "ComplexError") return helpers::MakeComplexErrorError(response, std::move(parsed));
   if (parsed.code == "InvalidGreeting") return helpers::MakeInvalidGreetingError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseOperationWithDefaultsError(const smithy::http::HttpResponse& response) {
+opal::Error ParseOperationWithDefaultsError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "ValidationException") return helpers::MakeValidationExceptionError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseRpcV2CborDenseMapsError(const smithy::http::HttpResponse& response) {
+opal::Error ParseRpcV2CborDenseMapsError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "ValidationException") return helpers::MakeValidationExceptionError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseRpcV2CborListsError(const smithy::http::HttpResponse& response) {
+opal::Error ParseRpcV2CborListsError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "ValidationException") return helpers::MakeValidationExceptionError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseRpcV2CborSparseMapsError(const smithy::http::HttpResponse& response) {
+opal::Error ParseRpcV2CborSparseMapsError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "ValidationException") return helpers::MakeValidationExceptionError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
@@ -127,60 +127,60 @@ smithy::Error ParseRpcV2CborSparseMapsError(const smithy::http::HttpResponse& re
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<RpcV2ProtocolClient> RpcV2ProtocolClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<RpcV2ProtocolClient> RpcV2ProtocolClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("RpcV2ProtocolClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("RpcV2ProtocolClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("RpcV2ProtocolClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("RpcV2ProtocolClient: config needs an endpoint or an http_client");
   }
   return RpcV2ProtocolClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-RpcV2ProtocolClient::RpcV2ProtocolClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+RpcV2ProtocolClient::RpcV2ProtocolClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> RpcV2ProtocolClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> RpcV2ProtocolClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/cbor");
   request.headers.Set("user-agent", config_.user_agent);
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<EmptyInputOutputOutput> RpcV2ProtocolClient::EmptyInputOutput(const EmptyInputOutputInput& input) const {
+opal::Outcome<EmptyInputOutputOutput> RpcV2ProtocolClient::EmptyInputOutput(const EmptyInputOutputInput& input) const {
   (void)input;
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/EmptyInputOutput";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeEmptyInputOutputInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeEmptyInputOutputInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   return EmptyInputOutputOutput{};
 }
 
-smithy::Outcome<Float16Output> RpcV2ProtocolClient::Float16(const Float16Input& input) const {
+opal::Outcome<Float16Output> RpcV2ProtocolClient::Float16(const Float16Input& input) const {
   (void)input;
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/Float16";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
@@ -188,14 +188,14 @@ smithy::Outcome<Float16Output> RpcV2ProtocolClient::Float16(const Float16Input& 
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return Float16Output{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeFloat16Output(*body_doc);
 }
 
-smithy::Outcome<FractionalSecondsOutput> RpcV2ProtocolClient::FractionalSeconds(const FractionalSecondsInput& input) const {
+opal::Outcome<FractionalSecondsOutput> RpcV2ProtocolClient::FractionalSeconds(const FractionalSecondsInput& input) const {
   (void)input;
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/FractionalSeconds";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
@@ -203,14 +203,14 @@ smithy::Outcome<FractionalSecondsOutput> RpcV2ProtocolClient::FractionalSeconds(
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return FractionalSecondsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeFractionalSecondsOutput(*body_doc);
 }
 
-smithy::Outcome<GreetingWithErrorsOutput> RpcV2ProtocolClient::GreetingWithErrors(const GreetingWithErrorsInput& input) const {
+opal::Outcome<GreetingWithErrorsOutput> RpcV2ProtocolClient::GreetingWithErrors(const GreetingWithErrorsInput& input) const {
   (void)input;
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/GreetingWithErrors";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
@@ -218,14 +218,14 @@ smithy::Outcome<GreetingWithErrorsOutput> RpcV2ProtocolClient::GreetingWithError
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseGreetingWithErrorsError(*response);
   if (response->body.empty()) return GreetingWithErrorsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeGreetingWithErrorsOutput(*body_doc);
 }
 
-smithy::Outcome<NoInputOutputOutput> RpcV2ProtocolClient::NoInputOutput(const NoInputOutputInput& input) const {
+opal::Outcome<NoInputOutputOutput> RpcV2ProtocolClient::NoInputOutput(const NoInputOutputInput& input) const {
   (void)input;
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/NoInputOutput";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
@@ -235,148 +235,148 @@ smithy::Outcome<NoInputOutputOutput> RpcV2ProtocolClient::NoInputOutput(const No
   return NoInputOutputOutput{};
 }
 
-smithy::Outcome<OperationWithDefaultsOutput> RpcV2ProtocolClient::OperationWithDefaults(const OperationWithDefaultsInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<OperationWithDefaultsOutput> RpcV2ProtocolClient::OperationWithDefaults(const OperationWithDefaultsInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/OperationWithDefaults";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeOperationWithDefaultsInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeOperationWithDefaultsInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseOperationWithDefaultsError(*response);
   if (response->body.empty()) return OperationWithDefaultsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeOperationWithDefaultsOutput(*body_doc);
 }
 
-smithy::Outcome<OptionalInputOutputOutput> RpcV2ProtocolClient::OptionalInputOutput(const OptionalInputOutputInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<OptionalInputOutputOutput> RpcV2ProtocolClient::OptionalInputOutput(const OptionalInputOutputInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/OptionalInputOutput";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeOptionalInputOutputInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeOptionalInputOutputInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return OptionalInputOutputOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeOptionalInputOutputOutput(*body_doc);
 }
 
-smithy::Outcome<RecursiveShapesOutput> RpcV2ProtocolClient::RecursiveShapes(const RecursiveShapesInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<RecursiveShapesOutput> RpcV2ProtocolClient::RecursiveShapes(const RecursiveShapesInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/RecursiveShapes";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeRecursiveShapesInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeRecursiveShapesInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return RecursiveShapesOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeRecursiveShapesOutput(*body_doc);
 }
 
-smithy::Outcome<RpcV2CborDenseMapsOutput> RpcV2ProtocolClient::RpcV2CborDenseMaps(const RpcV2CborDenseMapsInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<RpcV2CborDenseMapsOutput> RpcV2ProtocolClient::RpcV2CborDenseMaps(const RpcV2CborDenseMapsInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeRpcV2CborDenseMapsInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeRpcV2CborDenseMapsInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseRpcV2CborDenseMapsError(*response);
   if (response->body.empty()) return RpcV2CborDenseMapsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeRpcV2CborDenseMapsOutput(*body_doc);
 }
 
-smithy::Outcome<RpcV2CborListsOutput> RpcV2ProtocolClient::RpcV2CborLists(const RpcV2CborListsInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<RpcV2CborListsOutput> RpcV2ProtocolClient::RpcV2CborLists(const RpcV2CborListsInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/RpcV2CborLists";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeRpcV2CborListsInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeRpcV2CborListsInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseRpcV2CborListsError(*response);
   if (response->body.empty()) return RpcV2CborListsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeRpcV2CborListsOutput(*body_doc);
 }
 
-smithy::Outcome<RpcV2CborSparseMapsOutput> RpcV2ProtocolClient::RpcV2CborSparseMaps(const RpcV2CborSparseMapsInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<RpcV2CborSparseMapsOutput> RpcV2ProtocolClient::RpcV2CborSparseMaps(const RpcV2CborSparseMapsInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeRpcV2CborSparseMapsInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeRpcV2CborSparseMapsInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseRpcV2CborSparseMapsError(*response);
   if (response->body.empty()) return RpcV2CborSparseMapsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeRpcV2CborSparseMapsOutput(*body_doc);
 }
 
-smithy::Outcome<RpcV2CborUnionsOutput> RpcV2ProtocolClient::RpcV2CborUnions(const RpcV2CborUnionsInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<RpcV2CborUnionsOutput> RpcV2ProtocolClient::RpcV2CborUnions(const RpcV2CborUnionsInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/RpcV2CborUnions";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeRpcV2CborUnionsInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeRpcV2CborUnionsInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return RpcV2CborUnionsOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeRpcV2CborUnionsOutput(*body_doc);
 }
 
-smithy::Outcome<SimpleScalarPropertiesOutput> RpcV2ProtocolClient::SimpleScalarProperties(const SimpleScalarPropertiesInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<SimpleScalarPropertiesOutput> RpcV2ProtocolClient::SimpleScalarProperties(const SimpleScalarPropertiesInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeSimpleScalarPropertiesInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeSimpleScalarPropertiesInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return SimpleScalarPropertiesOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeSimpleScalarPropertiesOutput(*body_doc);
 }
 
-smithy::Outcome<SparseNullsOperationOutput> RpcV2ProtocolClient::SparseNullsOperation(const SparseNullsOperationInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<SparseNullsOperationOutput> RpcV2ProtocolClient::SparseNullsOperation(const SparseNullsOperationInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/RpcV2Protocol/operation/SparseNullsOperation";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeSparseNullsOperationInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeSparseNullsOperationInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::GenericError(helpers::ParseError(*response));
   if (response->body.empty()) return SparseNullsOperationOutput{};
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeSparseNullsOperationOutput(*body_doc);
 }
 
-}  // namespace smithy::protocoltests::rpcv2cbor
+}  // namespace opal::protocoltests::rpcv2cbor

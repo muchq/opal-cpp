@@ -22,59 +22,59 @@ namespace types = ::example::roundtrip::rpc;
 namespace {
 namespace helpers {
 
-smithy::http::HttpResponse CborError(int status, const std::string& code, const std::string& message, smithy::DocumentMap body) {
-  if (!code.empty()) body.insert_or_assign("__type", smithy::Document(code));
-  if (!message.empty()) body.insert_or_assign("message", smithy::Document(message));
-  smithy::http::HttpResponse response;
+opal::http::HttpResponse CborError(int status, const std::string& code, const std::string& message, opal::DocumentMap body) {
+  if (!code.empty()) body.insert_or_assign("__type", opal::Document(code));
+  if (!message.empty()) body.insert_or_assign("message", opal::Document(message));
+  opal::http::HttpResponse response;
   response.status = status;
   response.headers.Set("smithy-protocol", "rpc-v2-cbor");
   response.headers.Set("content-type", "application/cbor");
-  response.body = smithy::cbor::Encode(smithy::Document(std::move(body))).ToString();
+  response.body = opal::cbor::Encode(opal::Document(std::move(body))).ToString();
   return response;
 }
 
 // [[maybe_unused]]: only unary routes map handler errors here; a service
 // whose operations all stream reports errors on the stream instead.
-[[maybe_unused]] smithy::http::HttpResponse ErrorToResponse(const smithy::Error& error) {
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+[[maybe_unused]] opal::http::HttpResponse ErrorToResponse(const opal::Error& error) {
+  if (error.kind() == opal::ErrorKind::kModeled) {
     if (error.code() == "SinkNotFound") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::SinkNotFound>()) {
         body = SerializeSinkNotFound(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       return helpers::CborError(404, "example.roundtrip#SinkNotFound", "", std::move(body));
     }
     if (error.code() == "SinkQuotaExceeded") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::SinkQuotaExceeded>()) {
         body = SerializeSinkQuotaExceeded(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       return helpers::CborError(503, "example.roundtrip#SinkQuotaExceeded", "", std::move(body));
     }
     return helpers::CborError(400, error.code(), error.message(), {});
   }
-  if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) return helpers::CborError(400, "SerializationException", error.message(), {});
+  if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) return helpers::CborError(400, "SerializationException", error.message(), {});
   // Never leak internal detail on unexpected failures.
   return helpers::CborError(500, "InternalFailure", "internal failure", {});
 }
 
 // Constraint validation (smithy.framework#ValidationException): messages
 // and '/member' paths follow the official validation conformance suite.
-void AddValidationFailure(std::vector<smithy::server::ValidationFailure>* failures, std::string path, std::string message) {
+void AddValidationFailure(std::vector<opal::server::ValidationFailure>* failures, std::string path, std::string message) {
   failures->push_back({std::move(path), std::move(message)});
 }
 
-void ValidateKitchenSink(const types::KitchenSink& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidateKitchenSink(const types::KitchenSink& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   if (value.priority.has_value()) {
     const std::string member_path = path + "/priority";
     if ((*value.priority).value() == Priority::Value::kUnknown) {
@@ -103,7 +103,7 @@ void ValidateKitchenSink(const types::KitchenSink& value, const std::string& pat
   }
 }
 
-void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   if (value.sink.has_value()) {
     const std::string member_path = path + "/sink";
     helpers::ValidateKitchenSink((*value.sink), member_path, failures);
@@ -112,20 +112,20 @@ void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::str
 
 // [[maybe_unused]]: only unary routes reject invalid input over HTTP; a
 // service whose operations all stream reports validation on the stream.
-[[maybe_unused]] smithy::http::HttpResponse ValidationErrorResponse(const std::vector<smithy::server::ValidationFailure>& failures) {
+[[maybe_unused]] opal::http::HttpResponse ValidationErrorResponse(const std::vector<opal::server::ValidationFailure>& failures) {
   std::string summary = std::to_string(failures.size()) + " validation error" + (failures.size() == 1 ? "" : "s") + " detected. ";
-  smithy::DocumentList field_list;
+  opal::DocumentList field_list;
   for (std::size_t i = 0; i < failures.size(); ++i) {
     if (i > 0) summary += "; ";
     summary += failures[i].message;
-    smithy::DocumentMap field;
-    field.emplace("message", smithy::Document(failures[i].message));
-    field.emplace("path", smithy::Document(failures[i].path));
-    field_list.push_back(smithy::Document(std::move(field)));
+    opal::DocumentMap field;
+    field.emplace("message", opal::Document(failures[i].message));
+    field.emplace("path", opal::Document(failures[i].path));
+    field_list.push_back(opal::Document(std::move(field)));
   }
-  smithy::DocumentMap body;
-  body.emplace("fieldList", smithy::Document(std::move(field_list)));
-  smithy::http::HttpResponse response = helpers::CborError(400, "smithy.framework#ValidationException", summary, std::move(body));
+  opal::DocumentMap body;
+  body.emplace("fieldList", opal::Document(std::move(field_list)));
+  opal::http::HttpResponse response = helpers::CborError(400, "smithy.framework#ValidationException", summary, std::move(body));
   return response;
 }
 
@@ -133,33 +133,33 @@ void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::str
 }  // namespace
 
 RoundTripRpcServer::RoundTripRpcServer(std::shared_ptr<RoundTripRpcHandler> handler)
-  : router_(std::make_shared<smithy::server::Router>()) {
+  : router_(std::make_shared<opal::server::Router>()) {
   // The route table is derived from the model's @http traits; conflicts are
   // a modeling error surfaced by Router::Add (checked at generation time in a
   // later phase), so registration results are intentionally discarded.
-  (void)router_->Add("POST", "/service/RoundTripRpc/operation/Ping", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("POST", "/service/RoundTripRpc/operation/Ping", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     if (request.headers.Get("smithy-protocol").value_or("") != "rpc-v2-cbor") {
       return helpers::CborError(400, "SerializationException", "expected smithy-protocol: rpc-v2-cbor", {});
     }
     // Content-Type validation per the rpcv2Cbor spec: a present header must
     // carry application/cbor (parameters ignored); 415 otherwise.
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/cbor") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/cbor") {
       return helpers::CborError(415, "UnsupportedMediaTypeException", "expected content-type: application/cbor", {});
     }
     PingInput input{};
     auto outcome = handler->Ping(input, context);
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
-    smithy::http::HttpResponse response;
+    opal::http::HttpResponse response;
     response.headers.Set("smithy-protocol", "rpc-v2-cbor");
     response.headers.Set("content-type", "application/cbor");
-    response.body = smithy::cbor::Encode(SerializePingOutput(*outcome)).ToString();
+    response.body = opal::cbor::Encode(SerializePingOutput(*outcome)).ToString();
     return response;
   }, "Ping");
-  (void)router_->Add("POST", "/service/RoundTripRpc/operation/PutSinkRpc", [handler](const smithy::http::HttpRequest& raw_request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
-    smithy::http::HttpRequest request = raw_request;
+  (void)router_->Add("POST", "/service/RoundTripRpc/operation/PutSinkRpc", [handler](const opal::http::HttpRequest& raw_request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
+    opal::http::HttpRequest request = raw_request;
     // @requestCompression(gzip): decode before parsing.
     if (const auto request_encoding = request.headers.Get("content-encoding"); request_encoding.has_value() && (*request_encoding == "gzip" || request_encoding->ends_with(", gzip"))) {
-      auto decompressed = smithy::GzipDecompress(request.body);
+      auto decompressed = opal::GzipDecompress(request.body);
       if (!decompressed) {
         return helpers::CborError(400, "SerializationException", "invalid gzip request body", {});
       }
@@ -170,36 +170,36 @@ RoundTripRpcServer::RoundTripRpcServer(std::shared_ptr<RoundTripRpcHandler> hand
     }
     // Content-Type validation per the rpcv2Cbor spec: a present header must
     // carry application/cbor (parameters ignored); 415 otherwise.
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/cbor") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/cbor") {
       return helpers::CborError(415, "UnsupportedMediaTypeException", "expected content-type: application/cbor", {});
     }
     PutSinkRpcInput input{};
     // An absent body deserializes like an empty CBOR map.
-    smithy::Document body_doc{smithy::DocumentMap{}};
+    opal::Document body_doc{opal::DocumentMap{}};
     if (!request.body.empty()) {
-      auto decoded = smithy::cbor::Decode(smithy::Blob::FromString(request.body));
+      auto decoded = opal::cbor::Decode(opal::Blob::FromString(request.body));
       if (!decoded) return helpers::CborError(400, "SerializationException", decoded.error().message(), {});
       body_doc = *std::move(decoded);
     }
     auto parsed = DeserializePutSinkRpcInput(body_doc);
     if (!parsed) return helpers::CborError(400, "SerializationException", parsed.error().message(), {});
     input = *std::move(parsed);
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     helpers::ValidatePutSinkRpcInput(input, "", &validation_failures);
     if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     auto outcome = handler->PutSinkRpc(input, context);
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
-    smithy::http::HttpResponse response;
+    opal::http::HttpResponse response;
     response.headers.Set("smithy-protocol", "rpc-v2-cbor");
     response.headers.Set("content-type", "application/cbor");
-    response.body = smithy::cbor::Encode(SerializePutSinkRpcOutput(*outcome)).ToString();
+    response.body = opal::cbor::Encode(SerializePutSinkRpcOutput(*outcome)).ToString();
     return response;
   }, "PutSinkRpc");
 }
 
-smithy::http::RequestHandler RoundTripRpcServer::Handler() const {
+opal::http::RequestHandler RoundTripRpcServer::Handler() const {
   auto router = router_;
-  return [router](const smithy::http::HttpRequest& request) { return router->Route(request); };
+  return [router](const opal::http::HttpRequest& request) { return router->Route(request); };
 }
 
 }  // namespace example::roundtrip::rpc

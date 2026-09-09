@@ -8,7 +8,7 @@
 
 #include "smithy/core/outcome.h"
 
-namespace smithy {
+namespace opal {
 
 // Single-pass input iterator over a generated paginator, surfaced through
 // the paginator's begin()/end() so range-for works (issue #49):
@@ -77,6 +77,6 @@ class PageIterator {
   std::optional<Outcome<Page>> current_;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CLIENT_PAGINATION_H_

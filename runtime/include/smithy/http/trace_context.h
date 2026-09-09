@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-namespace smithy::http {
+namespace opal::http {
 
 // W3C Trace Context (https://www.w3.org/TR/trace-context/): the traceparent
 // header's fields, SDK-free. Backend integration (OpenTelemetry etc.) builds
@@ -29,6 +29,6 @@ TraceContext GenerateTraceContext();
 // A fresh random 16-hex-digit span id (for deriving child contexts).
 std::string GenerateSpanId();
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_TRACE_CONTEXT_H_

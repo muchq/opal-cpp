@@ -18,37 +18,36 @@
 namespace example::cafe {
 namespace {
 
-using smithy::Blob;
-using smithy::Document;
-using smithy::DocumentMap;
+using opal::Blob;
+using opal::Document;
+using opal::DocumentMap;
 
-class CapturingTransport : public smithy::http::HttpClient {
+class CapturingTransport : public opal::http::HttpClient {
  public:
-  smithy::Outcome<smithy::http::HttpResponse> Send(
-      const smithy::http::HttpRequest& request) override {
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
     last_request = request;
     return next_response;
   }
 
-  smithy::http::HttpRequest last_request;
-  smithy::http::HttpResponse next_response{200, {}, ""};
+  opal::http::HttpRequest last_request;
+  opal::http::HttpResponse next_response{200, {}, ""};
 };
 
 class CafeClientTest : public testing::Test {
  protected:
   void SetUp() override {
     transport_ = std::make_shared<CapturingTransport>();
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.http_client = transport_;
     auto client = CafeClient::Create(std::move(config));
     ASSERT_TRUE(client.ok()) << client.error().message();
     client_ = std::make_unique<CafeClient>(std::move(*client));
   }
 
-  static std::string EncodeBody(Document doc) { return smithy::cbor::Encode(doc).ToString(); }
+  static std::string EncodeBody(Document doc) { return opal::cbor::Encode(doc).ToString(); }
 
-  static smithy::Outcome<Document> DecodeBody(const std::string& body) {
-    return smithy::cbor::Decode(Blob::FromString(body));
+  static opal::Outcome<Document> DecodeBody(const std::string& body) {
+    return opal::cbor::Decode(Blob::FromString(body));
   }
 
   std::shared_ptr<CapturingTransport> transport_;
@@ -93,8 +92,8 @@ TEST_F(CafeClientTest, IdempotencyTokenAutoFills) {
     DocumentMap output;
     output.emplace("orderId", Document("o-2"));
     DocumentMap ready;
-    ready.emplace("readyAt", Document::FromTimestamp(smithy::Timestamp::FromEpochMilliseconds(5500),
-                                                     smithy::TimestampFormat::kEpochSeconds));
+    ready.emplace("readyAt", Document::FromTimestamp(opal::Timestamp::FromEpochMilliseconds(5500),
+                                                     opal::TimestampFormat::kEpochSeconds));
     DocumentMap status;
     status.emplace("ready", Document(std::move(ready)));
     output.emplace("status", Document(std::move(status)));
@@ -130,7 +129,7 @@ TEST_F(CafeClientTest, ModeledErrorsDeserialize) {
 
   const auto result = client_->GetOrder(GetOrderInput{.orderId = "missing"});
   ASSERT_FALSE(result.ok());
-  EXPECT_EQ(result.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(result.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(result.error().code(), "OrderNotFound");
   EXPECT_EQ(result.error().message(), "no such order");
   EXPECT_FALSE(result.error().retryable());
@@ -211,7 +210,7 @@ TEST_F(CafeClientTest, MissingRequiredMemberIsASerdeError) {
   const auto result =
       client_->OrderCoffee(OrderCoffeeInput{.coffeeType = CoffeeType(CoffeeType::Value::kDrip)});
   ASSERT_FALSE(result.ok());
-  EXPECT_EQ(result.error().kind(), smithy::ErrorKind::kSerialization);
+  EXPECT_EQ(result.error().kind(), opal::ErrorKind::kSerialization);
   EXPECT_NE(result.error().message().find("status"), std::string::npos);
 }
 
@@ -232,7 +231,7 @@ TEST_F(CafeClientTest, ApiKeyHeaderComesFromConfig) {
   EXPECT_FALSE(transport_->last_request.headers.Get("x-api-key").has_value());
 
   auto transport = std::make_shared<CapturingTransport>();
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = transport;
   config.api_key = [] { return std::string("cafe-key"); };
   auto client = CafeClient::Create(std::move(config));
@@ -257,7 +256,7 @@ TEST_F(CafeClientTest, SmallOrderBodiesAreNotCompressed) {
 
 TEST_F(CafeClientTest, ThresholdZeroCompressesEverything) {
   auto transport = std::make_shared<CapturingTransport>();
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = transport;
   config.request_min_compression_size_bytes = 0;
   auto client = CafeClient::Create(std::move(config));
@@ -267,7 +266,7 @@ TEST_F(CafeClientTest, ThresholdZeroCompressesEverything) {
 
   (void)client->OrderCoffee(OrderCoffeeInput{.coffeeType = CoffeeType::FromString("LATTE")});
   EXPECT_EQ(transport->last_request.headers.Get("content-encoding"), "gzip");
-  const auto decompressed = smithy::GzipDecompress(transport->last_request.body);
+  const auto decompressed = opal::GzipDecompress(transport->last_request.body);
   ASSERT_TRUE(decompressed.ok()) << decompressed.error().message();
   const auto doc = DecodeBody(*decompressed);
   ASSERT_TRUE(doc.ok());
@@ -282,7 +281,7 @@ TEST_F(CafeClientTest, LargeOrderBodiesCompressAtTheDefaultThreshold) {
   transport_->next_response.body = EncodeBody(Document(DocumentMap{}));
   (void)client_->OrderCoffee(input);
   EXPECT_EQ(transport_->last_request.headers.Get("content-encoding"), "gzip");
-  const auto decompressed = smithy::GzipDecompress(transport_->last_request.body);
+  const auto decompressed = opal::GzipDecompress(transport_->last_request.body);
   ASSERT_TRUE(decompressed.ok());
   const auto doc = DecodeBody(*decompressed);
   ASSERT_TRUE(doc.ok());

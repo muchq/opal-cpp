@@ -7,7 +7,7 @@
 
 #include "smithy/core/base64.h"
 
-namespace smithy::json {
+namespace opal::json {
 namespace {
 
 nlohmann::json ToBackend(const Document& doc) {
@@ -151,4 +151,4 @@ Outcome<Document> Decode(std::string_view text) {
   return FromBackend(parsed);
 }
 
-}  // namespace smithy::json
+}  // namespace opal::json

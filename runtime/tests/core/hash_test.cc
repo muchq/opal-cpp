@@ -21,7 +21,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/core/timestamp.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 template <typename T>
@@ -99,4 +99,4 @@ TEST(StdHashTest, UnitHashesConsistently) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

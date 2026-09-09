@@ -6,7 +6,7 @@
 #include "smithy/http/server_dispatch.h"
 #include "smithy/http/transport.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // In-memory transport: an HttpClient wired directly to a request handler with
 // no sockets, serialization of the connection, or threads. The backbone of
@@ -33,6 +33,6 @@ class Loopback : public HttpClient, public HttpServerTransport {
   RequestHandler handler_;
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_LOOPBACK_H_

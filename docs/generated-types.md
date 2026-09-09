@@ -11,20 +11,20 @@ compatibility contract: changes to it are breaking for consumers of generated co
 | `byte` / `short` / `integer` / `long` | `std::int8_t` / `std::int16_t` / `std::int32_t` / `std::int64_t` | |
 | `float` / `double` | `float` / `double` | |
 | `string` | `std::string` | |
-| `blob` | `smithy::Blob` | |
-| `timestamp` | `smithy::Timestamp` | |
-| `document` | `smithy::Document` | |
+| `blob` | `opal::Blob` | |
+| `timestamp` | `opal::Timestamp` | |
+| `document` | `opal::Document` | |
 | `list<T>` | `std::vector<T>` | `@sparse` ⇒ `std::vector<std::optional<T>>` |
 | `map<string, T>` | `std::map<std::string, T>` | `@sparse` ⇒ optional values; `std::map` keeps output deterministic |
 | `structure` | `struct` with public members | Aggregate; `operator==` and `operator<=>` defaulted; every member value-initialized with `{}` |
 | `union` | class over `std::variant` | See below |
 | `enum` | class with nested `enum class Value` | See below; unknown wire values preserved |
 | `intEnum` | `enum class X : std::int32_t` | Wire values outside int32 fail the parse; unknown in-range values are preserved (servers additionally validate membership) |
-| `smithy.api#Unit` | `smithy::Unit` | Never declared; maps to the runtime type |
+| `smithy.api#Unit` | `opal::Unit` | Never declared; maps to the runtime type |
 | `bigInteger` / `bigDecimal` | — | Rejected with a clear error (planned) |
-| `@streaming` blob member | trait ignored | Generates as a fully buffered `smithy::Blob`; see the README's [Current limitations](../README.md#current-limitations) |
-| `@streaming` union member | typed event stream (ADR-0016) | The operation generates `smithy::eventstream::EventStream` signatures (client and server) instead of carrying the union in the body; the union itself still generates as a normal union type |
-| recursive structures | `smithy::Boxed<T>` member indirection | Deep copy/equality; list cycles ride `std::vector` directly. Cycles through union members or map values are still rejected with a clear error |
+| `@streaming` blob member | trait ignored | Generates as a fully buffered `opal::Blob`; see the README's [Current limitations](../README.md#current-limitations) |
+| `@streaming` union member | typed event stream (ADR-0016) | The operation generates `opal::eventstream::EventStream` signatures (client and server) instead of carrying the union in the body; the union itself still generates as a normal union type |
+| recursive structures | `opal::Boxed<T>` member indirection | Deep copy/equality; list cycles ride `std::vector` directly. Cycles through union members or map values are still rejected with a clear error |
 
 ## Conventions
 
@@ -42,8 +42,8 @@ compatibility contract: changes to it are breaking for consumers of generated co
   `@required` + `@default` reads absence as the default instead of failing.
 - **Ordering**: generated types default `operator<=>` beside `operator==` whenever every member
   is three-way-comparable, so structs, unions, and enums key `std::map`/`std::set` and sort
-  (issue #49). Types that can't order — a `smithy::Document` member, or recursion (via
-  `smithy::Boxed`, which deliberately has no `<=>`: deducing a deep ordering around the cycle
+  (issue #49). Types that can't order — a `opal::Document` member, or recursion (via
+  `opal::Boxed`, which deliberately has no `<=>`: deducing a deep ordering around the cycle
   it exists to break is a hard error on clang), transitively through members — are
   equality-only: the generator omits `<=>` and leaves an "Equality-only" comment in the
   header. `float`/`double` members make the ordering partial.
@@ -51,8 +51,8 @@ compatibility contract: changes to it are breaking for consumers of generated co
   `std::unordered_map`/`std::unordered_set` the same way it keys `std::map` (equality-only
   types get neither). Structs hash member-wise, enums hash their (value, unknown-text) pair,
   unions and `<Op>Errors` listings hash (engaged index, engaged member); list/map/optional
-  members hash element-wise via `smithy::HashValue`, and the runtime types (`smithy::Blob`,
-  `smithy::Timestamp`, `smithy::Unit`) carry `std::hash` in their own headers. The
+  members hash element-wise via `opal::HashValue`, and the runtime types (`opal::Blob`,
+  `opal::Timestamp`, `opal::Unit`) carry `std::hash` in their own headers. The
   specializations sit after the namespace's closing brace in the same generated header.
   Hash values are **process-local**: they build on `std::hash`, so never persist them or
   compare them across processes, builds, or library versions.
@@ -68,7 +68,7 @@ compatibility contract: changes to it are breaking for consumers of generated co
   **not gated**: recursion and `Document` members print fine (value semantics keep the data
   acyclic). The runtime member types render via the same mechanism: `Blob` as size plus a
   bounded hex prefix (never full contents), `Timestamp` as RFC 3339, `Document` JSON-ish,
-  `smithy::DebugString(x)`/`DebugAppend` in `smithy/core/print.h` for anything else. Debug
+  `opal::DebugString(x)`/`DebugAppend` in `smithy/core/print.h` for anything else. Debug
   output is for **humans and logs only** — it is not a serialization format; never parse it,
   and never pin exact bytes across library versions.
 - **Deliberately not generated**:
@@ -131,7 +131,7 @@ terminates the process with the union, requested, and engaged member named (e.g.
 `std::bad_variant_access`. For access that can't die, branch on `is_x()`, use
 `as_x_or_null()` (`if (const auto* dairy = milk.as_dairy_or_null()) …`), or `visit()` with a
 visitor that covers every member plus `std::monostate` for the empty state —
-`smithy::Overloaded` (`smithy/core/overloaded.h`) builds one from lambdas.
+`opal::Overloaded` (`smithy/core/overloaded.h`) builds one from lambdas.
 
 ## Serde (Phase 3)
 
@@ -139,15 +139,15 @@ visitor that covers every member plus `std::monostate` for the empty state —
 operation:
 
 ```cpp
-smithy::Document SerializeOrderCoffeeInput(const OrderCoffeeInput& value);
-smithy::Outcome<OrderCoffeeInput> DeserializeOrderCoffeeInput(const smithy::Document& value);
+opal::Document SerializeOrderCoffeeInput(const OrderCoffeeInput& value);
+opal::Outcome<OrderCoffeeInput> DeserializeOrderCoffeeInput(const opal::Document& value);
 ```
 
-- **Pivot type**: `smithy::Document` — protocol-independent; the client picks the JSON or CBOR
+- **Pivot type**: `opal::Document` — protocol-independent; the client picks the JSON or CBOR
   codec at the wire boundary, so serde is generated once per shape, not once per protocol.
 - **Tolerant reads**: unknown response members are ignored; unknown enum values are preserved
   (`Value::kUnknown` + original text). Missing `@required` members produce a
-  `smithy::ErrorKind::kSerialization` error naming the member.
+  `opal::ErrorKind::kSerialization` error naming the member.
 - **Sparse** lists/maps serialize `std::nullopt` as explicit nulls; timestamps honor
   `@timestampFormat` with the protocol default applied where unspecified.
 - **alloy unions**: `@discriminated("key")` unions put the engaged member's fields inline with
@@ -175,7 +175,7 @@ auto client = WeatherClient::Create(std::move(config)).value_or_die("creating we
 auto city   = client.GetCity(GetCityInput{.cityId = "seattle"});  // Outcome<GetCityOutput>
 ```
 
-- **Transport-agnostic**: `smithy::ClientConfig` supplies either an `endpoint` (uses the default
+- **Transport-agnostic**: `opal::ClientConfig` supplies either an `endpoint` (uses the default
   socket transport) or an explicit `http_client` (loopback for tests, Beast, custom).
 - **Protocol binding** is chosen at generation time from the service's protocol trait:
   simpleRestJson (HTTP bindings: labels, query, headers, status codes), rpcv2Cbor
@@ -183,7 +183,7 @@ auto city   = client.GetCity(GetCityInput{.cityId = "seattle"});  // Outcome<Get
   jsonRpc2 (single `POST /`, `{"jsonrpc":"2.0","method":…,"params":…,"id":1}` envelopes).
 - `@idempotencyToken` members are auto-filled with a UUIDv4 when unset; caller-provided values
   pass through untouched.
-- HTTP 4xx/5xx map to `smithy::ErrorKind::kModeled` with the sanitized error code
+- HTTP 4xx/5xx map to `opal::ErrorKind::kModeled` with the sanitized error code
   (`ns#Shape` → `Shape`, simpleRestJson also reads the `x-error-type` header; jsonRpc2 errors
   arrive as JSON-RPC error objects on HTTP 200, discriminated by `error.data.__type`);
   `@retryable` errors and 5xx responses (jsonRpc2: `error.code >= 500`) are marked retryable.
@@ -197,7 +197,7 @@ auto city   = client.GetCity(GetCityInput{.cityId = "seattle"});  // Outcome<Get
   if (const auto* e = typed.as_order_not_found_or_null()) use(e->orderId);
   // or exhaustively — the visitor must also cover std::monostate, the
   // "not one of this operation's modeled errors" state:
-  typed.visit(smithy::Overloaded{
+  typed.visit(opal::Overloaded{
       [](const OrderNotFound& e) { /* ... */ },
       [](std::monostate) { /* transport/serialization/unknown */ },
   });
@@ -214,7 +214,7 @@ auto city   = client.GetCity(GetCityInput{.cityId = "seattle"});  // Outcome<Get
 
 `server.h`/`src/server.cc` emit a pure-virtual `<Service>Handler` (one `Outcome`-returning
 method per operation) and a `<Service>Server` that binds it to the runtime router; `Handler()`
-returns a transport-agnostic `smithy::http::RequestHandler`. Routing, binding deserialization,
+returns a transport-agnostic `opal::http::RequestHandler`. Routing, binding deserialization,
 response serialization, and modeled-error mapping (`@httpError` status, `__type` body, typed
 detail via `set_detail`) are generated — see [docs/server-guide.md](server-guide.md). Every
 module also gets `tests/smoke_test.cc`: generated client ↔ generated server over loopback.

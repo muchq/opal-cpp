@@ -16,7 +16,7 @@
 
 #include "smithy/http/trace_context.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // Sends raw bytes to the loopback server and returns the raw response, so an
@@ -496,4 +496,4 @@ TEST(SocketTransportTest, TheClientReadsAHeadResponseAsHeadersWhateverFollowsThe
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

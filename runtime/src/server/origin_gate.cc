@@ -11,7 +11,7 @@
 #include "smithy/http/uri.h"
 #include "smithy/server/router.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 // The canonical form origins are compared in: lowercased scheme://host
@@ -47,7 +47,7 @@ std::function<std::optional<http::HttpResponse>(const http::HttpRequest&)> Requi
     if (!normalized.has_value()) {
       // A malformed allowlist is a programming error that would silently
       // refuse every browser — fail fast at construction (ADR-0009).
-      smithy::internal::Fatal("RequireOrigin: not an http(s) origin or \"null\": " + entry);
+      opal::internal::Fatal("RequireOrigin: not an http(s) origin or \"null\": " + entry);
     }
     allowed.insert(std::move(*normalized));
   }
@@ -69,4 +69,4 @@ std::function<std::optional<http::HttpResponse>(const http::HttpRequest&)> Requi
   };
 }
 
-}  // namespace smithy::server
+}  // namespace opal::server

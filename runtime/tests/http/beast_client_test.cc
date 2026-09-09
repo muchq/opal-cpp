@@ -35,13 +35,13 @@
 #include "smithy/testing/connection_event_recorder.h"
 #include "smithy/testing/tls_test_identity.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
-using smithy::testing::kMismatchedNameCertificatePem;
-using smithy::testing::kMismatchedNamePrivateKeyPem;
-using smithy::testing::kTestCertificatePem;
-using smithy::testing::kTestPrivateKeyPem;
+using opal::testing::kMismatchedNameCertificatePem;
+using opal::testing::kMismatchedNamePrivateKeyPem;
+using opal::testing::kTestCertificatePem;
+using opal::testing::kTestPrivateKeyPem;
 
 RequestHandler EchoHandler() {
   return [](const HttpRequest& request) {
@@ -229,7 +229,7 @@ TEST(BeastClientTest, PlaintextToTheTlsPortIsObservedAsAHandshakeFailure) {
   // The "LB is misrouting" alarm (ADR-0013): a client speaking plain HTTP
   // to the TLS port fails the handshake, and the event carries the peer —
   // known before TLS ever ran.
-  smithy::testing::ConnectionEventRecorder recorder;
+  opal::testing::ConnectionEventRecorder recorder;
   auto options = TlsServerOptions();
   options.on_connection_event = recorder.Hook();
   BeastServerTransport server(options);
@@ -257,7 +257,7 @@ TEST(BeastClientTest, TlsLifecycleAndProbesStaySilent) {
   // (stream_truncated at the server's next read — a healthy close, not a
   // drop), and (b) TCP health probes connect and leave, or idle into the
   // deadline, without ever really starting a handshake. All silent.
-  smithy::testing::ConnectionEventRecorder recorder;
+  opal::testing::ConnectionEventRecorder recorder;
   auto options = TlsServerOptions();
   options.request_timeout_seconds = 1;
   options.on_connection_event = recorder.Hook();
@@ -545,7 +545,7 @@ TEST(BeastClientTest, ATlsPeerVanishingMidRequestIsObservedAsDropped) {
   // The mid-message side of the stream_truncated split (ADR-0013): a TLS
   // client that dies after starting a request — TCP close, no close_notify
   // — is a drop, not a clean close.
-  smithy::testing::ConnectionEventRecorder recorder;
+  opal::testing::ConnectionEventRecorder recorder;
   auto options = TlsServerOptions();
   options.on_connection_event = recorder.Hook();
   BeastServerTransport server(options);
@@ -750,4 +750,4 @@ TEST(BeastClientTest, TlsClientReachesATls13OnlyServer) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

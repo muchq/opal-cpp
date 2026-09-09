@@ -52,7 +52,7 @@ class GeneratedCodeShapeTest {
     assertTrue(types.contains("require_is(1, \"pending\");"), types);
     assertTrue(
         types.contains(
-            "smithy::internal::FatalWrongUnionAccess(\"Status\", requested," + " case_name());"),
+            "opal::internal::FatalWrongUnionAccess(\"Status\", requested," + " case_name());"),
         types);
     assertTrue(
         types.contains(
@@ -101,10 +101,9 @@ class GeneratedCodeShapeTest {
         PluginTestHarness.generate(ERRORS_MODEL, "test.shape#Svc", "test::shape")
             .expectFileString("/include/test/shape/client.h");
     assertTrue(client.contains("class PingErrors {"), client);
+    assertTrue(client.contains("static PingErrors FromError(const opal::Error& error) {"), client);
     assertTrue(
-        client.contains("static PingErrors FromError(const smithy::Error& error) {"), client);
-    assertTrue(
-        client.contains("if (error.kind() != smithy::ErrorKind::kModeled) return result;"), client);
+        client.contains("if (error.kind() != opal::ErrorKind::kModeled) return result;"), client);
     assertTrue(client.contains("if (error.code() == \"NotFound\")"), client);
     assertTrue(client.contains("bool is_not_found() const"), client);
     assertTrue(
@@ -116,7 +115,7 @@ class GeneratedCodeShapeTest {
             "static constexpr const char* kNames[] ="
                 + " {\"(empty)\", \"not_found\", \"quota\"};"),
         client);
-    // Error listings are matched from a smithy::Error, never hand-assembled:
+    // Error listings are matched from a opal::Error, never hand-assembled:
     // no From<Member> factories.
     assertFalse(client.contains("FromNotFound"), client);
   }
@@ -174,12 +173,11 @@ class GeneratedCodeShapeTest {
     var manifest = PluginTestHarness.generate(ORDERING_MODEL, "test.shape#Svc", "test::shape");
     String types = manifest.expectFileString("/include/test/shape/types.h");
     assertTrue(types.contains("#include \"smithy/core/hash.h\""), types);
-    // Structs hash member-wise through smithy::HashValue (containers and
+    // Structs hash member-wise through opal::HashValue (containers and
     // optionals have no std::hash of their own).
     assertTrue(types.contains("struct std::hash<test::shape::Pending> {"), types);
     assertTrue(
-        types.contains("seed = smithy::HashCombine(seed, smithy::HashValue(value.position));"),
-        types);
+        types.contains("seed = opal::HashCombine(seed, opal::HashValue(value.position));"), types);
     // Member-less structs have nothing to mix — and must not name the unused
     // parameter (clang's -Wunused-parameter fires in every including TU).
     assertTrue(
@@ -221,7 +219,7 @@ class GeneratedCodeShapeTest {
     // sink parameter.
     assertTrue(types.contains("if (this->position.has_value()) {"), types);
     assertTrue(types.contains("out += \".position = \";"), types);
-    assertTrue(types.contains("smithy::DebugAppend(out, *this->position);"), types);
+    assertTrue(types.contains("opal::DebugAppend(out, *this->position);"), types);
     assertTrue(
         types.contains(
             "std::string DebugString() const {"
@@ -236,7 +234,7 @@ class GeneratedCodeShapeTest {
     // Unions print the engaged member by name; the empty state prints none.
     assertTrue(types.contains("out += \"Status(\";"), types);
     assertTrue(types.contains("out += \"pending = \";"), types);
-    assertTrue(types.contains("smithy::DebugAppend(out, std::get<1>(value_));"), types);
+    assertTrue(types.contains("opal::DebugAppend(out, std::get<1>(value_));"), types);
     // A @required member prints unconditionally — no presence guard.
     var required = PluginTestHarness.generate(ERRORS_MODEL, "test.shape#Svc", "test::shape");
     String requiredTypes = required.expectFileString("/include/test/shape/types.h");
@@ -280,7 +278,7 @@ class GeneratedCodeShapeTest {
     assertFalse(types.contains("DebugAppend(out, *this->token)"), types);
     assertTrue(types.contains("out += \"Vault{[REDACTED]}\";"), types);
     // The non-sensitive sibling member still prints its value.
-    assertTrue(types.contains("smithy::DebugAppend(out, *this->user);"), types);
+    assertTrue(types.contains("opal::DebugAppend(out, *this->user);"), types);
   }
 
   @Test
@@ -399,7 +397,7 @@ class GeneratedCodeShapeTest {
   void streamingBlobsStayPlainBufferedBlobs() {
     // The README's "Current limitations": @streaming BLOBS remain unmodeled —
     // a streaming blob payload generates as an ordinary, fully buffered
-    // smithy::Blob with the plain unary operation around it. Event-stream
+    // opal::Blob with the plain unary operation around it. Event-stream
     // unions became real in Phase 8 slice 3 (ADR-0016; the flipped pin is
     // eventStreamOperationsGenerateStreamingSignatures below), which is why
     // this pin is now blob-specific.
@@ -427,10 +425,10 @@ class GeneratedCodeShapeTest {
         """;
     var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
     String types = manifest.expectFileString("/include/test/shape/types.h");
-    assertTrue(types.contains("smithy::Blob body{};"), types);
+    assertTrue(types.contains("opal::Blob body{};"), types);
     String client = manifest.expectFileString("/include/test/shape/client.h");
     assertTrue(
-        client.contains("smithy::Outcome<UploadOutput> Upload(const UploadInput& input) const;"),
+        client.contains("opal::Outcome<UploadOutput> Upload(const UploadInput& input) const;"),
         client);
     assertFalse(client.contains("EventStream"), client);
   }
@@ -468,20 +466,20 @@ class GeneratedCodeShapeTest {
     var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
     String client = manifest.expectFileString("/include/test/shape/client.h");
     assertTrue(
-        client.contains("using ChatClientStream = smithy::eventstream::EventStream<In, Out>;"),
+        client.contains("using ChatClientStream = opal::eventstream::EventStream<In, Out>;"),
         client);
     assertTrue(
-        client.contains("smithy::Outcome<ChatClientStream> Chat(const ChatInput& input) const;"),
+        client.contains("opal::Outcome<ChatClientStream> Chat(const ChatInput& input) const;"),
         client);
     String server = manifest.expectFileString("/include/test/shape/server.h");
     assertTrue(
-        server.contains("using ChatServerStream = smithy::eventstream::EventStream<Out, In>;"),
+        server.contains("using ChatServerStream = opal::eventstream::EventStream<Out, In>;"),
         server);
     assertTrue(
         server.contains(
-            "virtual smithy::Outcome<smithy::Unit> Chat(const ChatInput& input,"
+            "virtual opal::Outcome<opal::Unit> Chat(const ChatInput& input,"
                 + " ChatServerStream& stream,"
-                + " const smithy::server::RequestContext& context) = 0;"),
+                + " const opal::server::RequestContext& context) = 0;"),
         server);
   }
 
@@ -489,7 +487,7 @@ class GeneratedCodeShapeTest {
   void paginatorsAreRanges() {
     // Issue #49: @paginated was pull-only — Next()/nullopt with no
     // begin()/end(), so `for (page : pages)` didn't compile. Paginators now
-    // expose the single-pass smithy::PageIterator range: iteration yields
+    // expose the single-pass opal::PageIterator range: iteration yields
     // Outcome<Page>&, and a failed call ends the range after being seen once.
     String model =
         """
@@ -517,11 +515,11 @@ class GeneratedCodeShapeTest {
     assertTrue(client.contains("using Page = ListThingsOutput;"), client);
     assertTrue(
         client.contains(
-            "smithy::PageIterator<ListThingsPaginator> begin() { return"
-                + " smithy::PageIterator<ListThingsPaginator>(this); }"),
+            "opal::PageIterator<ListThingsPaginator> begin() { return"
+                + " opal::PageIterator<ListThingsPaginator>(this); }"),
         client);
     assertTrue(
-        client.contains("smithy::PageIterator<ListThingsPaginator> end() { return {}; }"), client);
+        client.contains("opal::PageIterator<ListThingsPaginator> end() { return {}; }"), client);
   }
 
   @Test
@@ -536,7 +534,7 @@ class GeneratedCodeShapeTest {
     assertTrue(
         client.contains(
             "https endpoints need a TLS-capable transport"
-                + " (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)"),
+                + " (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)"),
         client);
     assertFalse(client.contains("FromEndpoint"), client);
   }

@@ -2,7 +2,7 @@ load("@rules_java//java:defs.bzl", "java_binary", "java_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# Read by //tools:release_test, which pins it to smithy::Version().
+# Read by //tools:release_test, which pins it to opal::Version().
 exports_files(["gradle.properties"])
 
 # The generator, compiled from the same sources the Gradle build uses, so the

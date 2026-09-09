@@ -30,10 +30,10 @@
 
 namespace {
 
-using smithy::Outcome;
-using smithy::Unit;
-using smithy::eventstream::Message;
-using smithy::http::WebSocket;
+using opal::Outcome;
+using opal::Unit;
+using opal::eventstream::Message;
+using opal::http::WebSocket;
 
 // A third-party session: a bounded outbound wire nobody drains, one parked
 // receive, one parked send. Deliberately minimal — the point is not the
@@ -55,7 +55,7 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
   Outcome<std::optional<Message>> Receive(std::chrono::milliseconds timeout) override {
     std::unique_lock<std::mutex> lock(mutex_);
     if (!changed_.wait_for(lock, timeout, [this] { return closed_; })) {
-      return smithy::Error::Timeout("consumer socket: no message within the deadline");
+      return opal::Error::Timeout("consumer socket: no message within the deadline");
     }
     return std::optional<Message>();
   }
@@ -63,7 +63,7 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
   Outcome<Unit> Send(const Message& message) override {
     std::unique_lock<std::mutex> lock(mutex_);
     changed_.wait(lock, [this] { return queued_ < kDepth || closed_; });
-    if (closed_) return smithy::Error::Transport("consumer socket: session is closed");
+    if (closed_) return opal::Error::Transport("consumer socket: session is closed");
     ++queued_;
     (void)message;
     return Unit{};
@@ -87,7 +87,7 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
         pending_receive_ = std::exchange(deliver, nullptr);
         ++receive_park_generation_;  // a stale deadline must not fire this park
       } else if (!closed_) {
-        immediate = smithy::Error::Validation("consumer socket: a receive is already outstanding");
+        immediate = opal::Error::Validation("consumer socket: a receive is already outstanding");
       }
     }
     if (!deliver) return;  // parked: EndSession completes it
@@ -113,11 +113,11 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
         pending_receive_ = std::exchange(deliver, nullptr);
         parked_generation = ++receive_park_generation_;
       } else if (!closed_ && pending_receive_) {
-        immediate = smithy::Error::Validation("consumer socket: a receive is already outstanding");
+        immediate = opal::Error::Validation("consumer socket: a receive is already outstanding");
       } else if (!closed_) {
         // The non-positive poll — this peer never sends, so nothing is
         // ever already in hand.
-        immediate = smithy::Error::Timeout("consumer socket: no message within the deadline");
+        immediate = opal::Error::Timeout("consumer socket: no message within the deadline");
       }
     }
     if (!deliver) {
@@ -133,9 +133,9 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
     {
       const std::lock_guard<std::mutex> lock(mutex_);
       if (closed_) {
-        immediate = smithy::Error::Transport("consumer socket: session is closed");
+        immediate = opal::Error::Transport("consumer socket: session is closed");
       } else if (pending_send_) {
-        immediate = smithy::Error::Validation("consumer socket: a send is already in flight");
+        immediate = opal::Error::Validation("consumer socket: a send is already in flight");
       } else if (queued_ >= kDepth) {
         pending_send_ = std::move(callback);  // parked on the full wire
         return;
@@ -161,7 +161,7 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
       changed_.notify_all();
     }
     std::move(waiters).Fire(
-        smithy::Error::Transport("consumer socket: session is closed"), std::optional<Message>(),
+        opal::Error::Transport("consumer socket: session is closed"), std::optional<Message>(),
         [](const char*, const auto& callback, auto outcome) { callback(std::move(outcome)); });
   }
 
@@ -191,7 +191,7 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
         expired = std::exchange(self->pending_receive_, nullptr);
         self->changed_.notify_all();
       }
-      expired(smithy::Error::Timeout("consumer socket: no message within the deadline"));
+      expired(opal::Error::Timeout("consumer socket: no message within the deadline"));
     };
     ReceiveCallback refused;
     try {
@@ -205,7 +205,7 @@ class ConsumerSocket final : public WebSocket, public std::enable_shared_from_th
       }
     }
     if (refused) {
-      refused(smithy::Error::Transport("consumer socket: cannot arm the receive deadline"));
+      refused(opal::Error::Transport("consumer socket: cannot arm the receive deadline"));
     }
   }
 
@@ -225,7 +225,7 @@ struct ConsumerContractDriver {
 
   Message BulkMessage(int n) {
     return Message{.headers = {{":event-type", "bulk"}},
-                   .payload = smithy::Blob::FromString(std::to_string(n))};
+                   .payload = opal::Blob::FromString(std::to_string(n))};
   }
 
   void EndSessionFromPeer() { socket_->EndSession(); }
@@ -237,6 +237,6 @@ struct ConsumerContractDriver {
 
 // gtest builds the registration symbols from the bare suite name, so the
 // instantiation lives in the namespace the suite was registered in.
-namespace smithy::testing {
+namespace opal::testing {
 INSTANTIATE_TYPED_TEST_SUITE_P(ConsumerSocket, WebSocketContractTest, ConsumerContractDriver);
-}  // namespace smithy::testing
+}  // namespace opal::testing

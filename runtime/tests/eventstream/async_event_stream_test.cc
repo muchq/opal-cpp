@@ -29,7 +29,7 @@
 #include "smithy/http/websocket_pair.h"
 #include "smithy/testing/websocket_contract_test.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 constexpr std::size_t kWireDepth = http::InMemoryWebSocketPair::kQueueDepth;
@@ -896,12 +896,12 @@ struct PairContractDriver {
 };
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 // The instantiation lives where the suite was registered: gtest builds the
 // registration symbols from the bare suite name, so a qualified one does
 // not resolve.
-namespace smithy::testing {
+namespace opal::testing {
 INSTANTIATE_TYPED_TEST_SUITE_P(InMemoryPair, WebSocketContractTest,
                                eventstream::PairContractDriver);
-}  // namespace smithy::testing
+}  // namespace opal::testing

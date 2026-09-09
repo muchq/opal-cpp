@@ -90,7 +90,7 @@ class ConditionalWiringCoverageTest {
         PluginTestHarness.generate(model, "test.wiring#Svc", "test::wiring")
             .expectFileString("/src/client.cc");
     assertTrue(
-        client.contains("if (prepared.token.empty()) prepared.token = smithy::GenerateUuidV4();"),
+        client.contains("if (prepared.token.empty()) prepared.token = opal::GenerateUuidV4();"),
         client);
   }
 

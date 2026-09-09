@@ -45,7 +45,7 @@ using example::chat::RoomSummary;
 using example::chat::WatchAsyncServerStream;
 using example::chat::WatchInput;
 
-using Registry = smithy::server::SessionRegistry<RoomEvents>;
+using Registry = opal::server::SessionRegistry<RoomEvents>;
 
 // The fan-out state: ids are "<room>/<name>", exactly the hub_handler
 // scheme, over the async-delivery registry — no writer threads, no parked
@@ -56,7 +56,7 @@ class AsyncHub {
  public:
   explicit AsyncHub(std::chrono::seconds grace) : registry_(RegistryOptions(this, grace)) {}
 
-  smithy::server::SessionRegistry<RoomEvents>& registry() { return registry_; }
+  opal::server::SessionRegistry<RoomEvents>& registry() { return registry_; }
 
   // A watcher seat's id is "<room>/#watch-<n>" — one predicate, one
   // spelling, for every roster/occupancy filter below.
@@ -107,9 +107,9 @@ class AsyncHub {
   }
 
  private:
-  static smithy::server::SessionRegistry<RoomEvents>::Options RegistryOptions(
+  static opal::server::SessionRegistry<RoomEvents>::Options RegistryOptions(
       AsyncHub* hub, std::chrono::seconds grace) {
-    smithy::server::SessionRegistry<RoomEvents>::Options options;
+    opal::server::SessionRegistry<RoomEvents>::Options options;
     options.async_delivery = true;  // ADR-0019: chains, not writer threads
     options.grace_period = grace;   // ADR-0020: abrupt losses detach, not vanish
     options.on_expired = [hub](const std::string& id) {
@@ -134,7 +134,7 @@ class AsyncHub {
     return ids;
   }
 
-  smithy::server::SessionRegistry<RoomEvents> registry_;
+  opal::server::SessionRegistry<RoomEvents> registry_;
 };
 
 // The generated async handler (ADR-0021): each streaming method is one
@@ -146,8 +146,8 @@ class HubHandler final : public example::chat::ChatAsyncHandler {
 
   AsyncHub& hub() { return hub_; }
 
-  smithy::eventstream::StreamTask Converse(ConverseInput input,
-                                           ConverseAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Converse(ConverseInput input,
+                                         ConverseAsyncServerStream& stream) override {
     const std::string room = input.room;
     const std::string name = input.nickname.value_or("anonymous");
     const std::string id = room + "/" + name;
@@ -163,7 +163,7 @@ class HubHandler final : public example::chat::ChatAsyncHandler {
       Kicked kicked;
       kicked.message = "nickname '" + name + "' is already in " + room;
       kicked.by = "hub";
-      auto refusal = smithy::Error::Modeled("Kicked", *kicked.message);
+      auto refusal = opal::Error::Modeled("Kicked", *kicked.message);
       refusal.set_detail(std::move(kicked));
       co_return refusal;
     }
@@ -206,24 +206,24 @@ class HubHandler final : public example::chat::ChatAsyncHandler {
     }
     // An abrupt loss inside grace stays silent: the resumed session replays
     // the roster, and only expiry announces the departure (on_expired).
-    co_return smithy::Unit{};  // the generated wrapper closes the stream
+    co_return opal::Unit{};  // the generated wrapper closes the stream
   }
 
-  smithy::eventstream::StreamTask Watch(WatchInput input, WatchAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Watch(WatchInput input, WatchAsyncServerStream& stream) override {
     // A read-only seat in the room's fan-out: broadcasts reach it, the
     // roster ignores it, and it gets no reconnect grace (nothing to
     // resume). Rx is NoEvents, so the Receive only ever reports the close.
     const std::string id = input.room + "/#watch-" + std::to_string(watch_seq_.fetch_add(1));
     if (!hub_.registry().Add(id, stream.Share())) {
-      co_return smithy::Error::Validation("watch seat admission failed");
+      co_return opal::Error::Validation("watch seat admission failed");
     }
     (void)co_await stream.Receive();
     hub_.registry().Remove(id);
-    co_return smithy::Unit{};
+    co_return opal::Unit{};
   }
 
-  smithy::Outcome<ListRoomsOutput> ListRooms(
-      const ListRoomsInput& /*input*/, const smithy::server::RequestContext& /*context*/) override {
+  opal::Outcome<ListRoomsOutput> ListRooms(
+      const ListRoomsInput& /*input*/, const opal::server::RequestContext& /*context*/) override {
     return hub_.ListRooms();
   }
 
@@ -249,14 +249,14 @@ int main(int argc, char** argv) {
   // the shared-session seam; the unary table (ListRooms) is identical.
   example::chat::ChatServer server(handler);
 
-  smithy::http::BeastServerTransport::Options options;
+  opal::http::BeastServerTransport::Options options;
   options.address = "0.0.0.0";
   options.port = argc > 1 ? std::atoi(argv[1]) : 8080;  // 0 binds an ephemeral port
   options.handler_threads = 2;  // launch points + unary requests; sessions hold no thread
   options.websocket_gate = server.StreamRouter()->Gate();
   options.on_websocket_session = server.StreamRouter()->ServeSession();
-  smithy::http::BeastServerTransport transport(options);
-  smithy::Outcome<smithy::Unit> started = transport.Start(server.Handler());
+  opal::http::BeastServerTransport transport(options);
+  opal::Outcome<opal::Unit> started = transport.Start(server.Handler());
   if (!started.ok()) {
     std::fprintf(stderr, "async-hub: start failed: %s\n", started.error().message().c_str());
     return 1;

@@ -139,7 +139,7 @@ fun registerProtocolTestTask(
 val generateSimpleRestJsonProtocolTests = registerProtocolTestTask(
     "generateSimpleRestJsonProtocolTests",
     "alloy.test#PizzaAdminService",
-    "smithy::protocoltests::simplerestjson",
+    "opal::protocoltests::simplerestjson",
     "protocol-tests/simplerestjson/generated",
     omitOperations = listOf(
         // alloy-protocol-tests 0.3.32+: PrimitiveEncodings.duration targets
@@ -153,7 +153,7 @@ val generateSimpleRestJsonProtocolTests = registerProtocolTestTask(
 val generateRpcv2CborProtocolTests = registerProtocolTestTask(
     "generateRpcv2CborProtocolTests",
     "smithy.protocoltests.rpcv2Cbor#RpcV2Protocol",
-    "smithy::protocoltests::rpcv2cbor",
+    "opal::protocoltests::rpcv2cbor",
     "protocol-tests/rpcv2cbor/generated",
     malformedTests = true,
 )
@@ -164,7 +164,7 @@ val generateRpcv2CborProtocolTests = registerProtocolTestTask(
 val generateJsonRpc2ProtocolTests = registerProtocolTestTask(
     "generateJsonRpc2ProtocolTests",
     "smithy.cpp.protocoltests.jsonrpc2#JsonRpc2Protocol",
-    "smithy::protocoltests::jsonrpc2",
+    "opal::protocoltests::jsonrpc2",
     "protocol-tests/jsonrpc2/generated",
     malformedTests = true,
     modelPath = "protocol-tests/jsonrpc2/model/jsonrpc2.smithy",

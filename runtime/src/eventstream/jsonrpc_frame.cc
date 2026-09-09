@@ -9,7 +9,7 @@
 #include "smithy/eventstream/envelope.h"
 #include "smithy/json/json.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 constexpr std::string_view kVersionMember = "jsonrpc";
@@ -263,4 +263,4 @@ std::string EncodeJsonRpcViolationResponse(int code, std::string_view reason, co
   return json::Encode(Document(std::move(envelope)));
 }
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

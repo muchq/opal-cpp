@@ -103,15 +103,15 @@ final class SerdeGenerator {
     w.addInclude("\"smithy/core/outcome.h\"");
     w.addInclude("\"" + context.settings().includePrefix() + "/types.h\"");
     w.write("// Document-pivot serde for every aggregate shape in the model closure.");
-    w.write("// Serializers never fail; deserializers return smithy::Error on wire");
+    w.write("// Serializers never fail; deserializers return opal::Error on wire");
     w.write("// mismatches and enforce @required members.");
     w.write("");
     for (Shape shape : shapes) {
       String suffix = SerdeCodeGen.serdeFunctionSuffix(context, shape);
       String type = valueType(shape);
       w.addIncludesFor(context.cppSymbols().toSymbol(shape));
-      w.write("smithy::Document Serialize$L(const $L& value);", suffix, type);
-      w.write("smithy::Outcome<$L> Deserialize$L(const smithy::Document& doc);", type, suffix);
+      w.write("opal::Document Serialize$L(const $L& value);", suffix, type);
+      w.write("opal::Outcome<$L> Deserialize$L(const opal::Document& doc);", type, suffix);
       w.write("");
     }
   }
@@ -142,18 +142,18 @@ final class SerdeGenerator {
     // value; the parameter stays unnamed (Core Guidelines F.9) so the function
     // is clean under -Wextra's -Wunused-parameter.
     String valueParam = shape.members().isEmpty() ? "/*value*/" : "value";
-    w.openBlock("smithy::Document Serialize$L(const $L& $L) {", suffix, type, valueParam);
-    w.write("smithy::DocumentMap map;");
+    w.openBlock("opal::Document Serialize$L(const $L& $L) {", suffix, type, valueParam);
+    w.write("opal::DocumentMap map;");
     for (MemberShape member : shape.members()) {
       serde.writeMemberSerialize(w, member, "value", "map");
     }
-    w.write("return smithy::Document(std::move(map));");
+    w.write("return opal::Document(std::move(map));");
     w.closeBlock("}");
     w.write("");
 
-    w.openBlock("smithy::Outcome<$L> Deserialize$L(const smithy::Document& doc) {", type, suffix);
+    w.openBlock("opal::Outcome<$L> Deserialize$L(const opal::Document& doc) {", type, suffix);
     w.write(
-        "if (!doc.is_map()) return smithy::Error::Serialization($S);",
+        "if (!doc.is_map()) return opal::Error::Serialization($S);",
         type + ": expected a map on the wire");
     w.write("$L out;", type);
     for (MemberShape member : shape.members()) {
@@ -170,7 +170,7 @@ final class SerdeGenerator {
             // exchange-level message).
             w2.openBlock("if ($L) {", SerdeCodeGen.MEMBER_ABSENT);
             w2.write(
-                "return smithy::Error::Serialization($S);",
+                "return opal::Error::Serialization($S);",
                 type + ": missing required member: " + serde.wireName(m));
             w2.closeBlock("}");
             deserializeMember.run();
@@ -192,8 +192,8 @@ final class SerdeGenerator {
     // for unrecognized tags; it has no tag key of its own.
     Optional<MemberShape> unknown = jsonUnknownMember(shape);
 
-    w.openBlock("smithy::Document Serialize$L(const $L& value) {", suffix, type);
-    w.write("smithy::DocumentMap map;");
+    w.openBlock("opal::Document Serialize$L(const $L& value) {", suffix, type);
+    w.write("opal::DocumentMap map;");
     for (MemberShape member : shape.members()) {
       String name = context.cppSymbols().toMemberName(member);
       if (isJsonUnknown(member)) {
@@ -207,13 +207,13 @@ final class SerdeGenerator {
           serde.serializeExpression(member, "value.as_" + name + "()"));
       w.closeBlock("}");
     }
-    w.write("return smithy::Document(std::move(map));");
+    w.write("return opal::Document(std::move(map));");
     w.closeBlock("}");
     w.write("");
 
-    w.openBlock("smithy::Outcome<$L> Deserialize$L(const smithy::Document& doc) {", type, suffix);
+    w.openBlock("opal::Outcome<$L> Deserialize$L(const opal::Document& doc) {", type, suffix);
     w.write(
-        "if (!doc.is_map()) return smithy::Error::Serialization($S);",
+        "if (!doc.is_map()) return opal::Error::Serialization($S);",
         type + ": expected a map on the wire");
     // Unions are exactly one member on the wire; extra known or unknown
     // members are malformed (the malformed-request suite pins this), but a
@@ -224,7 +224,7 @@ final class SerdeGenerator {
     } else {
       w.write(
           "if (doc.as_map().size() - (doc.Find(\"__type\") != nullptr ? 1 : 0) != 1) "
-              + "return smithy::Error::Serialization($S);",
+              + "return opal::Error::Serialization($S);",
           type + ": expected exactly one union member");
     }
     for (MemberShape member : shape.members()) {
@@ -235,7 +235,7 @@ final class SerdeGenerator {
       Symbol targetType =
           context.cppSymbols().toSymbol(context.model().expectShape(member.getTarget()));
       w.openBlock(
-          "if (const smithy::Document* member = doc.Find($S);"
+          "if (const opal::Document* member = doc.Find($S);"
               + " member != nullptr && !member->is_null()) {",
           wireName);
       w.write("$L parsed_member{};", targetType.getName());
@@ -253,8 +253,7 @@ final class SerdeGenerator {
           type,
           pascal(context.cppSymbols().toMemberName(unknown.get())));
     } else {
-      w.write(
-          "return smithy::Error::Serialization($S);", type + ": unknown or missing union member");
+      w.write("return opal::Error::Serialization($S);", type + ": unknown or missing union member");
     }
     w.closeBlock("}");
     w.write("");
@@ -272,7 +271,7 @@ final class SerdeGenerator {
     String discriminator = shape.expectTrait(DiscriminatedUnionTrait.class).getValue();
     Optional<MemberShape> unknown = jsonUnknownMember(shape);
 
-    w.openBlock("smithy::Document Serialize$L(const $L& value) {", suffix, type);
+    w.openBlock("opal::Document Serialize$L(const $L& value) {", suffix, type);
     for (MemberShape member : shape.members()) {
       String name = context.cppSymbols().toMemberName(member);
       if (isJsonUnknown(member)) {
@@ -281,25 +280,25 @@ final class SerdeGenerator {
       }
       w.openBlock("if (value.is_$L()) {", name);
       w.write(
-          "smithy::Document member_doc = $L;",
+          "opal::Document member_doc = $L;",
           serde.serializeExpression(member, "value.as_" + name + "()"));
       w.write(
-          "member_doc.as_map().insert_or_assign($S, smithy::Document(std::string($S)));",
+          "member_doc.as_map().insert_or_assign($S, opal::Document(std::string($S)));",
           discriminator,
           serde.wireName(member));
       w.write("return member_doc;");
       w.closeBlock("}");
     }
-    w.write("return smithy::Document(smithy::DocumentMap{});");
+    w.write("return opal::Document(opal::DocumentMap{});");
     w.closeBlock("}");
     w.write("");
 
-    w.openBlock("smithy::Outcome<$L> Deserialize$L(const smithy::Document& doc) {", type, suffix);
+    w.openBlock("opal::Outcome<$L> Deserialize$L(const opal::Document& doc) {", type, suffix);
     w.write(
-        "if (!doc.is_map()) return smithy::Error::Serialization($S);",
+        "if (!doc.is_map()) return opal::Error::Serialization($S);",
         type + ": expected a map on the wire");
     w.openBlock(
-        "if (const smithy::Document* discriminator = doc.Find($S);"
+        "if (const opal::Document* discriminator = doc.Find($S);"
             + " discriminator != nullptr && discriminator->is_string()) {",
         discriminator);
     for (MemberShape member : shape.members()) {
@@ -309,7 +308,7 @@ final class SerdeGenerator {
       Symbol targetType =
           context.cppSymbols().toSymbol(context.model().expectShape(member.getTarget()));
       w.openBlock("if (discriminator->as_string() == $S) {", serde.wireName(member));
-      w.write("const smithy::Document* member = &doc;");
+      w.write("const opal::Document* member = &doc;");
       w.write("$L parsed_member{};", targetType.getName());
       serde.writeDeserializeInto(
           w, member, "member", "parsed_member", type + "." + serde.wireName(member));
@@ -326,8 +325,7 @@ final class SerdeGenerator {
           type,
           pascal(context.cppSymbols().toMemberName(unknown.get())));
     } else {
-      w.write(
-          "return smithy::Error::Serialization($S);", type + ": unknown or missing union member");
+      w.write("return opal::Error::Serialization($S);", type + ": unknown or missing union member");
     }
     w.closeBlock("}");
     w.write("");
@@ -348,8 +346,8 @@ final class SerdeGenerator {
     boolean sparse = shape.hasTrait(SparseTrait.class);
     Symbol element = context.cppSymbols().toSymbol(context.model().expectShape(member.getTarget()));
 
-    w.openBlock("smithy::Document Serialize$L(const $L& value) {", suffix, type);
-    w.write("smithy::DocumentList list;");
+    w.openBlock("opal::Document Serialize$L(const $L& value) {", suffix, type);
+    w.write("opal::DocumentList list;");
     w.write("list.reserve(value.size());");
     w.openBlock("for (const auto& item : value) {");
     if (sparse) {
@@ -362,18 +360,18 @@ final class SerdeGenerator {
       w.write("list.push_back($L);", serde.serializeExpression(member, "item"));
     }
     w.closeBlock("}");
-    w.write("return smithy::Document(std::move(list));");
+    w.write("return opal::Document(std::move(list));");
     w.closeBlock("}");
     w.write("");
 
-    w.openBlock("smithy::Outcome<$L> Deserialize$L(const smithy::Document& doc) {", type, suffix);
+    w.openBlock("opal::Outcome<$L> Deserialize$L(const opal::Document& doc) {", type, suffix);
     w.write(
-        "if (!doc.is_list()) return smithy::Error::Serialization($S);",
+        "if (!doc.is_list()) return opal::Error::Serialization($S);",
         type + ": expected a list on the wire");
     w.write("$L out;", type);
     w.write("out.reserve(doc.as_list().size());");
-    w.openBlock("for (const smithy::Document& item_doc : doc.as_list()) {");
-    w.write("const smithy::Document* item = &item_doc;");
+    w.openBlock("for (const opal::Document& item_doc : doc.as_list()) {");
+    w.write("const opal::Document* item = &item_doc;");
     if (sparse) {
       w.openBlock("if (item->is_null()) {");
       w.write("out.emplace_back(std::nullopt);");
@@ -381,7 +379,7 @@ final class SerdeGenerator {
       w.closeBlock("}");
     } else {
       w.write(
-          "if (item->is_null()) return smithy::Error::Serialization($S);",
+          "if (item->is_null()) return opal::Error::Serialization($S);",
           type + ": null element in a dense list");
     }
     w.write("$L parsed_item{};", element.getName());
@@ -400,12 +398,12 @@ final class SerdeGenerator {
     boolean sparse = shape.hasTrait(SparseTrait.class);
     Symbol element = context.cppSymbols().toSymbol(context.model().expectShape(member.getTarget()));
 
-    w.openBlock("smithy::Document Serialize$L(const $L& value) {", suffix, type);
-    w.write("smithy::DocumentMap map;");
+    w.openBlock("opal::Document Serialize$L(const $L& value) {", suffix, type);
+    w.write("opal::DocumentMap map;");
     w.openBlock("for (const auto& [key, item] : value) {");
     if (sparse) {
       w.openBlock("if (!item.has_value()) {");
-      w.write("map.emplace(key, smithy::Document(nullptr));");
+      w.write("map.emplace(key, opal::Document(nullptr));");
       w.write("continue;");
       w.closeBlock("}");
       w.write("map.emplace(key, $L);", serde.serializeExpression(member, "(*item)"));
@@ -413,17 +411,17 @@ final class SerdeGenerator {
       w.write("map.emplace(key, $L);", serde.serializeExpression(member, "item"));
     }
     w.closeBlock("}");
-    w.write("return smithy::Document(std::move(map));");
+    w.write("return opal::Document(std::move(map));");
     w.closeBlock("}");
     w.write("");
 
-    w.openBlock("smithy::Outcome<$L> Deserialize$L(const smithy::Document& doc) {", type, suffix);
+    w.openBlock("opal::Outcome<$L> Deserialize$L(const opal::Document& doc) {", type, suffix);
     w.write(
-        "if (!doc.is_map()) return smithy::Error::Serialization($S);",
+        "if (!doc.is_map()) return opal::Error::Serialization($S);",
         type + ": expected a map on the wire");
     w.write("$L out;", type);
     w.openBlock("for (const auto& [key, item_doc] : doc.as_map()) {");
-    w.write("const smithy::Document* item = &item_doc;");
+    w.write("const opal::Document* item = &item_doc;");
     if (sparse) {
       w.openBlock("if (item->is_null()) {");
       w.write("out.emplace(key, std::nullopt);");

@@ -24,18 +24,18 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   constexpr std::size_t kOutputCap = std::size_t{1} << 20;
 
   // Differential decompress: slicing must not change the verdict or bytes.
-  const auto whole = smithy::GzipDecompress(payload, kOutputCap);
-  const auto sliced = smithy::internal::GzipDecompressChunked(payload, kOutputCap, max_feed);
+  const auto whole = opal::GzipDecompress(payload, kOutputCap);
+  const auto sliced = opal::internal::GzipDecompressChunked(payload, kOutputCap, max_feed);
   if (whole.ok() != sliced.ok()) std::abort();        // slicing changed the verdict
   if (whole.ok() && *whole != *sliced) std::abort();  // slicing changed the bytes
 
   // Round trip: compress under the fuzzed slicing, read back both ways.
-  const auto packed = smithy::internal::GzipCompressChunked(payload, max_feed);
+  const auto packed = opal::internal::GzipCompressChunked(payload, max_feed);
   if (!packed.ok()) std::abort();  // compress accepts any bytes
-  const auto restored = smithy::GzipDecompress(*packed, kOutputCap);
+  const auto restored = opal::GzipDecompress(*packed, kOutputCap);
   if (!restored.ok()) std::abort();        // own output must decompress
   if (*restored != payload) std::abort();  // and round-trip exactly
-  const auto re_sliced = smithy::internal::GzipDecompressChunked(*packed, kOutputCap, max_feed);
+  const auto re_sliced = opal::internal::GzipDecompressChunked(*packed, kOutputCap, max_feed);
   if (!re_sliced.ok() || *re_sliced != payload) std::abort();
   return 0;
 }

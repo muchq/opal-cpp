@@ -12,7 +12,7 @@
 #include "smithy/core/exception_guard.h"
 #include "smithy/core/fatal.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 http::RequestHandler Chain(std::vector<Middleware> middleware, http::RequestHandler handler) {
   // Wrap inside-out so the first middleware ends up outermost.
@@ -54,7 +54,7 @@ Middleware PerClientRateLimit(std::function<bool(const std::string& client)> all
   if (allow == nullptr) {
     // A null policy would throw std::bad_function_call per request — fail
     // fast at composition like HealthEndpoint and Observe do (ADR-0009).
-    smithy::internal::Fatal("smithy::server::PerClientRateLimit: allow must not be null");
+    opal::internal::Fatal("opal::server::PerClientRateLimit: allow must not be null");
   }
   return Guard(
       [allow = std::move(allow), trusted = std::move(trusted)](const http::HttpRequest& request) {
@@ -72,7 +72,7 @@ namespace {
 // -fno-exceptions, where the sink cannot throw.
 template <typename Callback, typename Observation>
 void CallContained(const Callback& callback, const Observation& observation, const char* which) {
-  smithy::internal::Contain(
+  opal::internal::Contain(
       [&] { callback(observation); },
       [&](const char* what) {
         if (what != nullptr) {
@@ -88,7 +88,7 @@ void CallContained(const Callback& callback, const Observation& observation, con
 // message is the one clue to why /readyz is flapping, so keep the log
 // trail.
 bool ProbeContained(const ReadinessCheck& check) {
-  return smithy::internal::Contain(
+  return opal::internal::Contain(
       [&] { return check.probe(); },
       [&](const char* what) -> bool {
         if (what != nullptr) {
@@ -109,13 +109,13 @@ Middleware HealthEndpoint(std::string path, std::vector<ReadinessCheck> checks) 
   // monitoring is parsing it.
   for (const ReadinessCheck& check : checks) {
     if (check.probe == nullptr) {
-      smithy::internal::Fatal("smithy::server::HealthEndpoint: check '" + check.name +
-                              "' has a null probe");
+      opal::internal::Fatal("opal::server::HealthEndpoint: check '" + check.name +
+                            "' has a null probe");
     }
     for (const char c : check.name) {
       if (c == '"' || c == '\\' || static_cast<unsigned char>(c) < 0x20) {
-        smithy::internal::Fatal("smithy::server::HealthEndpoint: check name '" + check.name +
-                                "' contains a quote, backslash, or control character");
+        opal::internal::Fatal("opal::server::HealthEndpoint: check name '" + check.name +
+                              "' contains a quote, backslash, or control character");
       }
     }
   }
@@ -164,7 +164,7 @@ Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
                    std::function<std::chrono::steady_clock::time_point()> now,
                    std::optional<http::TrustedProxies> trusted) {
   if (on_complete == nullptr) {
-    smithy::internal::Fatal("smithy::server::Observe: on_complete may not be null");
+    opal::internal::Fatal("opal::server::Observe: on_complete may not be null");
   }
   if (now == nullptr) {
     now = [] { return std::chrono::steady_clock::now(); };
@@ -268,4 +268,4 @@ Middleware RequireApiKeyHeader(std::string header_name, std::string scheme,
   };
 }
 
-}  // namespace smithy::server
+}  // namespace opal::server

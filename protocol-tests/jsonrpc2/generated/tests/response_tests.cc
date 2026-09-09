@@ -8,23 +8,23 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/client.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
 // Generated from smithy.test#httpResponseTests (client cases),
 // including the cases attached to modeled error shapes.
 namespace {
 
 struct Fixture {
-  std::shared_ptr<smithy::testing::CapturingTransport> transport;
+  std::shared_ptr<opal::testing::CapturingTransport> transport;
   JsonRpc2ProtocolClient client;
 };
 
 Fixture MakeFixture(const std::string& endpoint = "") {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   config.endpoint = endpoint;
@@ -112,4 +112,4 @@ TEST(JsonRpc2ProtocolErrorTest, JsonRpc2ThrottledError) {
   EXPECT_EQ(*detail, expected);
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

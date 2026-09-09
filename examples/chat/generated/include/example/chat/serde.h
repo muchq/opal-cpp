@@ -12,53 +12,53 @@
 namespace example::chat {
 
 // Document-pivot serde for every aggregate shape in the model closure.
-// Serializers never fail; deserializers return smithy::Error on wire
+// Serializers never fail; deserializers return opal::Error on wire
 // mismatches and enforce @required members.
 
-smithy::Document SerializeLeaveNotice(const LeaveNotice& value);
-smithy::Outcome<LeaveNotice> DeserializeLeaveNotice(const smithy::Document& doc);
+opal::Document SerializeLeaveNotice(const LeaveNotice& value);
+opal::Outcome<LeaveNotice> DeserializeLeaveNotice(const opal::Document& doc);
 
-smithy::Document SerializeChatMessage(const ChatMessage& value);
-smithy::Outcome<ChatMessage> DeserializeChatMessage(const smithy::Document& doc);
+opal::Document SerializeChatMessage(const ChatMessage& value);
+opal::Outcome<ChatMessage> DeserializeChatMessage(const opal::Document& doc);
 
-smithy::Document SerializeChatEvents(const ChatEvents& value);
-smithy::Outcome<ChatEvents> DeserializeChatEvents(const smithy::Document& doc);
+opal::Document SerializeChatEvents(const ChatEvents& value);
+opal::Outcome<ChatEvents> DeserializeChatEvents(const opal::Document& doc);
 
-smithy::Document SerializeConverseInput(const ConverseInput& value);
-smithy::Outcome<ConverseInput> DeserializeConverseInput(const smithy::Document& doc);
+opal::Document SerializeConverseInput(const ConverseInput& value);
+opal::Outcome<ConverseInput> DeserializeConverseInput(const opal::Document& doc);
 
-smithy::Document SerializeMemberJoined(const MemberJoined& value);
-smithy::Outcome<MemberJoined> DeserializeMemberJoined(const smithy::Document& doc);
+opal::Document SerializeMemberJoined(const MemberJoined& value);
+opal::Outcome<MemberJoined> DeserializeMemberJoined(const opal::Document& doc);
 
-smithy::Document SerializeMemberLeft(const MemberLeft& value);
-smithy::Outcome<MemberLeft> DeserializeMemberLeft(const smithy::Document& doc);
+opal::Document SerializeMemberLeft(const MemberLeft& value);
+opal::Outcome<MemberLeft> DeserializeMemberLeft(const opal::Document& doc);
 
-smithy::Document SerializeRoomEvents(const RoomEvents& value);
-smithy::Outcome<RoomEvents> DeserializeRoomEvents(const smithy::Document& doc);
+opal::Document SerializeRoomEvents(const RoomEvents& value);
+opal::Outcome<RoomEvents> DeserializeRoomEvents(const opal::Document& doc);
 
-smithy::Document SerializeConverseOutput(const ConverseOutput& value);
-smithy::Outcome<ConverseOutput> DeserializeConverseOutput(const smithy::Document& doc);
+opal::Document SerializeConverseOutput(const ConverseOutput& value);
+opal::Outcome<ConverseOutput> DeserializeConverseOutput(const opal::Document& doc);
 
-smithy::Document SerializeKicked(const Kicked& value);
-smithy::Outcome<Kicked> DeserializeKicked(const smithy::Document& doc);
+opal::Document SerializeKicked(const Kicked& value);
+opal::Outcome<Kicked> DeserializeKicked(const opal::Document& doc);
 
-smithy::Document SerializeListRoomsInput(const ListRoomsInput& value);
-smithy::Outcome<ListRoomsInput> DeserializeListRoomsInput(const smithy::Document& doc);
+opal::Document SerializeListRoomsInput(const ListRoomsInput& value);
+opal::Outcome<ListRoomsInput> DeserializeListRoomsInput(const opal::Document& doc);
 
-smithy::Document SerializeRoomSummary(const RoomSummary& value);
-smithy::Outcome<RoomSummary> DeserializeRoomSummary(const smithy::Document& doc);
+opal::Document SerializeRoomSummary(const RoomSummary& value);
+opal::Outcome<RoomSummary> DeserializeRoomSummary(const opal::Document& doc);
 
-smithy::Document SerializeRoomSummaries(const std::vector<RoomSummary>& value);
-smithy::Outcome<std::vector<RoomSummary>> DeserializeRoomSummaries(const smithy::Document& doc);
+opal::Document SerializeRoomSummaries(const std::vector<RoomSummary>& value);
+opal::Outcome<std::vector<RoomSummary>> DeserializeRoomSummaries(const opal::Document& doc);
 
-smithy::Document SerializeListRoomsOutput(const ListRoomsOutput& value);
-smithy::Outcome<ListRoomsOutput> DeserializeListRoomsOutput(const smithy::Document& doc);
+opal::Document SerializeListRoomsOutput(const ListRoomsOutput& value);
+opal::Outcome<ListRoomsOutput> DeserializeListRoomsOutput(const opal::Document& doc);
 
-smithy::Document SerializeWatchInput(const WatchInput& value);
-smithy::Outcome<WatchInput> DeserializeWatchInput(const smithy::Document& doc);
+opal::Document SerializeWatchInput(const WatchInput& value);
+opal::Outcome<WatchInput> DeserializeWatchInput(const opal::Document& doc);
 
-smithy::Document SerializeWatchOutput(const WatchOutput& value);
-smithy::Outcome<WatchOutput> DeserializeWatchOutput(const smithy::Document& doc);
+opal::Document SerializeWatchOutput(const WatchOutput& value);
+opal::Outcome<WatchOutput> DeserializeWatchOutput(const opal::Document& doc);
 
 }  // namespace example::chat
 

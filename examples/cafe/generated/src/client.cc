@@ -32,38 +32,38 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::cbor::Decode(smithy::Blob::FromString(response.body));
+  auto doc = opal::cbor::Decode(opal::Blob::FromString(response.body));
   if (doc.ok()) parsed.doc = *std::move(doc);
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type == nullptr) type = parsed.doc.Find("code");
     if (parsed.code == "UnknownError" && type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
-    const smithy::Document* text = parsed.doc.Find("message");
+    const opal::Document* text = parsed.doc.Find("message");
     if (text != nullptr && text->is_string()) parsed.message = text->as_string();
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
-smithy::Error MakeOrderNotFoundError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeOrderNotFoundError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("OrderNotFound", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("OrderNotFound", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeOrderNotFound(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -71,11 +71,11 @@ smithy::Error MakeOrderNotFoundError(const smithy::http::HttpResponse& response,
   return error;
 }
 
-smithy::Error MakeOutOfBeansError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeOutOfBeansError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = true;  // @retryable
-  smithy::Error error = smithy::Error::Modeled("OutOfBeans", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("OutOfBeans", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeOutOfBeans(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -83,13 +83,13 @@ smithy::Error MakeOutOfBeansError(const smithy::http::HttpResponse& response, Pa
   return error;
 }
 
-smithy::Error ParseGetOrderError(const smithy::http::HttpResponse& response) {
+opal::Error ParseGetOrderError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "OrderNotFound") return helpers::MakeOrderNotFoundError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseOrderCoffeeError(const smithy::http::HttpResponse& response) {
+opal::Error ParseOrderCoffeeError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "OutOfBeans") return helpers::MakeOutOfBeansError(response, std::move(parsed));
   return helpers::GenericError(std::move(parsed));
@@ -98,34 +98,34 @@ smithy::Error ParseOrderCoffeeError(const smithy::http::HttpResponse& response) 
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<CafeClient> CafeClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<CafeClient> CafeClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("CafeClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("CafeClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("CafeClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("CafeClient: config needs an endpoint or an http_client");
   }
   return CafeClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-CafeClient::CafeClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+CafeClient::CafeClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> CafeClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> CafeClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/cbor");
   request.headers.Set("user-agent", config_.user_agent);
@@ -136,36 +136,36 @@ smithy::Outcome<smithy::http::HttpResponse> CafeClient::Send(smithy::http::HttpR
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<GetOrderOutput> CafeClient::GetOrder(const GetOrderInput& input) const {
-  smithy::http::HttpRequest request;
+opal::Outcome<GetOrderOutput> CafeClient::GetOrder(const GetOrderInput& input) const {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/Cafe/operation/GetOrder";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeGetOrderInput(input)).ToString();
+  request.body = opal::cbor::Encode(SerializeGetOrderInput(input)).ToString();
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseGetOrderError(*response);
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeGetOrderOutput(*body_doc);
 }
 
-smithy::Outcome<OrderCoffeeOutput> CafeClient::OrderCoffee(const OrderCoffeeInput& input) const {
+opal::Outcome<OrderCoffeeOutput> CafeClient::OrderCoffee(const OrderCoffeeInput& input) const {
   OrderCoffeeInput prepared = input;
-  if (!prepared.clientToken.has_value()) prepared.clientToken = smithy::GenerateUuidV4();
-  smithy::http::HttpRequest request;
+  if (!prepared.clientToken.has_value()) prepared.clientToken = opal::GenerateUuidV4();
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = path_prefix_ + "/service/Cafe/operation/OrderCoffee";
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
   request.headers.Set("content-type", "application/cbor");
-  request.body = smithy::cbor::Encode(SerializeOrderCoffeeInput(prepared)).ToString();
+  request.body = opal::cbor::Encode(SerializeOrderCoffeeInput(prepared)).ToString();
   // @requestCompression(gzip): applied last, appended to Content-Encoding.
   if (request.body.size() >= static_cast<std::size_t>(config_.request_min_compression_size_bytes)) {
-    auto compressed = smithy::GzipCompress(request.body);
+    auto compressed = opal::GzipCompress(request.body);
     if (!compressed) return std::move(compressed).error();
     request.body = *std::move(compressed);
     const auto existing_encoding = request.headers.Get("content-encoding");
@@ -174,7 +174,7 @@ smithy::Outcome<OrderCoffeeOutput> CafeClient::OrderCoffee(const OrderCoffeeInpu
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseOrderCoffeeError(*response);
-  auto body_doc = smithy::cbor::Decode(smithy::Blob::FromString(response->body));
+  auto body_doc = opal::cbor::Decode(opal::Blob::FromString(response->body));
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeOrderCoffeeOutput(*body_doc);
 }

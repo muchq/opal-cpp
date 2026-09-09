@@ -185,7 +185,7 @@ TEST_F(ChatEndToEndTest, ModeledMidStreamErrorSurfacesTypedOnTheClient) {
   // and the typed detail all match what a failed unary call would carry.
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "Kicked");
   EXPECT_EQ(outcome.error().message(), "kicked from lobby");
   const Kicked* detail = outcome.error().detail<Kicked>();
@@ -209,19 +209,19 @@ TEST_F(ChatEndToEndTest, UnknownEventTypeIsATerminalSerializationError) {
   auto stream = client_->Converse(input);
   ASSERT_TRUE(stream.ok()) << stream.error().message();
   ASSERT_EQ(sessions_.size(), 1U);
-  const std::shared_ptr<smithy::http::WebSocket> far = sessions_.back();
+  const std::shared_ptr<opal::http::WebSocket> far = sessions_.back();
 
   // A well-formed event message whose :event-type matches no RoomEvents
   // member — a newer peer's event, or a corrupted one.
-  ASSERT_TRUE(far->Send(smithy::eventstream::MakeEventMessage("presence", "application/json",
-                                                              smithy::Blob::FromString("{}")))
+  ASSERT_TRUE(far->Send(opal::eventstream::MakeEventMessage("presence", "application/json",
+                                                            opal::Blob::FromString("{}")))
                   .ok());
 
   // Undecodable is terminal (ADR-0016): the error is Serialization-kinded
   // and names the stray type...
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kSerialization);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kSerialization);
   EXPECT_NE(outcome.error().message().find("presence"), std::string::npos)
       << outcome.error().message();
 
@@ -234,7 +234,7 @@ TEST_F(ChatEndToEndTest, UnknownEventTypeIsATerminalSerializationError) {
 
 TEST_F(ChatEndToEndTest, GateRefusesAnUnknownStreamPath) {
   const auto gate = server_->StreamRouter()->Gate();
-  smithy::http::HttpRequest upgrade;
+  opal::http::HttpRequest upgrade;
   upgrade.method = "GET";
   upgrade.target = "/nope";
   const auto refusal = gate(upgrade);
@@ -253,9 +253,9 @@ TEST_F(ChatEndToEndTest, GateRefusesAnUnknownStreamPath) {
 TEST(ChatStreamDialTest, StreamingWithoutEndpointOrDialerIsAValidationError) {
   // A client wired for unary only (http_client, no endpoint, no dialer) has
   // nowhere to dial a stream; the generated branch must name the fix.
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
-  config.http_client = std::make_shared<smithy::http::Loopback>();
+  config.http_client = std::make_shared<opal::http::Loopback>();
   auto client = ChatClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
 
@@ -263,18 +263,18 @@ TEST(ChatStreamDialTest, StreamingWithoutEndpointOrDialerIsAValidationError) {
   input.room = "lobby";
   auto stream = client->Converse(input);
   ASSERT_FALSE(stream.ok());
-  EXPECT_EQ(stream.error().kind(), smithy::ErrorKind::kValidation);
+  EXPECT_EQ(stream.error().kind(), opal::ErrorKind::kValidation);
   EXPECT_NE(stream.error().message().find("endpoint or a websocket_dialer"), std::string::npos)
       << stream.error().message();
 }
 
 TEST(ChatStreamDialTest, ADialerFailureSurfacesVerbatimFromTheStreamingOperation) {
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
-  config.http_client = std::make_shared<smithy::http::Loopback>();
-  config.websocket_dialer = [](const smithy::http::WebSocketDialRequest&)
-      -> smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> {
-    return smithy::Error::Transport("dial refused by probe");
+  config.http_client = std::make_shared<opal::http::Loopback>();
+  config.websocket_dialer = [](const opal::http::WebSocketDialRequest&)
+      -> opal::Outcome<std::shared_ptr<opal::http::WebSocket>> {
+    return opal::Error::Transport("dial refused by probe");
   };
   auto client = ChatClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -285,7 +285,7 @@ TEST(ChatStreamDialTest, ADialerFailureSurfacesVerbatimFromTheStreamingOperation
     return input;
   }());
   ASSERT_FALSE(stream.ok());
-  EXPECT_EQ(stream.error().kind(), smithy::ErrorKind::kTransport);
+  EXPECT_EQ(stream.error().kind(), opal::ErrorKind::kTransport);
   EXPECT_EQ(stream.error().message(), "dial refused by probe");
 }
 
@@ -298,33 +298,33 @@ TEST(ChatStreamDialTest, ADialerFailureSurfacesVerbatimFromTheStreamingOperation
 // error-path complement of RoomHandler (room_handler.h).
 class ErrorScriptHandler final : public ChatHandler {
  public:
-  smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
-                                             const smithy::server::RequestContext&) override {
+  opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
+                                           const opal::server::RequestContext&) override {
     return ListRoomsOutput{};
   }
 
-  smithy::Outcome<smithy::Unit> Converse(const ConverseInput&, ConverseServerStream& stream,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> Converse(const ConverseInput&, ConverseServerStream& stream,
+                                     const opal::server::RequestContext&) override {
     while (true) {
       auto event = stream.Receive();
-      if (!event.ok() || !event->has_value()) return smithy::Unit{};
+      if (!event.ok() || !event->has_value()) return opal::Unit{};
       if (!(**event).is_message()) continue;
       const std::string& text = (**event).as_message().text;
-      if (text == "crash") return smithy::Error::Transport("secret-internal-detail");
-      if (text == "reject") return smithy::Error::Validation("bad input");
-      if (text == "roomfull") return smithy::Error::Modeled("RoomFull", "room is full");
+      if (text == "crash") return opal::Error::Transport("secret-internal-detail");
+      if (text == "reject") return opal::Error::Validation("bad input");
+      if (text == "roomfull") return opal::Error::Modeled("RoomFull", "room is full");
       ChatMessage echo;
       echo.text = text;
-      if (!stream.Send(RoomEvents::FromMessage(echo)).ok()) return smithy::Unit{};
+      if (!stream.Send(RoomEvents::FromMessage(echo)).ok()) return opal::Unit{};
     }
   }
 
-  smithy::Outcome<smithy::Unit> Watch(const WatchInput&, WatchServerStream& stream,
-                                      const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> Watch(const WatchInput&, WatchServerStream& stream,
+                                  const opal::server::RequestContext&) override {
     ChatMessage message;
     message.text = "update";
     (void)stream.Send(RoomEvents::FromMessage(message));
-    return smithy::Unit{};
+    return opal::Unit{};
   }
 };
 
@@ -344,7 +344,7 @@ TEST_F(ScriptedChatTest, SendingAnEmptyUnionFailsValidationAndSparesTheSession) 
 
   const auto refused = stream->Send(ChatEvents{});  // no member engaged
   ASSERT_FALSE(refused.ok());
-  EXPECT_EQ(refused.error().kind(), smithy::ErrorKind::kValidation);
+  EXPECT_EQ(refused.error().kind(), opal::ErrorKind::kValidation);
   EXPECT_NE(refused.error().message().find("no event member engaged"), std::string::npos)
       << refused.error().message();
 
@@ -414,7 +414,7 @@ TEST_F(ScriptedChatTest, AnUndeclaredModeledErrorFallsThroughAsGenericModeled) {
   ASSERT_TRUE(stream->Send(ChatEvents::FromMessage(message)).ok());
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "RoomFull");
   EXPECT_EQ(outcome.error().message(), "room is full");
   EXPECT_FALSE(ConverseErrors::FromError(outcome.error()).is_kicked());
@@ -429,16 +429,16 @@ TEST_F(ScriptedChatTest, AnUndeclaredModeledErrorFallsThroughAsGenericModeled) {
 // "explode" (StreamTask's containment, end to end), an echo otherwise.
 class EchoAsyncHandler final : public ChatAsyncHandler {
  public:
-  smithy::eventstream::StreamTask Converse(ConverseInput input,
-                                           ConverseAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Converse(ConverseInput input,
+                                         ConverseAsyncServerStream& stream) override {
     const std::string name = input.nickname.value_or("anonymous");
     (void)co_await stream.Send(RoomEvents::FromJoined(MemberJoined{.member = name}));
     while (true) {
       auto event = co_await stream.Receive();
-      if (!event.ok() || !event->has_value()) co_return smithy::Unit{};
+      if (!event.ok() || !event->has_value()) co_return opal::Unit{};
       if ((*event)->is_leave()) {
         (void)co_await stream.Send(RoomEvents::FromLeft(MemberLeft{.member = name}));
-        co_return smithy::Unit{};
+        co_return opal::Unit{};
       }
       if (!(*event)->is_message()) continue;
       const ChatMessage& message = (*event)->as_message();
@@ -446,7 +446,7 @@ class EchoAsyncHandler final : public ChatAsyncHandler {
         Kicked kicked;
         kicked.message = "kicked from " + input.room;
         kicked.by = kModerator;
-        auto refusal = smithy::Error::Modeled("Kicked", *kicked.message);
+        auto refusal = opal::Error::Modeled("Kicked", *kicked.message);
         refusal.set_detail(std::move(kicked));
         co_return refusal;
       }
@@ -457,17 +457,17 @@ class EchoAsyncHandler final : public ChatAsyncHandler {
     }
   }
 
-  smithy::eventstream::StreamTask Watch(WatchInput input, WatchAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Watch(WatchInput input, WatchAsyncServerStream& stream) override {
     for (int i = 0; i < 3; ++i) {
       ChatMessage update;
       update.text = input.room + "-update-" + std::to_string(i);
       (void)co_await stream.Send(RoomEvents::FromMessage(update));
     }
-    co_return smithy::Unit{};
+    co_return opal::Unit{};
   }
 
-  smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
-                                             const smithy::server::RequestContext&) override {
+  opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
+                                           const opal::server::RequestContext&) override {
     ListRoomsOutput output;
     output.rooms.push_back(RoomSummary{.name = "lobby", .members = 2});
     return output;
@@ -551,7 +551,7 @@ TEST_F(AsyncChatEndToEndTest, AFailedTaskOutcomeSurfacesTypedOnTheClient) {
   ASSERT_TRUE(stream->Send(ChatEvents::FromMessage(message)).ok());
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "Kicked");
   EXPECT_EQ(outcome.error().message(), "kicked from lobby");
   const Kicked* detail = outcome.error().detail<Kicked>();
@@ -594,29 +594,29 @@ TEST_F(AsyncChatEndToEndTest, UnaryOperationSharesTheAsyncService) {
 // so the wrapper's exception send cannot complete inline.
 class FloodThenRefuseHandler final : public ChatAsyncHandler {
  public:
-  smithy::eventstream::StreamTask Converse(ConverseInput input,
-                                           ConverseAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Converse(ConverseInput input,
+                                         ConverseAsyncServerStream& stream) override {
     auto handle = stream.Share();
-    for (std::size_t i = 0; i < smithy::http::InMemoryWebSocketPair::kQueueDepth; ++i) {
+    for (std::size_t i = 0; i < opal::http::InMemoryWebSocketPair::kQueueDepth; ++i) {
       ChatMessage fill;
       fill.text = "fill-" + std::to_string(i);
-      handle.SendAsync(RoomEvents::FromMessage(fill), [](const smithy::Outcome<smithy::Unit>&) {});
+      handle.SendAsync(RoomEvents::FromMessage(fill), [](const opal::Outcome<opal::Unit>&) {});
     }
     Kicked kicked;
     kicked.message = "kicked from " + input.room;
     kicked.by = kModerator;
-    auto refusal = smithy::Error::Modeled("Kicked", *kicked.message);
+    auto refusal = opal::Error::Modeled("Kicked", *kicked.message);
     refusal.set_detail(std::move(kicked));
     co_return refusal;
   }
 
-  smithy::eventstream::StreamTask Watch(WatchInput, WatchAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Watch(WatchInput, WatchAsyncServerStream& stream) override {
     (void)co_await stream.Receive();
-    co_return smithy::Unit{};
+    co_return opal::Unit{};
   }
 
-  smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
-                                             const smithy::server::RequestContext&) override {
+  opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput&,
+                                           const opal::server::RequestContext&) override {
     return ListRoomsOutput{};
   }
 };
@@ -636,7 +636,7 @@ TEST_F(AsyncRefusalTest, ATypedRefusalSurvivesAFullWire) {
   auto stream = client_->Converse(input);
   ASSERT_TRUE(stream.ok()) << stream.error().message();
 
-  for (std::size_t i = 0; i < smithy::http::InMemoryWebSocketPair::kQueueDepth; ++i) {
+  for (std::size_t i = 0; i < opal::http::InMemoryWebSocketPair::kQueueDepth; ++i) {
     auto fill = stream->Receive();
     ASSERT_TRUE(fill.ok() && fill->has_value()) << "fill " << i << " missing";
   }

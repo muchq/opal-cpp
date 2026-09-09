@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace smithy::cbor {
+namespace opal::cbor {
 namespace {
 
 std::string ToHex(const Blob& blob) {
@@ -208,4 +208,4 @@ TEST(CborTest, RejectsExcessiveNesting) {
 }
 
 }  // namespace
-}  // namespace smithy::cbor
+}  // namespace opal::cbor

@@ -102,7 +102,7 @@ class HttpJsonBindingProtocolTest {
     String client = generateFiles().expectFileString("/src/client.cc");
     assertTrue(client.contains("request.method = \"PUT\";"), client);
     // @httpLabel: URI-encoded path segment.
-    assertTrue(client.contains("target += smithy::http::EncodePathSegment("), client);
+    assertTrue(client.contains("target += opal::http::EncodePathSegment("), client);
     // @httpQuery, @httpHeader, @httpPrefixHeaders, and the document body.
     assertTrue(client.contains("query.Add(\"tag\","), client);
     assertTrue(client.contains("request.headers.Set(\"x-file-kind\","), client);
@@ -117,7 +117,7 @@ class HttpJsonBindingProtocolTest {
     assertTrue(client.contains("out.code = static_cast<"), client);
     assertTrue(client.contains("(response->status);"), client);
     assertTrue(
-        client.contains("smithy::http::HeaderNameStartsWith(header_name, \"x-out-\")"), client);
+        client.contains("opal::http::HeaderNameStartsWith(header_name, \"x-out-\")"), client);
     // Error identity: the neutral x-error-type header discriminates modeled errors.
     assertTrue(client.contains("x-error-type"), client);
   }
@@ -129,7 +129,7 @@ class HttpJsonBindingProtocolTest {
     assertTrue(server.contains("context.labels.at(\"name\")"), server);
     assertTrue(server.contains("if (key == \"tag\")"), server);
     assertTrue(
-        server.contains("smithy::http::HeaderNameStartsWith(header_name, \"x-meta-\")"), server);
+        server.contains("opal::http::HeaderNameStartsWith(header_name, \"x-meta-\")"), server);
     assertTrue(server.contains("body_doc->Find(\"body\")"), server);
   }
 
@@ -137,7 +137,7 @@ class HttpJsonBindingProtocolTest {
   void floatTextBindingsNarrowThroughTheCheckedHelper() {
     // No checked-in fixture binds a float to a text position, so the golden
     // trees can't pin this: a finite query/label/header value beyond float
-    // range must fail the parse via smithy::FloatFromDouble instead of
+    // range must fail the parse via opal::FloatFromDouble instead of
     // hitting the UB static_cast (issue #109). Doubles stay unnarrowed.
     String server =
         PluginTestHarness.generate(
@@ -165,7 +165,7 @@ class HttpJsonBindingProtocolTest {
                 "test.rest#Nums",
                 "test::rest")
             .expectFileString("/src/server.cc");
-    assertTrue(server.contains("smithy::FloatFromDouble(*parsed_num)"), server);
+    assertTrue(server.contains("opal::FloatFromDouble(*parsed_num)"), server);
     assertTrue(
         server.contains("if (!narrowed_num) return std::move(narrowed_num).error();"), server);
     assertEquals(1, count(server, "FloatFromDouble"), server);
@@ -282,7 +282,7 @@ class HttpJsonBindingProtocolTest {
     // Client: strict — the required @httpResponseCode member forces the
     // member-by-member body parse, and absence is a Serialization error.
     assertTrue(
-        client.contains("smithy::Error::Serialization(\"missing required member: name\")"), client);
+        client.contains("opal::Error::Serialization(\"missing required member: name\")"), client);
     // Server: lenient — absence is recorded and parsing continues.
     assertTrue(server.contains("AddValidationFailure(validation_failures, \"/name\""), server);
   }

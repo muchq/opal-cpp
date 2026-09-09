@@ -109,7 +109,7 @@ class SerdeGeneratorTest {
     assertTrue(intEnumCheck >= 0, serde);
     assertTrue(intEnumCast >= 0, serde);
     assertTrue(intEnumCheck < intEnumCast, "range check must precede the narrowing cast");
-    assertTrue(serde.contains("smithy::FloatFromDouble"), serde);
+    assertTrue(serde.contains("opal::FloatFromDouble"), serde);
     assertTrue(serde.contains("Payload.ratio: value out of range"), serde);
     assertFalse(serde.contains("Payload.precise: value out of range"), serde);
   }
@@ -117,7 +117,7 @@ class SerdeGeneratorTest {
   @Test
   void timestampFormatTraitOverridesTheProtocolDefault() {
     String serde = generateSerde(KITCHEN_MODEL);
-    assertTrue(serde.contains("smithy::TimestampFormat::kHttpDate"), serde);
+    assertTrue(serde.contains("opal::TimestampFormat::kHttpDate"), serde);
   }
 
   @Test

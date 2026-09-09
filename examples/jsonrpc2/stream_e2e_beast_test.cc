@@ -27,9 +27,9 @@
 namespace example::calculator {
 namespace {
 
-smithy::eventstream::Message RawText(std::string text) {
-  smithy::eventstream::Message message;
-  message.payload = smithy::Blob::FromString(std::move(text));
+opal::eventstream::Message RawText(std::string text) {
+  opal::eventstream::Message message;
+  message.payload = opal::Blob::FromString(std::move(text));
   return message;
 }
 
@@ -43,7 +43,7 @@ class AccumulateBeastEndToEndTest : public testing::Test {
         session_seam
             ? std::make_unique<CalculatorServer>(std::make_shared<AsyncAccumulatingCalculator>())
             : std::make_unique<CalculatorServer>(std::make_shared<AccumulatingCalculator>());
-    smithy::http::BeastServerTransport::Options options;
+    opal::http::BeastServerTransport::Options options;
     options.websocket_gate = server_->StreamRouter()->Gate();
     if (session_seam) {
       options.on_websocket_session = server_->StreamRouter()->ServeSession();
@@ -52,20 +52,20 @@ class AccumulateBeastEndToEndTest : public testing::Test {
     }
     options.websocket_raw_text_frames = true;
     if (tls) {
-      options.tls_certificate_chain_pem = smithy::testing::kTestCertificatePem;
-      options.tls_private_key_pem = smithy::testing::kTestPrivateKeyPem;
+      options.tls_certificate_chain_pem = opal::testing::kTestCertificatePem;
+      options.tls_private_key_pem = opal::testing::kTestPrivateKeyPem;
     }
-    transport_ = std::make_unique<smithy::http::BeastServerTransport>(options);
+    transport_ = std::make_unique<opal::http::BeastServerTransport>(options);
     ASSERT_TRUE(transport_->Start(server_->Handler()).ok());
 
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     if (tls) {
       // One endpoint configures both directions: the unary transport and
       // the streaming dial derive wss/TLS from it (nothing twice).
       config.endpoint = "https://127.0.0.1:" + std::to_string(transport_->port());
-      config.tls.ca_pem = smithy::testing::kTestCertificatePem;
-      auto http_client = smithy::http::BeastHttpClient::FromConfig(config);
+      config.tls.ca_pem = opal::testing::kTestCertificatePem;
+      auto http_client = opal::http::BeastHttpClient::FromConfig(config);
       ASSERT_TRUE(http_client.ok()) << http_client.error().message();
       config.http_client = *http_client;
     } else {
@@ -98,7 +98,7 @@ class AccumulateBeastEndToEndTest : public testing::Test {
   }
 
   std::unique_ptr<CalculatorServer> server_;
-  std::unique_ptr<smithy::http::BeastServerTransport> transport_;
+  std::unique_ptr<opal::http::BeastServerTransport> transport_;
   std::unique_ptr<CalculatorClient> client_;
 };
 
@@ -122,7 +122,7 @@ TEST_F(AccumulateBeastEndToEndTest, TheModeledOverflowIsTypedOverTheRealWire) {
   ASSERT_TRUE(stream->Send(Terms::FromAdd(Term{.value = 20})).ok());
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "Overflow");
   const Overflow* detail = outcome.error().detail<Overflow>();
   ASSERT_NE(detail, nullptr);
@@ -156,7 +156,7 @@ TEST_F(AccumulateBeastEndToEndTest, ABrowserShapedPeerExchangesThePinnedText) {
   // arrives — expressed through the raw-text dial: every frame below is
   // one text WebSocket message carrying exactly these bytes.
   Start(/*session_seam=*/true);
-  auto peer = smithy::http::BeastWebSocketClient::Dial(
+  auto peer = opal::http::BeastWebSocketClient::Dial(
       {.host = "127.0.0.1", .port = transport_->port(), .raw_text_frames = true});
   ASSERT_TRUE(peer.ok()) << peer.error().message();
 
@@ -195,7 +195,7 @@ TEST_F(AccumulateBeastEndToEndTest, AMidStreamViolationEarnsTheReservedCodeOverT
   // the opening id, and the close rides behind the write — the peer reads
   // the envelope, then the clean close, in that order.
   Start(/*session_seam=*/true);
-  auto peer = smithy::http::BeastWebSocketClient::Dial(
+  auto peer = opal::http::BeastWebSocketClient::Dial(
       {.host = "127.0.0.1", .port = transport_->port(), .raw_text_frames = true});
   ASSERT_TRUE(peer.ok()) << peer.error().message();
 

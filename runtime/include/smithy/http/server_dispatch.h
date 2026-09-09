@@ -8,7 +8,7 @@
 #include "smithy/http/message.h"
 #include "smithy/http/transport.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // Renders a peer's sockaddr as HttpRequest::peer_address ("ip:port", v6
 // bracketed) — the one definition of the format, shared by every server
@@ -40,6 +40,6 @@ std::string FormatPeerAddress(const sockaddr* address, socklen_t length);
 // empty — that yields a 503 (no correlation id: nothing ran).
 HttpResponse InvokeHandlerGuarded(const RequestHandler& handler, HttpRequest request);
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_SERVER_DISPATCH_H_
