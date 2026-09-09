@@ -1306,8 +1306,11 @@ TEST(BeastTransportTest, TheMetricsEndpointScrapesOverTheRealTransport) {
       std::string::npos)
       << body;
   // The scrape itself went through MetricsEndpoint, which sits outside
-  // RecordMetrics — so it answered without counting itself.
-  EXPECT_EQ(body.find(R"(operation="",status="200")"), std::string::npos) << body;
+  // RecordMetrics — so it answered without counting itself. The endpoint
+  // stamps route="/metrics" on its response, so a counted scrape would be
+  // exactly that series (asserting the old operation=""/status= spellings
+  // here was vacuous: those labels cannot appear in this exposition at all).
+  EXPECT_EQ(body.find(R"(route="/metrics")"), std::string::npos) << body;
 
   server.Stop();
 }

@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -90,21 +91,44 @@ std::string FormatNumber(double value) {
   if (std::isinf(value)) {
     return value > 0 ? "+Inf" : "-Inf";
   }
-  std::array<char, 64> buffer{};
-  const int written = std::snprintf(buffer.data(), buffer.size(), "%.6f", value);
-  if (written <= 0) {
-    return "0";
+  if (std::isnan(value)) {
+    return "NaN";
   }
-  std::string text(buffer.data(), static_cast<std::size_t>(written));
-  if (text.find('.') != std::string::npos) {
-    text.erase(text.find_last_not_of('0') + 1);
-    if (!text.empty() && text.back() == '.') {
-      text.pop_back();
+  // "%.6f" with trailing zeros trimmed is the stable spelling: the built-in
+  // microsecond families and every integral bound render as plain digits, and
+  // those strings are series identity — a le="2500000" that became le="2.5e+06"
+  // would be a different series to Prometheus. But "%.6f" is lossy outside its
+  // range: it cannot say anything smaller than 1e-6 (two distinct tiny bucket
+  // bounds would both render "0" — duplicate series, whole scrape rejected),
+  // and for huge values snprintf reports a length longer than any buffer it
+  // was given. So the fixed form is used only when it parses back to exactly
+  // the value it claims to be.
+  std::array<char, 64> buffer{};
+  const int fixed = std::snprintf(buffer.data(), buffer.size(), "%.6f", value);
+  if (fixed > 0 && static_cast<std::size_t>(fixed) < buffer.size()) {
+    std::string text(buffer.data(), static_cast<std::size_t>(fixed));
+    if (text.find('.') != std::string::npos) {
+      text.erase(text.find_last_not_of('0') + 1);
+      if (!text.empty() && text.back() == '.') {
+        text.pop_back();
+      }
+    }
+    if (!text.empty() && std::strtod(text.c_str(), nullptr) == value) {
+      return text;
     }
   }
-  return text.empty() ? "0" : text;
+  // Shortest round-trip form, fewest digits first. 17 significant digits are
+  // sufficient for any double, so the last format cannot fail the parse-back
+  // check, and its longest rendering (~24 characters) fits the buffer.
+  for (const char* format : {"%.15g", "%.16g", "%.17g"}) {
+    const int written = std::snprintf(buffer.data(), buffer.size(), format, value);
+    if (written > 0 && static_cast<std::size_t>(written) < buffer.size() &&
+        std::strtod(buffer.data(), nullptr) == value) {
+      return std::string(buffer.data(), static_cast<std::size_t>(written));
+    }
+  }
+  return "0";  // unreachable: kept so the compiler sees every path return
 }
-
 // Prometheus metric names are [a-zA-Z_:][a-zA-Z0-9_:]*, label names the same
 // without the colon. Both are code constants here, so an invalid one is a
 // programming error caught on the first run rather than data to sanitize —
@@ -123,13 +147,27 @@ bool ValidName(std::string_view name, bool allow_colon) {
 // Renders a label set into the inner text of `{...}`, sorted by name so the
 // same labels in a different order address the same series instead of
 // silently minting a second one.
-std::string RenderLabels(const MetricLabels& labels) {
+std::string RenderLabels(const MetricLabels& labels, bool histogram) {
   std::vector<std::pair<std::string, std::string>> sorted(labels.begin(), labels.end());
   std::ranges::sort(sorted, [](const auto& a, const auto& b) { return a.first < b.first; });
   std::string out;
-  for (const auto& [name, value] : sorted) {
+  for (std::size_t i = 0; i < sorted.size(); ++i) {
+    const auto& [name, value] = sorted[i];
     if (!ValidName(name, /*allow_colon=*/false)) {
       smithy::internal::Fatal("smithy::server::MetricsRegistry: invalid label name '" + name + "'");
+    }
+    // Both of these render a scrape Prometheus rejects whole, with no
+    // in-process consumer to notice — the same class the invalid-name abort
+    // above exists for (ADR-0009). Duplicates are adjacent after the sort;
+    // `le` is the label the histogram exposition appends itself, so a user
+    // copy would put it on every bucket line twice.
+    if (i > 0 && name == sorted[i - 1].first) {
+      smithy::internal::Fatal("smithy::server::MetricsRegistry: duplicate label name '" + name +
+                              "'");
+    }
+    if (histogram && name == "le") {
+      smithy::internal::Fatal(
+          "smithy::server::MetricsRegistry: 'le' is reserved on a histogram's series");
     }
     if (!out.empty()) out += ',';
     out += name;
@@ -197,7 +235,7 @@ void AppendFamilyHeader(std::string& out, std::string_view name, std::string_vie
 namespace internal {
 
 void MetricFamily::Add(const MetricLabels& labels, double amount, bool set) {
-  const std::string key = RenderLabels(labels);
+  const std::string key = RenderLabels(labels, kind == Kind::kHistogram);
   const std::lock_guard<std::mutex> lock(mutex);
   if (auto found = samples.find(key); found != samples.end()) {
     if (set) {
@@ -215,7 +253,7 @@ void MetricFamily::Add(const MetricLabels& labels, double amount, bool set) {
 }
 
 void MetricFamily::Observe(const MetricLabels& labels, double value) {
-  const std::string key = RenderLabels(labels);
+  const std::string key = RenderLabels(labels, kind == Kind::kHistogram);
   const std::lock_guard<std::mutex> lock(mutex);
   auto found = samples.find(key);
   if (found == samples.end()) {
@@ -237,7 +275,7 @@ void MetricFamily::Observe(const MetricLabels& labels, double value) {
 }
 
 void MetricFamily::Declare(const MetricLabels& labels) {
-  const std::string key = RenderLabels(labels);
+  const std::string key = RenderLabels(labels, kind == Kind::kHistogram);
   const std::lock_guard<std::mutex> lock(mutex);
   if (samples.contains(key)) {
     return;  // idempotent, and never disturbs a series already carrying events
@@ -414,9 +452,10 @@ std::shared_ptr<internal::MetricFamily> MetricsRegistry::Register(std::string na
     // Idempotent for an identical re-registration; a mismatch is the case
     // that would corrupt the scrape, so it aborts rather than picking one.
     const internal::MetricFamily& existing = *found->second;
-    if (existing.kind != kind || existing.help != help) {
+    if (existing.kind != kind || existing.help != help || existing.buckets != buckets) {
       smithy::internal::Fatal("smithy::server::MetricsRegistry: '" + name +
-                              "' is already registered with a different type or help text");
+                              "' is already registered with a different type, help text, or "
+                              "bucket ladder");
     }
     return found->second;
   }

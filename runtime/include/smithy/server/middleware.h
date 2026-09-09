@@ -140,12 +140,12 @@ struct RequestObservation {
   // The client as derived from the L4 peer and x-forwarded-for (ADR-0012),
   // with its provenance — NOT the raw header, which a client can forge. This
   // is the identity PerClientRateLimit keys on, so it is the one that answers
-  // "whose bucket did that 429 come from". Derived against the TrustedProxies
-  // passed to Observe: unset means TrustedProxies::None(), the deliberate
-  // direct-connect statement, under which the peer is the client and the
-  // header is ignored wholly. `source` is worth reporting alongside the
-  // address — the *distribution* of sources across requests is the
-  // misconfiguration signal docs/production-guide.md reads.
+  // "whose bucket did that 429 come from". Populated only when Observe was
+  // given a TrustedProxies to derive against; with none supplied it stays
+  // value-initialized (empty address, Source::kUnknown) and the request pays
+  // for no derivation — see Observe below. `source` is worth reporting
+  // alongside the address: the *distribution* of sources across requests is
+  // the misconfiguration signal docs/production-guide.md reads.
   http::DerivedClient client{};
   // True when the handler threw and Observe reported the contained 500 on its
   // behalf. Distinguishes "we crashed" from "the handler deliberately
@@ -177,13 +177,20 @@ struct RequestStart {
 // tests (null means steady_clock).
 // `trusted` is the ADR-0012 trust boundary used to derive
 // RequestObservation::client. Pass the same one given to PerClientRateLimit,
-// or a 429's bucket and the client an observation reports will disagree.
-// Unset means TrustedProxies::None() — the deliberate direct-connect
-// statement, which reports the peer itself.
+// or a 429's bucket and the client an observation reports will disagree; for
+// a deployment with no proxy tier, pass TrustedProxies::None() — the
+// deliberate direct-connect statement, under which the peer is the client
+// and the header is ignored wholly.
+//
+// Left unset, the derivation is skipped entirely and client stays
+// value-initialized (Source::kUnknown). Deriving means a header lookup, an
+// address parse, and string building on every request, which is pure waste
+// in a chain whose sinks never read client — RecordMetrics deliberately
+// does not, so the metrics-only composition pays nothing here.
 Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
                    std::function<void(const RequestStart&)> on_start = nullptr,
                    std::function<std::chrono::steady_clock::time_point()> now = nullptr,
-                   http::TrustedProxies trusted = http::TrustedProxies::None());
+                   std::optional<http::TrustedProxies> trusted = std::nullopt);
 
 // 401 unless the request carries "authorization: Bearer <token>" (scheme
 // matched case-insensitively per RFC 6750) and validator(token) returns

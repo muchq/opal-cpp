@@ -179,9 +179,11 @@ TEST(ObserveTest, TheClientIsTheDerivedOneNotTheForgeableHeader) {
 TEST(ObserveTest, AnUntrustedPeerIsTheClientAndItsHeaderIsIgnored) {
   // The forgery case, and the reason the raw header is the wrong thing to
   // log: a direct client claiming to be someone else must not be believed.
-  // Unset trust is TrustedProxies::None(), so every peer is untrusted.
+  // TrustedProxies::None() is the direct-connect statement, so every peer is
+  // untrusted and its header is ignored wholly.
   std::vector<RequestObservation> observations;
-  auto handler = Chain({Observe([&](const RequestObservation& o) { observations.push_back(o); })},
+  auto handler = Chain({Observe([&](const RequestObservation& o) { observations.push_back(o); },
+                                nullptr, nullptr, http::TrustedProxies::None())},
                        [](const http::HttpRequest&) { return Ok("served"); });
 
   http::HttpRequest request;
@@ -200,7 +202,8 @@ TEST(ObserveTest, AnUntrustedPeerIsTheClientAndItsHeaderIsIgnored) {
 TEST(ObserveTest, TheClientIsReportedOnTheThrownPathToo) {
   // The 500s are exactly when someone wants to know who was calling.
   std::vector<RequestObservation> observations;
-  auto handler = Chain({Observe([&](const RequestObservation& o) { observations.push_back(o); })},
+  auto handler = Chain({Observe([&](const RequestObservation& o) { observations.push_back(o); },
+                                nullptr, nullptr, http::TrustedProxies::None())},
                        [](const http::HttpRequest&) -> http::HttpResponse {
                          throw std::runtime_error("handler exploded");
                        });
@@ -215,6 +218,29 @@ TEST(ObserveTest, TheClientIsReportedOnTheThrownPathToo) {
   ASSERT_EQ(observations.size(), 1u);
   EXPECT_EQ(observations[0].client.address, "198.51.100.9");
   EXPECT_EQ(observations[0].request_bytes, 7u);
+}
+
+TEST(ObserveTest, NoTrustBoundaryMeansNoDerivationAtAll) {
+  // The default. Deriving costs a header lookup, an address parse, and
+  // string building on every request — pure waste in a chain whose sinks
+  // never read client, which is every metrics-only composition. So with no
+  // boundary supplied the field stays value-initialized rather than being
+  // derived against an assumed one; a sink that wants the client states the
+  // trust boundary, the way PerClientRateLimit already must.
+  std::vector<RequestObservation> observations;
+  auto handler = Chain({Observe([&](const RequestObservation& o) { observations.push_back(o); })},
+                       [](const http::HttpRequest&) { return Ok("served"); });
+
+  http::HttpRequest request;
+  request.method = "GET";
+  request.target = "/things";
+  request.peer_address = "198.51.100.9";
+  request.headers.Set("x-forwarded-for", "203.0.113.7");
+  (void)handler(request);
+
+  ASSERT_EQ(observations.size(), 1u);
+  EXPECT_EQ(observations[0].client.address, "");
+  EXPECT_EQ(observations[0].client.source, http::DerivedClient::Source::kUnknown);
 }
 
 TEST(ObserveTest, TracesAreNeverEmptyWhenServedThroughATransport) {

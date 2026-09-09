@@ -144,6 +144,17 @@ class Counter {
  public:
   void Increment(double amount = 1.0) { Increment(MetricLabels{}, amount); }
   void Increment(const MetricLabels& labels, double amount = 1.0) {
+    // A counter only goes up. A negative amount does not fail anywhere
+    // visible — rate() and increase() read the decrease as a counter reset
+    // and extrapolate from zero, inflating exactly the panel someone is
+    // staring at. Fail-fast like every other scrape-corrupting misuse
+    // (ADR-0009; prometheus/client_golang panics here for the same reason),
+    // and deliberately BEFORE the disabled-registry check: enabling metrics
+    // in production must never be the first time this runs.
+    if (amount < 0) {
+      smithy::internal::Fatal(
+          "smithy::server::Counter: a counter may not be incremented by a negative amount");
+    }
     // A handle from a disabled registry holds no family. The branch is what
     // makes an always-compiled call site free when metrics are off; the
     // argument is not, so guard a hot call site whose labels are themselves
@@ -247,8 +258,9 @@ struct MetricsOptions {
   // stored, and invisible — the failure mode that looks like success.
   std::string service_name{};
 
-  // Bounds the distinct {method,route,status} and {method,route}
-  // combinations retained, and separately the series of each application
+  // Bounds the distinct {method,route} combinations retained by the built-in
+  // families (which share one record per route, so one cap admits or refuses
+  // all of them together), and separately the series of each application
   // family; see the cardinality note on MetricsRegistry.
   std::size_t max_series = 4096;
 };
@@ -405,8 +417,9 @@ class MetricsRegistry {
     std::uint64_t duration_count = 0;
   };
 
-  // Renders `{a="1",b="2"}` from the constant labels plus what is passed,
-  // dropping any pair whose name is empty. Callers hold mutex_.
+  // Renders the inner label text of a built-in series: service_name first,
+  // then the passed pairs in the order given (names here are code constants,
+  // never caller data). Callers hold mutex_.
   std::string BuiltInLabels(const MetricLabels& labels) const;
 
   // Finds or admits the stats for `key`, or returns nullptr when the cap
