@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # The authored stream conformance suite (ADR-0023): normative for the
 # jsonRpc2 stream wire the way the model's trait cases (rendered into
@@ -9,7 +9,7 @@ cc_test(
     name = "stream_conformance_test",
     size = "small",
     srcs = ["stream_conformance_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//protocol-tests/jsonrpc2/generated:client",
         "//protocol-tests/jsonrpc2/generated:server",

@@ -70,7 +70,7 @@ class BuildFileGeneratorTest {
     String external =
         PluginTestHarness.generate(MODEL, "test.build#Svc", "test::build")
             .expectFileString("/BUILD.bazel");
-    assertTrue(external.contains("\"@smithy_cpp//runtime:core\""), external);
+    assertTrue(external.contains("\"@opal_cpp//runtime:core\""), external);
   }
 
   @Test

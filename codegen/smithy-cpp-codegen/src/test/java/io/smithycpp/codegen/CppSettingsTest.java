@@ -23,7 +23,7 @@ class CppSettingsTest {
     CppSettings settings = CppSettings.fromNode(minimal());
     assertEquals("example.weather#Weather", settings.service().toString());
     assertEquals("example::weather", settings.namespace());
-    assertEquals("@smithy_cpp//runtime:core", settings.runtimeTarget());
+    assertEquals("@opal_cpp//runtime:core", settings.runtimeTarget());
   }
 
   @Test

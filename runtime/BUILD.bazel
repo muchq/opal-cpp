@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
-load("//bazel:copts.bzl", COPTS = "SMITHY_COPTS")
+load("//bazel:copts.bzl", COPTS = "OPAL_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 

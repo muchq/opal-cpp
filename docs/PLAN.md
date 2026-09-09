@@ -474,13 +474,13 @@ without reading generator internals or touching Gradle.
   - The generator runs as a Bazel **toolchain/action** with a hermetic JVM via `rules_java` —
     generation happens inside the build graph (correct caching, remote-execution compatible),
     never as a "run this script first" step.
-  - bzlmod module `smithy_cpp` published to the **Bazel Central Registry**; runtime targets
-    (`@smithy_cpp//runtime:core`, `:client`, `:server`, …) consumable directly.
+  - bzlmod module `opal_cpp` published to the **Bazel Central Registry**; runtime targets
+    (`@opal_cpp//runtime:core`, `:client`, `:server`, …) consumable directly.
     **Deferred**: BCR (and Maven Central) publishing waits until the project is validated in
     production; until then consumers use `git_override`/`local_path_override` (see
     docs/quickstart.md).
   - Out-of-tree consumer example (`examples/bazel-consumer/`) exercised in CI: a standalone
-    Bazel 9 module that depends on the released `smithy_cpp` module, defines a model, builds
+    Bazel 9 module that depends on the released `opal_cpp` module, defines a model, builds
     client + server, and runs the Phase-5-style integration test — this is the quick-start
     acceptance test.
 - **CLI wrapper**: `smithy-cpp generate --model … --mode client|server|both --out …` (thin wrapper

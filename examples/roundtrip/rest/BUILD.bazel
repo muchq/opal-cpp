@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # The typed view over an operation's modeled errors (issue #49): FromError
 # matching, detail carriage, kind gating, exhaustive visit, wrong-case death.
@@ -7,7 +7,7 @@ cc_test(
     name = "typed_errors_test",
     size = "small",
     srcs = ["typed_errors_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/roundtrip/rest/generated:client",
         "//runtime:core",
@@ -22,7 +22,7 @@ cc_test(
     name = "numeric_bounds_wire_test",
     size = "small",
     srcs = ["numeric_bounds_wire_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/roundtrip/rest/generated:client",
         "//examples/roundtrip/rest/generated:serde",
@@ -39,7 +39,7 @@ cc_test(
     name = "api_key_wire_test",
     size = "small",
     srcs = ["api_key_wire_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/roundtrip/rest/generated:client",
         "//runtime:client",

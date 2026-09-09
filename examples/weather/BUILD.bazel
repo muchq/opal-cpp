@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
-load("//bazel:copts.bzl", "SMITHY_COPTS")
+load("//bazel:copts.bzl", "OPAL_COPTS")
 
 # Hand-written prototype of the code the Phase 2/3/4 generators will emit for
 # model/weather.smithy; its e2e test is the Phase 1 exit criterion.
@@ -16,7 +16,7 @@ cc_library(
         "handwritten/weather_server.h",
         "handwritten/weather_types.h",
     ],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//runtime:client",
@@ -31,7 +31,7 @@ cc_test(
     name = "generated_types_test",
     size = "small",
     srcs = ["generated_types_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         "//examples/weather/generated:types",
         "@googletest//:gtest_main",
@@ -42,7 +42,7 @@ cc_test(
     name = "generated_client_e2e_test",
     size = "small",
     srcs = ["generated_client_e2e_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     tags = ["requires-network"],
     deps = [
         ":weather_handwritten",
@@ -55,7 +55,7 @@ cc_test(
     name = "generated_server_e2e_test",
     size = "small",
     srcs = ["generated_server_e2e_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     deps = [
         ":weather_handwritten",
         "//examples/weather/generated:client",
@@ -70,7 +70,7 @@ cc_test(
     name = "weather_e2e_test",
     size = "small",
     srcs = ["handwritten/weather_e2e_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     tags = ["requires-network"],
     deps = [
         ":weather_handwritten",
@@ -84,7 +84,7 @@ cc_test(
     name = "weather_e2e_beast_test",
     size = "small",
     srcs = ["handwritten/weather_e2e_test.cc"],
-    copts = SMITHY_COPTS,
+    copts = OPAL_COPTS,
     defines = ["OPAL_E2E_HAVE_BEAST"],
     tags = ["requires-network"],
     deps = [
