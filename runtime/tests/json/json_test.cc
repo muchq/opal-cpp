@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-namespace smithy::json {
+namespace opal::json {
 namespace {
 
 Document CityDocument() {
@@ -117,4 +117,4 @@ TEST(JsonTest, DecodesNestedLists) {
 }
 
 }  // namespace
-}  // namespace smithy::json
+}  // namespace opal::json

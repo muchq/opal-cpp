@@ -25,6 +25,8 @@
 #include <utility>
 #include <vector>
 
+#include "opal/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/server.h"
 #include "smithy/client/config.h"
 #include "smithy/core/error.h"
 #include "smithy/core/outcome.h"
@@ -33,10 +35,8 @@
 #include "smithy/http/message.h"
 #include "smithy/http/websocket.h"
 #include "smithy/http/websocket_pair.h"
-#include "smithy/protocoltests/jsonrpc2/client.h"
-#include "smithy/protocoltests/jsonrpc2/server.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 namespace {
 
 // One raw wire frame: a headerless message whose payload is the envelope
@@ -54,69 +54,68 @@ eventstream::Message RawText(std::string text) {
 // single-threaded and deterministic; one blocking-seam case pins parity.
 class AsyncEchoHandler final : public JsonRpc2ProtocolAsyncHandler {
  public:
-  smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput&,
-                                                 const smithy::server::RequestContext&) override {
+  opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput&,
+                                               const opal::server::RequestContext&) override {
     return EchoPayloadOutput{};
   }
-  smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput&,
-                                       const smithy::server::RequestContext&) override {
+  opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput&,
+                                     const opal::server::RequestContext&) override {
     return NoArgsOutput{};
   }
-  smithy::Outcome<PutConstrainedOutput> PutConstrained(
-      const PutConstrainedInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput&,
+                                                     const opal::server::RequestContext&) override {
     return PutConstrainedOutput{};
   }
 
-  smithy::eventstream::StreamTask EchoStream(EchoStreamInput input,
-                                             EchoStreamAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask EchoStream(EchoStreamInput input,
+                                           EchoStreamAsyncServerStream& stream) override {
     const std::string prefix = input.prefix.value_or("");
     while (true) {
       auto note = co_await stream.Receive();
-      if (!note.ok() || !note->has_value()) co_return smithy::Unit{};
+      if (!note.ok() || !note->has_value()) co_return opal::Unit{};
       const std::string& text = (**note).as_note().text;
-      if (text == "done") co_return smithy::Unit{};
+      if (text == "done") co_return opal::Unit{};
       if (text == "abort") {
-        smithy::Error error = smithy::Error::Modeled("StreamAbort", "aborted by note");
+        opal::Error error = opal::Error::Modeled("StreamAbort", "aborted by note");
         error.set_detail(StreamAbort{.message = "aborted by note"});
         co_return error;
       }
       auto sent = co_await stream.Send(DownEvents::FromEcho(EchoedNote{.text = prefix + text}));
-      if (!sent.ok()) co_return smithy::Unit{};
+      if (!sent.ok()) co_return opal::Unit{};
     }
   }
 };
 
 class BlockingEchoHandler final : public JsonRpc2ProtocolHandler {
  public:
-  smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput&,
-                                                 const smithy::server::RequestContext&) override {
+  opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput&,
+                                               const opal::server::RequestContext&) override {
     return EchoPayloadOutput{};
   }
-  smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput&,
-                                       const smithy::server::RequestContext&) override {
+  opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput&,
+                                     const opal::server::RequestContext&) override {
     return NoArgsOutput{};
   }
-  smithy::Outcome<PutConstrainedOutput> PutConstrained(
-      const PutConstrainedInput&, const smithy::server::RequestContext&) override {
+  opal::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput&,
+                                                     const opal::server::RequestContext&) override {
     return PutConstrainedOutput{};
   }
 
-  smithy::Outcome<smithy::Unit> EchoStream(const EchoStreamInput& input,
-                                           EchoStreamServerStream& stream,
-                                           const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream,
+                                       const opal::server::RequestContext&) override {
     const std::string prefix = input.prefix.value_or("");
     while (true) {
       auto note = stream.Receive();
-      if (!note.ok() || !note->has_value()) return smithy::Unit{};
+      if (!note.ok() || !note->has_value()) return opal::Unit{};
       const std::string& text = (**note).as_note().text;
-      if (text == "done") return smithy::Unit{};
+      if (text == "done") return opal::Unit{};
       if (text == "abort") {
-        smithy::Error error = smithy::Error::Modeled("StreamAbort", "aborted by note");
+        opal::Error error = opal::Error::Modeled("StreamAbort", "aborted by note");
         error.set_detail(StreamAbort{.message = "aborted by note"});
         return error;
       }
       if (!stream.Send(DownEvents::FromEcho(EchoedNote{.text = prefix + text})).ok()) {
-        return smithy::Unit{};
+        return opal::Unit{};
       }
     }
   }
@@ -276,8 +275,8 @@ TEST_F(StreamConformanceTest, AHeaderedOpeningMessageIsRefusedWithMinus32600) {
   // messages by construction): a peer speaking the eventstream envelope
   // wire into the JSON-RPC endpoint.
   auto peer = OpenSession();
-  EXPECT_TRUE(peer->Send(smithy::eventstream::MakeEventMessage("note", "application/json",
-                                                               Blob::FromString("{}")))
+  EXPECT_TRUE(peer->Send(opal::eventstream::MakeEventMessage("note", "application/json",
+                                                             Blob::FromString("{}")))
                   .ok());
   auto answer = peer->Receive();
   ASSERT_TRUE(answer.ok() && answer->has_value());
@@ -441,13 +440,13 @@ class ClientStreamConformanceTest : public testing::Test {
   // A generated client whose dialer yields one pair end; the far end stays
   // raw — the test IS the server.
   JsonRpc2ProtocolClient MakeClient() {
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     // Never dialed: the injected websocket_dialer intercepts the stream,
     // and no unary call is made — Create just requires a transport story.
     config.endpoint = "http://127.0.0.1:1";
     config.websocket_dialer = [this](const http::WebSocketDialRequest& request)
-        -> smithy::Outcome<std::shared_ptr<http::WebSocket>> {
+        -> opal::Outcome<std::shared_ptr<http::WebSocket>> {
       EXPECT_EQ(request.target, "/");
       EXPECT_TRUE(request.raw_text_frames);
       auto [near, far] = http::InMemoryWebSocketPair::Create();
@@ -524,7 +523,7 @@ TEST_F(ClientStreamConformanceTest, TheTerminalErrorArrivesTypedThroughTheUnaryI
           .ok());
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "StreamAbort");
   const StreamAbort* detail = outcome.error().detail<StreamAbort>();
   ASSERT_NE(detail, nullptr);
@@ -550,4 +549,4 @@ TEST_F(ClientStreamConformanceTest, AReservedCodeErrorSurfacesAsTheGenericTermin
 }
 
 }  // namespace
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

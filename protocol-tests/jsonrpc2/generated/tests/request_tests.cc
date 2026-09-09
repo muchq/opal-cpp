@@ -8,22 +8,22 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/client.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
 // Generated from smithy.test#httpRequestTests (client cases).
 namespace {
 
 struct Fixture {
-  std::shared_ptr<smithy::testing::CapturingTransport> transport;
+  std::shared_ptr<opal::testing::CapturingTransport> transport;
   JsonRpc2ProtocolClient client;
 };
 
 Fixture MakeFixture(const std::string& endpoint = "") {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   config.endpoint = endpoint;
@@ -47,12 +47,12 @@ TEST(JsonRpc2ProtocolRequestTest, JsonRpc2BasicRequest) {
   return v;
 }();
   (void)fixture.client.EchoPayload(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/");
   EXPECT_EQ(request.headers.Get("accept").value_or("<missing>"), "application/json");
   EXPECT_EQ(request.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"string\":\"hello\",\"renamed\":\"other\",\"integer\":42,\"boolean\":true,\"double\":3.5}}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"string\":\"hello\",\"renamed\":\"other\",\"integer\":42,\"boolean\":true,\"double\":3.5}}", request.body));
 }
 
 // Lists, maps, and nested structures ride the shared JSON document pivot.
@@ -71,10 +71,10 @@ TEST(JsonRpc2ProtocolRequestTest, JsonRpc2AggregatesRequest) {
   return v;
 }();
   (void)fixture.client.EchoPayload(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"names\":[\"a\",\"b\"],\"attributes\":{\"k\":\"v\"},\"nested\":{\"label\":\"n\",\"depth\":2}}}", request.body));
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/");
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"names\":[\"a\",\"b\"],\"attributes\":{\"k\":\"v\"},\"nested\":{\"label\":\"n\",\"depth\":2}}}", request.body));
 }
 
 // Timestamps default to epoch-seconds; @timestampFormat(date-time) renders RFC3339.
@@ -82,15 +82,15 @@ TEST(JsonRpc2ProtocolRequestTest, JsonRpc2TimestampsRequest) {
   Fixture fixture = MakeFixture();
   const EchoPayloadInput input = [] {
   EchoPayloadInput v{};
-  v.timestamp = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
-  v.dateTime = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  v.timestamp = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  v.dateTime = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
   return v;
 }();
   (void)fixture.client.EchoPayload(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"timestamp\":1515531081,\"dateTime\":\"2018-01-09T20:51:21Z\"}}", request.body));
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/");
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1,\"params\":{\"timestamp\":1515531081,\"dateTime\":\"2018-01-09T20:51:21Z\"}}", request.body));
 }
 
 // Operations with no modeled input omit the params member entirely.
@@ -101,12 +101,12 @@ TEST(JsonRpc2ProtocolRequestTest, JsonRpc2NoParamsRequest) {
   return v;
 }();
   (void)fixture.client.NoArgs(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/");
   EXPECT_EQ(request.headers.Get("accept").value_or("<missing>"), "application/json");
   EXPECT_EQ(request.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"NoArgs\",\"id\":1}", request.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"NoArgs\",\"id\":1}", request.body));
 }
 
 // A valid constrained input passes validation and reaches the handler.
@@ -119,10 +119,10 @@ TEST(JsonRpc2ProtocolRequestTest, JsonRpc2ConstrainedRequest) {
   return v;
 }();
   (void)fixture.client.PutConstrained(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"PutConstrained\",\"id\":1,\"params\":{\"name\":\"ok\",\"limit\":10}}", request.body));
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/");
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"method\":\"PutConstrained\",\"id\":1,\"params\":{\"name\":\"ok\",\"limit\":10}}", request.body));
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

@@ -18,7 +18,7 @@
 #include "smithy/eventstream/frame.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The session-loop coroutine type (ADR-0019): fire and forget. A Detached
 // coroutine starts eagerly, owns nothing after launch (its frame frees
@@ -61,7 +61,7 @@ struct Detached {
 // symmetric transfer, and a handler that throws completes with
 // Error::Unknown instead of terminating (the containment posture, since
 // completion contexts have no caller to rethrow to). Every path must
-// co_return an Outcome — `smithy::Unit{}` is the clean close (a bare
+// co_return an Outcome — `opal::Unit{}` is the clean close (a bare
 // co_return does not compile). Handlers may factor their logic into
 // StreamTask-returning sub-coroutines and co_await each exactly once;
 // sub-results beyond the Outcome travel by out-parameter (the result
@@ -230,7 +230,7 @@ inline ReceiveMessageAwaitable ReceiveMessage(std::shared_ptr<http::WebSocket> s
 // the frame of the Detached loop serving it, so the session ends when the
 // loop does.
 //
-//   smithy::eventstream::Detached Serve(AsyncEventStream<Tx, Rx> stream) {
+//   opal::eventstream::Detached Serve(AsyncEventStream<Tx, Rx> stream) {
 //     while (true) {
 //       auto event = co_await stream.Receive();
 //       if (!event.ok() || !event->has_value()) break;
@@ -413,6 +413,6 @@ class AsyncEventStream {
   internal::SharedViewOwner view_;
 };
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_ASYNC_EVENT_STREAM_H_

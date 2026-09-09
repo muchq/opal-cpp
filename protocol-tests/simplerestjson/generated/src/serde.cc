@@ -3,68 +3,68 @@
 #include <string>
 #include <utility>
 
+#include "opal/protocoltests/simplerestjson/serde.h"
 #include "smithy/core/document_serde.h"
-#include "smithy/protocoltests/simplerestjson/serde.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 
-namespace types = ::smithy::protocoltests::simplerestjson;
+namespace types = ::opal::protocoltests::simplerestjson;
 
-smithy::Document SerializeIngredients(const std::vector<Ingredient>& value) {
-  smithy::DocumentList list;
+opal::Document SerializeIngredients(const std::vector<Ingredient>& value) {
+  opal::DocumentList list;
   list.reserve(value.size());
   for (const auto& item : value) {
-    list.push_back(smithy::Document(std::string(item.ToString())));
+    list.push_back(opal::Document(std::string(item.ToString())));
   }
-  return smithy::Document(std::move(list));
+  return opal::Document(std::move(list));
 }
 
-smithy::Outcome<std::vector<Ingredient>> DeserializeIngredients(const smithy::Document& doc) {
-  if (!doc.is_list()) return smithy::Error::Serialization("std::vector<Ingredient>: expected a list on the wire");
+opal::Outcome<std::vector<Ingredient>> DeserializeIngredients(const opal::Document& doc) {
+  if (!doc.is_list()) return opal::Error::Serialization("std::vector<Ingredient>: expected a list on the wire");
   std::vector<Ingredient> out;
   out.reserve(doc.as_list().size());
-  for (const smithy::Document& item_doc : doc.as_list()) {
-    const smithy::Document* item = &item_doc;
-    if (item->is_null()) return smithy::Error::Serialization("std::vector<Ingredient>: null element in a dense list");
+  for (const opal::Document& item_doc : doc.as_list()) {
+    const opal::Document* item = &item_doc;
+    if (item->is_null()) return opal::Error::Serialization("std::vector<Ingredient>: null element in a dense list");
     Ingredient parsed_item{};
-    if (!item->is_string()) return smithy::Error::Serialization("std::vector<Ingredient>[]: unexpected type on the wire");
+    if (!item->is_string()) return opal::Error::Serialization("std::vector<Ingredient>[]: unexpected type on the wire");
     parsed_item = types::Ingredient::FromString(item->as_string());
     out.push_back(std::move(parsed_item));
   }
   return out;
 }
 
-smithy::Document SerializePizza(const Pizza& value) {
-  smithy::DocumentMap map;
-  map.emplace("name", smithy::Document(value.name));
-  map.emplace("base", smithy::Document(std::string(value.base.ToString())));
+opal::Document SerializePizza(const Pizza& value) {
+  opal::DocumentMap map;
+  map.emplace("name", opal::Document(value.name));
+  map.emplace("base", opal::Document(std::string(value.base.ToString())));
   map.emplace("toppings", SerializeIngredients(value.toppings));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<Pizza> DeserializePizza(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("Pizza: expected a map on the wire");
+opal::Outcome<Pizza> DeserializePizza(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("Pizza: expected a map on the wire");
   Pizza out;
   {
-    const smithy::Document* member = doc.Find("name");
+    const opal::Document* member = doc.Find("name");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("Pizza: missing required member: name");
+      return opal::Error::Serialization("Pizza: missing required member: name");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("Pizza.name: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("Pizza.name: unexpected type on the wire");
     out.name = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("base");
+    const opal::Document* member = doc.Find("base");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("Pizza: missing required member: base");
+      return opal::Error::Serialization("Pizza: missing required member: base");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("Pizza.base: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("Pizza.base: unexpected type on the wire");
     out.base = types::PizzaBase::FromString(member->as_string());
   }
   {
-    const smithy::Document* member = doc.Find("toppings");
+    const opal::Document* member = doc.Find("toppings");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("Pizza: missing required member: toppings");
+      return opal::Error::Serialization("Pizza: missing required member: toppings");
     }
     {
       auto parsed = DeserializeIngredients(*member);
@@ -75,28 +75,28 @@ smithy::Outcome<Pizza> DeserializePizza(const smithy::Document& doc) {
   return out;
 }
 
-smithy::Document SerializeSalad(const Salad& value) {
-  smithy::DocumentMap map;
-  map.emplace("name", smithy::Document(value.name));
+opal::Document SerializeSalad(const Salad& value) {
+  opal::DocumentMap map;
+  map.emplace("name", opal::Document(value.name));
   map.emplace("ingredients", SerializeIngredients(value.ingredients));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<Salad> DeserializeSalad(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("Salad: expected a map on the wire");
+opal::Outcome<Salad> DeserializeSalad(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("Salad: expected a map on the wire");
   Salad out;
   {
-    const smithy::Document* member = doc.Find("name");
+    const opal::Document* member = doc.Find("name");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("Salad: missing required member: name");
+      return opal::Error::Serialization("Salad: missing required member: name");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("Salad.name: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("Salad.name: unexpected type on the wire");
     out.name = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("ingredients");
+    const opal::Document* member = doc.Find("ingredients");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("Salad: missing required member: ingredients");
+      return opal::Error::Serialization("Salad: missing required member: ingredients");
     }
     {
       auto parsed = DeserializeIngredients(*member);
@@ -107,21 +107,21 @@ smithy::Outcome<Salad> DeserializeSalad(const smithy::Document& doc) {
   return out;
 }
 
-smithy::Document SerializeFood(const Food& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeFood(const Food& value) {
+  opal::DocumentMap map;
   if (value.is_pizza()) {
     map.emplace("pizza", SerializePizza(value.as_pizza()));
   }
   if (value.is_salad()) {
     map.emplace("salad", SerializeSalad(value.as_salad()));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<Food> DeserializeFood(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("Food: expected a map on the wire");
-  if (doc.as_map().size() - (doc.Find("__type") != nullptr ? 1 : 0) != 1) return smithy::Error::Serialization("Food: expected exactly one union member");
-  if (const smithy::Document* member = doc.Find("pizza"); member != nullptr && !member->is_null()) {
+opal::Outcome<Food> DeserializeFood(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("Food: expected a map on the wire");
+  if (doc.as_map().size() - (doc.Find("__type") != nullptr ? 1 : 0) != 1) return opal::Error::Serialization("Food: expected exactly one union member");
+  if (const opal::Document* member = doc.Find("pizza"); member != nullptr && !member->is_null()) {
     Pizza parsed_member{};
     {
       auto parsed = DeserializePizza(*member);
@@ -130,7 +130,7 @@ smithy::Outcome<Food> DeserializeFood(const smithy::Document& doc) {
     }
     return Food::FromPizza(std::move(parsed_member));
   }
-  if (const smithy::Document* member = doc.Find("salad"); member != nullptr && !member->is_null()) {
+  if (const opal::Document* member = doc.Find("salad"); member != nullptr && !member->is_null()) {
     Salad parsed_member{};
     {
       auto parsed = DeserializeSalad(*member);
@@ -139,23 +139,23 @@ smithy::Outcome<Food> DeserializeFood(const smithy::Document& doc) {
     }
     return Food::FromSalad(std::move(parsed_member));
   }
-  return smithy::Error::Serialization("Food: unknown or missing union member");
+  return opal::Error::Serialization("Food: unknown or missing union member");
 }
 
-smithy::Document SerializeMenuItem(const MenuItem& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeMenuItem(const MenuItem& value) {
+  opal::DocumentMap map;
   map.emplace("food", SerializeFood(value.food));
-  map.emplace("price", smithy::Document(static_cast<double>(value.price)));
-  return smithy::Document(std::move(map));
+  map.emplace("price", opal::Document(static_cast<double>(value.price)));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<MenuItem> DeserializeMenuItem(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("MenuItem: expected a map on the wire");
+opal::Outcome<MenuItem> DeserializeMenuItem(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("MenuItem: expected a map on the wire");
   MenuItem out;
   {
-    const smithy::Document* member = doc.Find("food");
+    const opal::Document* member = doc.Find("food");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("MenuItem: missing required member: food");
+      return opal::Error::Serialization("MenuItem: missing required member: food");
     }
     {
       auto parsed = DeserializeFood(*member);
@@ -164,43 +164,43 @@ smithy::Outcome<MenuItem> DeserializeMenuItem(const smithy::Document& doc) {
     }
   }
   {
-    const smithy::Document* member = doc.Find("price");
+    const opal::Document* member = doc.Find("price");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("MenuItem: missing required member: price");
+      return opal::Error::Serialization("MenuItem: missing required member: price");
     }
     {
-      auto parsed = smithy::DoubleFromDocument(*member);
-      if (!parsed) return smithy::Error::Serialization("MenuItem.price: expected a number");
-      auto narrowed = smithy::FloatFromDouble(*parsed);
-      if (!narrowed) return smithy::Error::Serialization("MenuItem.price: value out of range");
+      auto parsed = opal::DoubleFromDocument(*member);
+      if (!parsed) return opal::Error::Serialization("MenuItem.price: expected a number");
+      auto narrowed = opal::FloatFromDouble(*parsed);
+      if (!narrowed) return opal::Error::Serialization("MenuItem.price: value out of range");
       out.price = *narrowed;
     }
   }
   return out;
 }
 
-smithy::Document SerializeAddMenuItemInput(const AddMenuItemInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("restaurant", smithy::Document(value.restaurant));
+opal::Document SerializeAddMenuItemInput(const AddMenuItemInput& value) {
+  opal::DocumentMap map;
+  map.emplace("restaurant", opal::Document(value.restaurant));
   map.emplace("menuItem", SerializeMenuItem(value.menuItem));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<AddMenuItemInput> DeserializeAddMenuItemInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("AddMenuItemInput: expected a map on the wire");
+opal::Outcome<AddMenuItemInput> DeserializeAddMenuItemInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("AddMenuItemInput: expected a map on the wire");
   AddMenuItemInput out;
   {
-    const smithy::Document* member = doc.Find("restaurant");
+    const opal::Document* member = doc.Find("restaurant");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddMenuItemInput: missing required member: restaurant");
+      return opal::Error::Serialization("AddMenuItemInput: missing required member: restaurant");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("AddMenuItemInput.restaurant: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("AddMenuItemInput.restaurant: unexpected type on the wire");
     out.restaurant = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("menuItem");
+    const opal::Document* member = doc.Find("menuItem");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddMenuItemInput: missing required member: menuItem");
+      return opal::Error::Serialization("AddMenuItemInput: missing required member: menuItem");
     }
     {
       auto parsed = DeserializeMenuItem(*member);
@@ -211,31 +211,31 @@ smithy::Outcome<AddMenuItemInput> DeserializeAddMenuItemInput(const smithy::Docu
   return out;
 }
 
-smithy::Document SerializeAddMenuItemOutput(const AddMenuItemOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("itemId", smithy::Document(value.itemId));
-  map.emplace("added", smithy::Document::FromTimestamp(value.added, smithy::TimestampFormat::kEpochSeconds));
-  return smithy::Document(std::move(map));
+opal::Document SerializeAddMenuItemOutput(const AddMenuItemOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("itemId", opal::Document(value.itemId));
+  map.emplace("added", opal::Document::FromTimestamp(value.added, opal::TimestampFormat::kEpochSeconds));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<AddMenuItemOutput> DeserializeAddMenuItemOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("AddMenuItemOutput: expected a map on the wire");
+opal::Outcome<AddMenuItemOutput> DeserializeAddMenuItemOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("AddMenuItemOutput: expected a map on the wire");
   AddMenuItemOutput out;
   {
-    const smithy::Document* member = doc.Find("itemId");
+    const opal::Document* member = doc.Find("itemId");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddMenuItemOutput: missing required member: itemId");
+      return opal::Error::Serialization("AddMenuItemOutput: missing required member: itemId");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("AddMenuItemOutput.itemId: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("AddMenuItemOutput.itemId: unexpected type on the wire");
     out.itemId = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("added");
+    const opal::Document* member = doc.Find("added");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("AddMenuItemOutput: missing required member: added");
+      return opal::Error::Serialization("AddMenuItemOutput: missing required member: added");
     }
     {
-      auto parsed = smithy::TimestampFromDocument(*member, smithy::TimestampFormat::kEpochSeconds);
+      auto parsed = opal::TimestampFromDocument(*member, opal::TimestampFormat::kEpochSeconds);
       if (!parsed) return std::move(parsed).error();
       out.added = *parsed;
     }
@@ -243,114 +243,114 @@ smithy::Outcome<AddMenuItemOutput> DeserializeAddMenuItemOutput(const smithy::Do
   return out;
 }
 
-smithy::Document SerializeGenericClientError(const GenericClientError& value) {
-  smithy::DocumentMap map;
-  map.emplace("message", smithy::Document(value.message));
-  return smithy::Document(std::move(map));
+opal::Document SerializeGenericClientError(const GenericClientError& value) {
+  opal::DocumentMap map;
+  map.emplace("message", opal::Document(value.message));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GenericClientError> DeserializeGenericClientError(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GenericClientError: expected a map on the wire");
+opal::Outcome<GenericClientError> DeserializeGenericClientError(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GenericClientError: expected a map on the wire");
   GenericClientError out;
   {
-    const smithy::Document* member = doc.Find("message");
+    const opal::Document* member = doc.Find("message");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GenericClientError: missing required member: message");
+      return opal::Error::Serialization("GenericClientError: missing required member: message");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GenericClientError.message: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GenericClientError.message: unexpected type on the wire");
     out.message = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeGenericServerError(const GenericServerError& value) {
-  smithy::DocumentMap map;
-  map.emplace("message", smithy::Document(value.message));
-  return smithy::Document(std::move(map));
+opal::Document SerializeGenericServerError(const GenericServerError& value) {
+  opal::DocumentMap map;
+  map.emplace("message", opal::Document(value.message));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GenericServerError> DeserializeGenericServerError(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GenericServerError: expected a map on the wire");
+opal::Outcome<GenericServerError> DeserializeGenericServerError(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GenericServerError: expected a map on the wire");
   GenericServerError out;
   {
-    const smithy::Document* member = doc.Find("message");
+    const opal::Document* member = doc.Find("message");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GenericServerError: missing required member: message");
+      return opal::Error::Serialization("GenericServerError: missing required member: message");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GenericServerError.message: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GenericServerError.message: unexpected type on the wire");
     out.message = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializePriceError(const PriceError& value) {
-  smithy::DocumentMap map;
-  map.emplace("message", smithy::Document(value.message));
-  map.emplace("code", smithy::Document(static_cast<std::int64_t>(value.code)));
-  return smithy::Document(std::move(map));
+opal::Document SerializePriceError(const PriceError& value) {
+  opal::DocumentMap map;
+  map.emplace("message", opal::Document(value.message));
+  map.emplace("code", opal::Document(static_cast<std::int64_t>(value.code)));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<PriceError> DeserializePriceError(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("PriceError: expected a map on the wire");
+opal::Outcome<PriceError> DeserializePriceError(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("PriceError: expected a map on the wire");
   PriceError out;
   {
-    const smithy::Document* member = doc.Find("message");
+    const opal::Document* member = doc.Find("message");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("PriceError: missing required member: message");
+      return opal::Error::Serialization("PriceError: missing required member: message");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("PriceError.message: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("PriceError.message: unexpected type on the wire");
     out.message = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("code");
+    const opal::Document* member = doc.Find("code");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("PriceError: missing required member: code");
+      return opal::Error::Serialization("PriceError: missing required member: code");
     }
-    if (!member->is_int()) return smithy::Error::Serialization("PriceError.code: unexpected type on the wire");
-    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return smithy::Error::Serialization("PriceError.code: value out of range");
+    if (!member->is_int()) return opal::Error::Serialization("PriceError.code: unexpected type on the wire");
+    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return opal::Error::Serialization("PriceError.code: value out of range");
     out.code = static_cast<std::int32_t>(member->as_int());
   }
   return out;
 }
 
-smithy::Document SerializeCustomCodeInput(const CustomCodeInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("code", smithy::Document(static_cast<std::int64_t>(value.code)));
-  return smithy::Document(std::move(map));
+opal::Document SerializeCustomCodeInput(const CustomCodeInput& value) {
+  opal::DocumentMap map;
+  map.emplace("code", opal::Document(static_cast<std::int64_t>(value.code)));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<CustomCodeInput> DeserializeCustomCodeInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("CustomCodeInput: expected a map on the wire");
+opal::Outcome<CustomCodeInput> DeserializeCustomCodeInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("CustomCodeInput: expected a map on the wire");
   CustomCodeInput out;
   {
-    const smithy::Document* member = doc.Find("code");
+    const opal::Document* member = doc.Find("code");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("CustomCodeInput: missing required member: code");
+      return opal::Error::Serialization("CustomCodeInput: missing required member: code");
     }
-    if (!member->is_int()) return smithy::Error::Serialization("CustomCodeInput.code: unexpected type on the wire");
-    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return smithy::Error::Serialization("CustomCodeInput.code: value out of range");
+    if (!member->is_int()) return opal::Error::Serialization("CustomCodeInput.code: unexpected type on the wire");
+    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return opal::Error::Serialization("CustomCodeInput.code: value out of range");
     out.code = static_cast<std::int32_t>(member->as_int());
   }
   return out;
 }
 
-smithy::Document SerializeCustomCodeOutput(const CustomCodeOutput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeCustomCodeOutput(const CustomCodeOutput& value) {
+  opal::DocumentMap map;
   if (value.code.has_value()) {
-    map.emplace("code", smithy::Document(static_cast<std::int64_t>((*value.code))));
+    map.emplace("code", opal::Document(static_cast<std::int64_t>((*value.code))));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<CustomCodeOutput> DeserializeCustomCodeOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("CustomCodeOutput: expected a map on the wire");
+opal::Outcome<CustomCodeOutput> DeserializeCustomCodeOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("CustomCodeOutput: expected a map on the wire");
   CustomCodeOutput out;
   {
-    const smithy::Document* member = doc.Find("code");
+    const opal::Document* member = doc.Find("code");
     if (member != nullptr && !member->is_null()) {
       std::int32_t parsed_member{};
-      if (!member->is_int()) return smithy::Error::Serialization("CustomCodeOutput.code: unexpected type on the wire");
-      if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return smithy::Error::Serialization("CustomCodeOutput.code: value out of range");
+      if (!member->is_int()) return opal::Error::Serialization("CustomCodeOutput.code: unexpected type on the wire");
+      if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return opal::Error::Serialization("CustomCodeOutput.code: value out of range");
       parsed_member = static_cast<std::int32_t>(member->as_int());
       out.code = std::move(parsed_member);
     }
@@ -358,43 +358,43 @@ smithy::Outcome<CustomCodeOutput> DeserializeCustomCodeOutput(const smithy::Docu
   return out;
 }
 
-smithy::Document SerializeUnknownServerError(const UnknownServerError& value) {
-  smithy::DocumentMap map;
-  map.emplace("errorCode", smithy::Document(std::string(value.errorCode.ToString())));
+opal::Document SerializeUnknownServerError(const UnknownServerError& value) {
+  opal::DocumentMap map;
+  map.emplace("errorCode", opal::Document(std::string(value.errorCode.ToString())));
   if (value.description.has_value()) {
-    map.emplace("description", smithy::Document((*value.description)));
+    map.emplace("description", opal::Document((*value.description)));
   }
   if (value.stateHash.has_value()) {
-    map.emplace("stateHash", smithy::Document((*value.stateHash)));
+    map.emplace("stateHash", opal::Document((*value.stateHash)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<UnknownServerError> DeserializeUnknownServerError(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("UnknownServerError: expected a map on the wire");
+opal::Outcome<UnknownServerError> DeserializeUnknownServerError(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("UnknownServerError: expected a map on the wire");
   UnknownServerError out;
   {
-    const smithy::Document* member = doc.Find("errorCode");
+    const opal::Document* member = doc.Find("errorCode");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("UnknownServerError: missing required member: errorCode");
+      return opal::Error::Serialization("UnknownServerError: missing required member: errorCode");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("UnknownServerError.errorCode: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("UnknownServerError.errorCode: unexpected type on the wire");
     out.errorCode = types::UnknownServerErrorCode::FromString(member->as_string());
   }
   {
-    const smithy::Document* member = doc.Find("description");
+    const opal::Document* member = doc.Find("description");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("UnknownServerError.description: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("UnknownServerError.description: unexpected type on the wire");
       parsed_member = member->as_string();
       out.description = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("stateHash");
+    const opal::Document* member = doc.Find("stateHash");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("UnknownServerError.stateHash: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("UnknownServerError.stateHash: unexpected type on the wire");
       parsed_member = member->as_string();
       out.stateHash = std::move(parsed_member);
     }
@@ -402,62 +402,62 @@ smithy::Outcome<UnknownServerError> DeserializeUnknownServerError(const smithy::
   return out;
 }
 
-smithy::Document SerializeFallbackError(const FallbackError& value) {
-  smithy::DocumentMap map;
-  map.emplace("error", smithy::Document(value.error));
-  return smithy::Document(std::move(map));
+opal::Document SerializeFallbackError(const FallbackError& value) {
+  opal::DocumentMap map;
+  map.emplace("error", opal::Document(value.error));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<FallbackError> DeserializeFallbackError(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("FallbackError: expected a map on the wire");
+opal::Outcome<FallbackError> DeserializeFallbackError(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("FallbackError: expected a map on the wire");
   FallbackError out;
   {
-    const smithy::Document* member = doc.Find("error");
+    const opal::Document* member = doc.Find("error");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("FallbackError: missing required member: error");
+      return opal::Error::Serialization("FallbackError: missing required member: error");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("FallbackError.error: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("FallbackError.error: unexpected type on the wire");
     out.error = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeGetEnumInput(const GetEnumInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("aa", smithy::Document(std::string(value.aa.ToString())));
-  return smithy::Document(std::move(map));
+opal::Document SerializeGetEnumInput(const GetEnumInput& value) {
+  opal::DocumentMap map;
+  map.emplace("aa", opal::Document(std::string(value.aa.ToString())));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetEnumInput> DeserializeGetEnumInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetEnumInput: expected a map on the wire");
+opal::Outcome<GetEnumInput> DeserializeGetEnumInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetEnumInput: expected a map on the wire");
   GetEnumInput out;
   {
-    const smithy::Document* member = doc.Find("aa");
+    const opal::Document* member = doc.Find("aa");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetEnumInput: missing required member: aa");
+      return opal::Error::Serialization("GetEnumInput: missing required member: aa");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GetEnumInput.aa: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GetEnumInput.aa: unexpected type on the wire");
     out.aa = types::TheEnum::FromString(member->as_string());
   }
   return out;
 }
 
-smithy::Document SerializeGetEnumOutput(const GetEnumOutput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeGetEnumOutput(const GetEnumOutput& value) {
+  opal::DocumentMap map;
   if (value.result.has_value()) {
-    map.emplace("result", smithy::Document((*value.result)));
+    map.emplace("result", opal::Document((*value.result)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetEnumOutput> DeserializeGetEnumOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetEnumOutput: expected a map on the wire");
+opal::Outcome<GetEnumOutput> DeserializeGetEnumOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetEnumOutput: expected a map on the wire");
   GetEnumOutput out;
   {
-    const smithy::Document* member = doc.Find("result");
+    const opal::Document* member = doc.Find("result");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("GetEnumOutput.result: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("GetEnumOutput.result: unexpected type on the wire");
       parsed_member = member->as_string();
       out.result = std::move(parsed_member);
     }
@@ -465,81 +465,81 @@ smithy::Outcome<GetEnumOutput> DeserializeGetEnumOutput(const smithy::Document& 
   return out;
 }
 
-smithy::Document SerializeGetIntEnumInput(const GetIntEnumInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("aa", smithy::Document(static_cast<std::int64_t>(value.aa)));
-  return smithy::Document(std::move(map));
+opal::Document SerializeGetIntEnumInput(const GetIntEnumInput& value) {
+  opal::DocumentMap map;
+  map.emplace("aa", opal::Document(static_cast<std::int64_t>(value.aa)));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetIntEnumInput> DeserializeGetIntEnumInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetIntEnumInput: expected a map on the wire");
+opal::Outcome<GetIntEnumInput> DeserializeGetIntEnumInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetIntEnumInput: expected a map on the wire");
   GetIntEnumInput out;
   {
-    const smithy::Document* member = doc.Find("aa");
+    const opal::Document* member = doc.Find("aa");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetIntEnumInput: missing required member: aa");
+      return opal::Error::Serialization("GetIntEnumInput: missing required member: aa");
     }
-    if (!member->is_int()) return smithy::Error::Serialization("GetIntEnumInput.aa: unexpected type on the wire");
-    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return smithy::Error::Serialization("GetIntEnumInput.aa: value out of range");
+    if (!member->is_int()) return opal::Error::Serialization("GetIntEnumInput.aa: unexpected type on the wire");
+    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return opal::Error::Serialization("GetIntEnumInput.aa: value out of range");
     out.aa = static_cast<types::EnumResult>(member->as_int());
   }
   return out;
 }
 
-smithy::Document SerializeGetIntEnumOutput(const GetIntEnumOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("result", smithy::Document(static_cast<std::int64_t>(value.result)));
-  return smithy::Document(std::move(map));
+opal::Document SerializeGetIntEnumOutput(const GetIntEnumOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("result", opal::Document(static_cast<std::int64_t>(value.result)));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetIntEnumOutput> DeserializeGetIntEnumOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetIntEnumOutput: expected a map on the wire");
+opal::Outcome<GetIntEnumOutput> DeserializeGetIntEnumOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetIntEnumOutput: expected a map on the wire");
   GetIntEnumOutput out;
   {
-    const smithy::Document* member = doc.Find("result");
+    const opal::Document* member = doc.Find("result");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetIntEnumOutput: missing required member: result");
+      return opal::Error::Serialization("GetIntEnumOutput: missing required member: result");
     }
-    if (!member->is_int()) return smithy::Error::Serialization("GetIntEnumOutput.result: unexpected type on the wire");
-    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return smithy::Error::Serialization("GetIntEnumOutput.result: value out of range");
+    if (!member->is_int()) return opal::Error::Serialization("GetIntEnumOutput.result: unexpected type on the wire");
+    if (member->as_int() < -2147483648LL || member->as_int() > 2147483647LL) return opal::Error::Serialization("GetIntEnumOutput.result: value out of range");
     out.result = static_cast<types::EnumResult>(member->as_int());
   }
   return out;
 }
 
-smithy::Document SerializeGetMenuInput(const GetMenuInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("restaurant", smithy::Document(value.restaurant));
-  return smithy::Document(std::move(map));
+opal::Document SerializeGetMenuInput(const GetMenuInput& value) {
+  opal::DocumentMap map;
+  map.emplace("restaurant", opal::Document(value.restaurant));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetMenuInput> DeserializeGetMenuInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetMenuInput: expected a map on the wire");
+opal::Outcome<GetMenuInput> DeserializeGetMenuInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetMenuInput: expected a map on the wire");
   GetMenuInput out;
   {
-    const smithy::Document* member = doc.Find("restaurant");
+    const opal::Document* member = doc.Find("restaurant");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetMenuInput: missing required member: restaurant");
+      return opal::Error::Serialization("GetMenuInput: missing required member: restaurant");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("GetMenuInput.restaurant: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("GetMenuInput.restaurant: unexpected type on the wire");
     out.restaurant = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeMenu(const std::map<std::string, MenuItem>& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeMenu(const std::map<std::string, MenuItem>& value) {
+  opal::DocumentMap map;
   for (const auto& [key, item] : value) {
     map.emplace(key, SerializeMenuItem(item));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<std::map<std::string, MenuItem>> DeserializeMenu(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("std::map<std::string, MenuItem>: expected a map on the wire");
+opal::Outcome<std::map<std::string, MenuItem>> DeserializeMenu(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("std::map<std::string, MenuItem>: expected a map on the wire");
   std::map<std::string, MenuItem> out;
   for (const auto& [key, item_doc] : doc.as_map()) {
-    const smithy::Document* item = &item_doc;
+    const opal::Document* item = &item_doc;
     // Tolerant read: null values in dense maps are skipped, not errors.
     if (item->is_null()) continue;
     MenuItem parsed_item{};
@@ -553,19 +553,19 @@ smithy::Outcome<std::map<std::string, MenuItem>> DeserializeMenu(const smithy::D
   return out;
 }
 
-smithy::Document SerializeGetMenuOutput(const GetMenuOutput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeGetMenuOutput(const GetMenuOutput& value) {
+  opal::DocumentMap map;
   map.emplace("menu", SerializeMenu(value.menu));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<GetMenuOutput> DeserializeGetMenuOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("GetMenuOutput: expected a map on the wire");
+opal::Outcome<GetMenuOutput> DeserializeGetMenuOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("GetMenuOutput: expected a map on the wire");
   GetMenuOutput out;
   {
-    const smithy::Document* member = doc.Find("menu");
+    const opal::Document* member = doc.Find("menu");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("GetMenuOutput: missing required member: menu");
+      return opal::Error::Serialization("GetMenuOutput: missing required member: menu");
     }
     {
       auto parsed = DeserializeMenu(*member);
@@ -576,78 +576,78 @@ smithy::Outcome<GetMenuOutput> DeserializeGetMenuOutput(const smithy::Document& 
   return out;
 }
 
-smithy::Document SerializeNotFoundError(const NotFoundError& value) {
-  smithy::DocumentMap map;
-  map.emplace("name", smithy::Document(value.name));
-  return smithy::Document(std::move(map));
+opal::Document SerializeNotFoundError(const NotFoundError& value) {
+  opal::DocumentMap map;
+  map.emplace("name", opal::Document(value.name));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<NotFoundError> DeserializeNotFoundError(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("NotFoundError: expected a map on the wire");
+opal::Outcome<NotFoundError> DeserializeNotFoundError(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("NotFoundError: expected a map on the wire");
   NotFoundError out;
   {
-    const smithy::Document* member = doc.Find("name");
+    const opal::Document* member = doc.Find("name");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("NotFoundError: missing required member: name");
+      return opal::Error::Serialization("NotFoundError: missing required member: name");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("NotFoundError.name: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("NotFoundError.name: unexpected type on the wire");
     out.name = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeHeaderEndpointInput(const HeaderEndpointInput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeHeaderEndpointInput(const HeaderEndpointInput& value) {
+  opal::DocumentMap map;
   if (value.uppercaseHeader.has_value()) {
-    map.emplace("uppercaseHeader", smithy::Document((*value.uppercaseHeader)));
+    map.emplace("uppercaseHeader", opal::Document((*value.uppercaseHeader)));
   }
   if (value.capitalizedHeader.has_value()) {
-    map.emplace("capitalizedHeader", smithy::Document((*value.capitalizedHeader)));
+    map.emplace("capitalizedHeader", opal::Document((*value.capitalizedHeader)));
   }
   if (value.lowercaseHeader.has_value()) {
-    map.emplace("lowercaseHeader", smithy::Document((*value.lowercaseHeader)));
+    map.emplace("lowercaseHeader", opal::Document((*value.lowercaseHeader)));
   }
   if (value.mixedHeader.has_value()) {
-    map.emplace("mixedHeader", smithy::Document((*value.mixedHeader)));
+    map.emplace("mixedHeader", opal::Document((*value.mixedHeader)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HeaderEndpointInput> DeserializeHeaderEndpointInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HeaderEndpointInput: expected a map on the wire");
+opal::Outcome<HeaderEndpointInput> DeserializeHeaderEndpointInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HeaderEndpointInput: expected a map on the wire");
   HeaderEndpointInput out;
   {
-    const smithy::Document* member = doc.Find("uppercaseHeader");
+    const opal::Document* member = doc.Find("uppercaseHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointInput.uppercaseHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointInput.uppercaseHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.uppercaseHeader = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("capitalizedHeader");
+    const opal::Document* member = doc.Find("capitalizedHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointInput.capitalizedHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointInput.capitalizedHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.capitalizedHeader = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("lowercaseHeader");
+    const opal::Document* member = doc.Find("lowercaseHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointInput.lowercaseHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointInput.lowercaseHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.lowercaseHeader = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("mixedHeader");
+    const opal::Document* member = doc.Find("mixedHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointInput.mixedHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointInput.mixedHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.mixedHeader = std::move(parsed_member);
     }
@@ -655,58 +655,58 @@ smithy::Outcome<HeaderEndpointInput> DeserializeHeaderEndpointInput(const smithy
   return out;
 }
 
-smithy::Document SerializeHeaderEndpointOutput(const HeaderEndpointOutput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeHeaderEndpointOutput(const HeaderEndpointOutput& value) {
+  opal::DocumentMap map;
   if (value.uppercaseHeader.has_value()) {
-    map.emplace("uppercaseHeader", smithy::Document((*value.uppercaseHeader)));
+    map.emplace("uppercaseHeader", opal::Document((*value.uppercaseHeader)));
   }
   if (value.capitalizedHeader.has_value()) {
-    map.emplace("capitalizedHeader", smithy::Document((*value.capitalizedHeader)));
+    map.emplace("capitalizedHeader", opal::Document((*value.capitalizedHeader)));
   }
   if (value.lowercaseHeader.has_value()) {
-    map.emplace("lowercaseHeader", smithy::Document((*value.lowercaseHeader)));
+    map.emplace("lowercaseHeader", opal::Document((*value.lowercaseHeader)));
   }
   if (value.mixedHeader.has_value()) {
-    map.emplace("mixedHeader", smithy::Document((*value.mixedHeader)));
+    map.emplace("mixedHeader", opal::Document((*value.mixedHeader)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HeaderEndpointOutput> DeserializeHeaderEndpointOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HeaderEndpointOutput: expected a map on the wire");
+opal::Outcome<HeaderEndpointOutput> DeserializeHeaderEndpointOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HeaderEndpointOutput: expected a map on the wire");
   HeaderEndpointOutput out;
   {
-    const smithy::Document* member = doc.Find("uppercaseHeader");
+    const opal::Document* member = doc.Find("uppercaseHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointOutput.uppercaseHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointOutput.uppercaseHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.uppercaseHeader = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("capitalizedHeader");
+    const opal::Document* member = doc.Find("capitalizedHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointOutput.capitalizedHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointOutput.capitalizedHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.capitalizedHeader = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("lowercaseHeader");
+    const opal::Document* member = doc.Find("lowercaseHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointOutput.lowercaseHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointOutput.lowercaseHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.lowercaseHeader = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("mixedHeader");
+    const opal::Document* member = doc.Find("mixedHeader");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HeaderEndpointOutput.mixedHeader: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HeaderEndpointOutput.mixedHeader: unexpected type on the wire");
       parsed_member = member->as_string();
       out.mixedHeader = std::move(parsed_member);
     }
@@ -714,22 +714,22 @@ smithy::Outcome<HeaderEndpointOutput> DeserializeHeaderEndpointOutput(const smit
   return out;
 }
 
-smithy::Document SerializeHealthInput(const HealthInput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeHealthInput(const HealthInput& value) {
+  opal::DocumentMap map;
   if (value.query.has_value()) {
-    map.emplace("query", smithy::Document((*value.query)));
+    map.emplace("query", opal::Document((*value.query)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HealthInput> DeserializeHealthInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HealthInput: expected a map on the wire");
+opal::Outcome<HealthInput> DeserializeHealthInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HealthInput: expected a map on the wire");
   HealthInput out;
   {
-    const smithy::Document* member = doc.Find("query");
+    const opal::Document* member = doc.Find("query");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HealthInput.query: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HealthInput.query: unexpected type on the wire");
       parsed_member = member->as_string();
       out.query = std::move(parsed_member);
     }
@@ -737,80 +737,80 @@ smithy::Outcome<HealthInput> DeserializeHealthInput(const smithy::Document& doc)
   return out;
 }
 
-smithy::Document SerializeHealthOutput(const HealthOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("status", smithy::Document(value.status));
-  return smithy::Document(std::move(map));
+opal::Document SerializeHealthOutput(const HealthOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("status", opal::Document(value.status));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HealthOutput> DeserializeHealthOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HealthOutput: expected a map on the wire");
+opal::Outcome<HealthOutput> DeserializeHealthOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HealthOutput: expected a map on the wire");
   HealthOutput out;
   {
-    const smithy::Document* member = doc.Find("status");
+    const opal::Document* member = doc.Find("status");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("HealthOutput: missing required member: status");
+      return opal::Error::Serialization("HealthOutput: missing required member: status");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("HealthOutput.status: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("HealthOutput.status: unexpected type on the wire");
     out.status = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeHttpPayloadRequiredWithDefaultInput(const HttpPayloadRequiredWithDefaultInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("body", smithy::Document(value.body));
-  return smithy::Document(std::move(map));
+opal::Document SerializeHttpPayloadRequiredWithDefaultInput(const HttpPayloadRequiredWithDefaultInput& value) {
+  opal::DocumentMap map;
+  map.emplace("body", opal::Document(value.body));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HttpPayloadRequiredWithDefaultInput> DeserializeHttpPayloadRequiredWithDefaultInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HttpPayloadRequiredWithDefaultInput: expected a map on the wire");
+opal::Outcome<HttpPayloadRequiredWithDefaultInput> DeserializeHttpPayloadRequiredWithDefaultInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HttpPayloadRequiredWithDefaultInput: expected a map on the wire");
   HttpPayloadRequiredWithDefaultInput out;
   {
-    const smithy::Document* member = doc.Find("body");
+    const opal::Document* member = doc.Find("body");
     if (member != nullptr && !member->is_null()) {
-      if (!member->is_string()) return smithy::Error::Serialization("HttpPayloadRequiredWithDefaultInput.body: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HttpPayloadRequiredWithDefaultInput.body: unexpected type on the wire");
       out.body = member->as_string();
     }
   }
   return out;
 }
 
-smithy::Document SerializeHttpPayloadRequiredWithDefaultOutput(const HttpPayloadRequiredWithDefaultOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("body", smithy::Document(value.body));
-  return smithy::Document(std::move(map));
+opal::Document SerializeHttpPayloadRequiredWithDefaultOutput(const HttpPayloadRequiredWithDefaultOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("body", opal::Document(value.body));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> DeserializeHttpPayloadRequiredWithDefaultOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HttpPayloadRequiredWithDefaultOutput: expected a map on the wire");
+opal::Outcome<HttpPayloadRequiredWithDefaultOutput> DeserializeHttpPayloadRequiredWithDefaultOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HttpPayloadRequiredWithDefaultOutput: expected a map on the wire");
   HttpPayloadRequiredWithDefaultOutput out;
   {
-    const smithy::Document* member = doc.Find("body");
+    const opal::Document* member = doc.Find("body");
     if (member != nullptr && !member->is_null()) {
-      if (!member->is_string()) return smithy::Error::Serialization("HttpPayloadRequiredWithDefaultOutput.body: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HttpPayloadRequiredWithDefaultOutput.body: unexpected type on the wire");
       out.body = member->as_string();
     }
   }
   return out;
 }
 
-smithy::Document SerializeHttpPayloadWithDefaultInput(const HttpPayloadWithDefaultInput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeHttpPayloadWithDefaultInput(const HttpPayloadWithDefaultInput& value) {
+  opal::DocumentMap map;
   if (value.body.has_value()) {
-    map.emplace("body", smithy::Document((*value.body)));
+    map.emplace("body", opal::Document((*value.body)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HttpPayloadWithDefaultInput> DeserializeHttpPayloadWithDefaultInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HttpPayloadWithDefaultInput: expected a map on the wire");
+opal::Outcome<HttpPayloadWithDefaultInput> DeserializeHttpPayloadWithDefaultInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HttpPayloadWithDefaultInput: expected a map on the wire");
   HttpPayloadWithDefaultInput out;
   {
-    const smithy::Document* member = doc.Find("body");
+    const opal::Document* member = doc.Find("body");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HttpPayloadWithDefaultInput.body: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HttpPayloadWithDefaultInput.body: unexpected type on the wire");
       parsed_member = member->as_string();
       out.body = std::move(parsed_member);
     } else {
@@ -820,20 +820,20 @@ smithy::Outcome<HttpPayloadWithDefaultInput> DeserializeHttpPayloadWithDefaultIn
   return out;
 }
 
-smithy::Document SerializeHttpPayloadWithDefaultOutput(const HttpPayloadWithDefaultOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("body", smithy::Document(value.body));
-  return smithy::Document(std::move(map));
+opal::Document SerializeHttpPayloadWithDefaultOutput(const HttpPayloadWithDefaultOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("body", opal::Document(value.body));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<HttpPayloadWithDefaultOutput> DeserializeHttpPayloadWithDefaultOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("HttpPayloadWithDefaultOutput: expected a map on the wire");
+opal::Outcome<HttpPayloadWithDefaultOutput> DeserializeHttpPayloadWithDefaultOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("HttpPayloadWithDefaultOutput: expected a map on the wire");
   HttpPayloadWithDefaultOutput out;
   {
-    const smithy::Document* member = doc.Find("body");
+    const opal::Document* member = doc.Find("body");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("HttpPayloadWithDefaultOutput.body: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("HttpPayloadWithDefaultOutput.body: unexpected type on the wire");
       parsed_member = member->as_string();
       out.body = std::move(parsed_member);
     }
@@ -841,65 +841,65 @@ smithy::Outcome<HttpPayloadWithDefaultOutput> DeserializeHttpPayloadWithDefaultO
   return out;
 }
 
-smithy::Document SerializeMyMap(const std::map<std::string, std::int32_t>& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeMyMap(const std::map<std::string, std::int32_t>& value) {
+  opal::DocumentMap map;
   for (const auto& [key, item] : value) {
-    map.emplace(key, smithy::Document(static_cast<std::int64_t>(item)));
+    map.emplace(key, opal::Document(static_cast<std::int64_t>(item)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<std::map<std::string, std::int32_t>> DeserializeMyMap(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("std::map<std::string, std::int32_t>: expected a map on the wire");
+opal::Outcome<std::map<std::string, std::int32_t>> DeserializeMyMap(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("std::map<std::string, std::int32_t>: expected a map on the wire");
   std::map<std::string, std::int32_t> out;
   for (const auto& [key, item_doc] : doc.as_map()) {
-    const smithy::Document* item = &item_doc;
+    const opal::Document* item = &item_doc;
     // Tolerant read: null values in dense maps are skipped, not errors.
     if (item->is_null()) continue;
     std::int32_t parsed_item{};
-    if (!item->is_int()) return smithy::Error::Serialization("std::map<std::string, std::int32_t>{}: unexpected type on the wire");
-    if (item->as_int() < -2147483648LL || item->as_int() > 2147483647LL) return smithy::Error::Serialization("std::map<std::string, std::int32_t>{}: value out of range");
+    if (!item->is_int()) return opal::Error::Serialization("std::map<std::string, std::int32_t>{}: unexpected type on the wire");
+    if (item->as_int() < -2147483648LL || item->as_int() > 2147483647LL) return opal::Error::Serialization("std::map<std::string, std::int32_t>{}: value out of range");
     parsed_item = static_cast<std::int32_t>(item->as_int());
     out.emplace(key, std::move(parsed_item));
   }
   return out;
 }
 
-smithy::Document SerializeSmallStruct(const SmallStruct& value) {
-  smithy::DocumentMap map;
-  map.emplace("content", smithy::Document(value.content));
-  return smithy::Document(std::move(map));
+opal::Document SerializeSmallStruct(const SmallStruct& value) {
+  opal::DocumentMap map;
+  map.emplace("content", opal::Document(value.content));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<SmallStruct> DeserializeSmallStruct(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("SmallStruct: expected a map on the wire");
+opal::Outcome<SmallStruct> DeserializeSmallStruct(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("SmallStruct: expected a map on the wire");
   SmallStruct out;
   {
-    const smithy::Document* member = doc.Find("content");
+    const opal::Document* member = doc.Find("content");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("SmallStruct: missing required member: content");
+      return opal::Error::Serialization("SmallStruct: missing required member: content");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("SmallStruct.content: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("SmallStruct.content: unexpected type on the wire");
     out.content = member->as_string();
   }
   return out;
 }
 
-smithy::Document SerializeOpenDiscriminatedUnion(const OpenDiscriminatedUnion& value) {
+opal::Document SerializeOpenDiscriminatedUnion(const OpenDiscriminatedUnion& value) {
   if (value.is_smol()) {
-    smithy::Document member_doc = SerializeSmallStruct(value.as_smol());
-    member_doc.as_map().insert_or_assign("key", smithy::Document(std::string("smol")));
+    opal::Document member_doc = SerializeSmallStruct(value.as_smol());
+    member_doc.as_map().insert_or_assign("key", opal::Document(std::string("smol")));
     return member_doc;
   }
   if (value.is_other()) return value.as_other();
-  return smithy::Document(smithy::DocumentMap{});
+  return opal::Document(opal::DocumentMap{});
 }
 
-smithy::Outcome<OpenDiscriminatedUnion> DeserializeOpenDiscriminatedUnion(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("OpenDiscriminatedUnion: expected a map on the wire");
-  if (const smithy::Document* discriminator = doc.Find("key"); discriminator != nullptr && discriminator->is_string()) {
+opal::Outcome<OpenDiscriminatedUnion> DeserializeOpenDiscriminatedUnion(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("OpenDiscriminatedUnion: expected a map on the wire");
+  if (const opal::Document* discriminator = doc.Find("key"); discriminator != nullptr && discriminator->is_string()) {
     if (discriminator->as_string() == "smol") {
-      const smithy::Document* member = &doc;
+      const opal::Document* member = &doc;
       SmallStruct parsed_member{};
       {
         auto parsed = DeserializeSmallStruct(*member);
@@ -912,21 +912,21 @@ smithy::Outcome<OpenDiscriminatedUnion> DeserializeOpenDiscriminatedUnion(const 
   return OpenDiscriminatedUnion::FromOther(doc);
 }
 
-smithy::Document SerializeOpenTaggedUnion(const OpenTaggedUnion& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeOpenTaggedUnion(const OpenTaggedUnion& value) {
+  opal::DocumentMap map;
   if (value.is_str()) {
-    map.emplace("str", smithy::Document(value.as_str()));
+    map.emplace("str", opal::Document(value.as_str()));
   }
   if (value.is_other()) return value.as_other();
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<OpenTaggedUnion> DeserializeOpenTaggedUnion(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("OpenTaggedUnion: expected a map on the wire");
+opal::Outcome<OpenTaggedUnion> DeserializeOpenTaggedUnion(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("OpenTaggedUnion: expected a map on the wire");
   if (doc.as_map().size() - (doc.Find("__type") != nullptr ? 1 : 0) == 1) {
-    if (const smithy::Document* member = doc.Find("str"); member != nullptr && !member->is_null()) {
+    if (const opal::Document* member = doc.Find("str"); member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("OpenTaggedUnion.str: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("OpenTaggedUnion.str: unexpected type on the wire");
       parsed_member = member->as_string();
       return OpenTaggedUnion::FromStr(std::move(parsed_member));
     }
@@ -934,21 +934,21 @@ smithy::Outcome<OpenTaggedUnion> DeserializeOpenTaggedUnion(const smithy::Docume
   return OpenTaggedUnion::FromOther(doc);
 }
 
-smithy::Document SerializeOpenUnionsPayload(const OpenUnionsPayload& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeOpenUnionsPayload(const OpenUnionsPayload& value) {
+  opal::DocumentMap map;
   if (value.is_tagged()) {
     map.emplace("tagged", SerializeOpenTaggedUnion(value.as_tagged()));
   }
   if (value.is_discriminated()) {
     map.emplace("discriminated", SerializeOpenDiscriminatedUnion(value.as_discriminated()));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<OpenUnionsPayload> DeserializeOpenUnionsPayload(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("OpenUnionsPayload: expected a map on the wire");
-  if (doc.as_map().size() - (doc.Find("__type") != nullptr ? 1 : 0) != 1) return smithy::Error::Serialization("OpenUnionsPayload: expected exactly one union member");
-  if (const smithy::Document* member = doc.Find("tagged"); member != nullptr && !member->is_null()) {
+opal::Outcome<OpenUnionsPayload> DeserializeOpenUnionsPayload(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("OpenUnionsPayload: expected a map on the wire");
+  if (doc.as_map().size() - (doc.Find("__type") != nullptr ? 1 : 0) != 1) return opal::Error::Serialization("OpenUnionsPayload: expected exactly one union member");
+  if (const opal::Document* member = doc.Find("tagged"); member != nullptr && !member->is_null()) {
     OpenTaggedUnion parsed_member{};
     {
       auto parsed = DeserializeOpenTaggedUnion(*member);
@@ -957,7 +957,7 @@ smithy::Outcome<OpenUnionsPayload> DeserializeOpenUnionsPayload(const smithy::Do
     }
     return OpenUnionsPayload::FromTagged(std::move(parsed_member));
   }
-  if (const smithy::Document* member = doc.Find("discriminated"); member != nullptr && !member->is_null()) {
+  if (const opal::Document* member = doc.Find("discriminated"); member != nullptr && !member->is_null()) {
     OpenDiscriminatedUnion parsed_member{};
     {
       auto parsed = DeserializeOpenDiscriminatedUnion(*member);
@@ -966,22 +966,22 @@ smithy::Outcome<OpenUnionsPayload> DeserializeOpenUnionsPayload(const smithy::Do
     }
     return OpenUnionsPayload::FromDiscriminated(std::move(parsed_member));
   }
-  return smithy::Error::Serialization("OpenUnionsPayload: unknown or missing union member");
+  return opal::Error::Serialization("OpenUnionsPayload: unknown or missing union member");
 }
 
-smithy::Document SerializeOpenUnionsInput(const OpenUnionsInput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeOpenUnionsInput(const OpenUnionsInput& value) {
+  opal::DocumentMap map;
   map.emplace("data", SerializeOpenUnionsPayload(value.data));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<OpenUnionsInput> DeserializeOpenUnionsInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("OpenUnionsInput: expected a map on the wire");
+opal::Outcome<OpenUnionsInput> DeserializeOpenUnionsInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("OpenUnionsInput: expected a map on the wire");
   OpenUnionsInput out;
   {
-    const smithy::Document* member = doc.Find("data");
+    const opal::Document* member = doc.Find("data");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("OpenUnionsInput: missing required member: data");
+      return opal::Error::Serialization("OpenUnionsInput: missing required member: data");
     }
     {
       auto parsed = DeserializeOpenUnionsPayload(*member);
@@ -992,19 +992,19 @@ smithy::Outcome<OpenUnionsInput> DeserializeOpenUnionsInput(const smithy::Docume
   return out;
 }
 
-smithy::Document SerializeOpenUnionsOutput(const OpenUnionsOutput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializeOpenUnionsOutput(const OpenUnionsOutput& value) {
+  opal::DocumentMap map;
   map.emplace("data", SerializeOpenUnionsPayload(value.data));
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<OpenUnionsOutput> DeserializeOpenUnionsOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("OpenUnionsOutput: expected a map on the wire");
+opal::Outcome<OpenUnionsOutput> DeserializeOpenUnionsOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("OpenUnionsOutput: expected a map on the wire");
   OpenUnionsOutput out;
   {
-    const smithy::Document* member = doc.Find("data");
+    const opal::Document* member = doc.Find("data");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("OpenUnionsOutput: missing required member: data");
+      return opal::Error::Serialization("OpenUnionsOutput: missing required member: data");
     }
     {
       auto parsed = DeserializeOpenUnionsPayload(*member);
@@ -1015,22 +1015,22 @@ smithy::Outcome<OpenUnionsOutput> DeserializeOpenUnionsOutput(const smithy::Docu
   return out;
 }
 
-smithy::Document SerializePreserveOrderInput(const PreserveOrderInput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializePreserveOrderInput(const PreserveOrderInput& value) {
+  opal::DocumentMap map;
   if (value.map.has_value()) {
     map.emplace("map", SerializeMyMap((*value.map)));
   }
   if (value.document.has_value()) {
     map.emplace("document", (*value.document));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<PreserveOrderInput> DeserializePreserveOrderInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("PreserveOrderInput: expected a map on the wire");
+opal::Outcome<PreserveOrderInput> DeserializePreserveOrderInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("PreserveOrderInput: expected a map on the wire");
   PreserveOrderInput out;
   {
-    const smithy::Document* member = doc.Find("map");
+    const opal::Document* member = doc.Find("map");
     if (member != nullptr && !member->is_null()) {
       std::map<std::string, std::int32_t> parsed_member{};
       {
@@ -1042,9 +1042,9 @@ smithy::Outcome<PreserveOrderInput> DeserializePreserveOrderInput(const smithy::
     }
   }
   {
-    const smithy::Document* member = doc.Find("document");
+    const opal::Document* member = doc.Find("document");
     if (member != nullptr && !member->is_null()) {
-      smithy::Document parsed_member{};
+      opal::Document parsed_member{};
       parsed_member = *member;
       out.document = std::move(parsed_member);
     }
@@ -1052,22 +1052,22 @@ smithy::Outcome<PreserveOrderInput> DeserializePreserveOrderInput(const smithy::
   return out;
 }
 
-smithy::Document SerializePreserveOrderOutput(const PreserveOrderOutput& value) {
-  smithy::DocumentMap map;
+opal::Document SerializePreserveOrderOutput(const PreserveOrderOutput& value) {
+  opal::DocumentMap map;
   if (value.map.has_value()) {
     map.emplace("map", SerializeMyMap((*value.map)));
   }
   if (value.document.has_value()) {
     map.emplace("document", (*value.document));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<PreserveOrderOutput> DeserializePreserveOrderOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("PreserveOrderOutput: expected a map on the wire");
+opal::Outcome<PreserveOrderOutput> DeserializePreserveOrderOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("PreserveOrderOutput: expected a map on the wire");
   PreserveOrderOutput out;
   {
-    const smithy::Document* member = doc.Find("map");
+    const opal::Document* member = doc.Find("map");
     if (member != nullptr && !member->is_null()) {
       std::map<std::string, std::int32_t> parsed_member{};
       {
@@ -1079,9 +1079,9 @@ smithy::Outcome<PreserveOrderOutput> DeserializePreserveOrderOutput(const smithy
     }
   }
   {
-    const smithy::Document* member = doc.Find("document");
+    const opal::Document* member = doc.Find("document");
     if (member != nullptr && !member->is_null()) {
-      smithy::Document parsed_member{};
+      opal::Document parsed_member{};
       parsed_member = *member;
       out.document = std::move(parsed_member);
     }
@@ -1089,55 +1089,55 @@ smithy::Outcome<PreserveOrderOutput> DeserializePreserveOrderOutput(const smithy
   return out;
 }
 
-smithy::Document SerializeRoundTripInput(const RoundTripInput& value) {
-  smithy::DocumentMap map;
-  map.emplace("label", smithy::Document(value.label));
+opal::Document SerializeRoundTripInput(const RoundTripInput& value) {
+  opal::DocumentMap map;
+  map.emplace("label", opal::Document(value.label));
   if (value.header.has_value()) {
-    map.emplace("header", smithy::Document((*value.header)));
+    map.emplace("header", opal::Document((*value.header)));
   }
   if (value.query.has_value()) {
-    map.emplace("query", smithy::Document((*value.query)));
+    map.emplace("query", opal::Document((*value.query)));
   }
   if (value.body.has_value()) {
-    map.emplace("body", smithy::Document((*value.body)));
+    map.emplace("body", opal::Document((*value.body)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<RoundTripInput> DeserializeRoundTripInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("RoundTripInput: expected a map on the wire");
+opal::Outcome<RoundTripInput> DeserializeRoundTripInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("RoundTripInput: expected a map on the wire");
   RoundTripInput out;
   {
-    const smithy::Document* member = doc.Find("label");
+    const opal::Document* member = doc.Find("label");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("RoundTripInput: missing required member: label");
+      return opal::Error::Serialization("RoundTripInput: missing required member: label");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("RoundTripInput.label: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("RoundTripInput.label: unexpected type on the wire");
     out.label = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("header");
+    const opal::Document* member = doc.Find("header");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("RoundTripInput.header: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("RoundTripInput.header: unexpected type on the wire");
       parsed_member = member->as_string();
       out.header = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("query");
+    const opal::Document* member = doc.Find("query");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("RoundTripInput.query: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("RoundTripInput.query: unexpected type on the wire");
       parsed_member = member->as_string();
       out.query = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("body");
+    const opal::Document* member = doc.Find("body");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("RoundTripInput.body: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("RoundTripInput.body: unexpected type on the wire");
       parsed_member = member->as_string();
       out.body = std::move(parsed_member);
     }
@@ -1145,55 +1145,55 @@ smithy::Outcome<RoundTripInput> DeserializeRoundTripInput(const smithy::Document
   return out;
 }
 
-smithy::Document SerializeRoundTripOutput(const RoundTripOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("label", smithy::Document(value.label));
+opal::Document SerializeRoundTripOutput(const RoundTripOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("label", opal::Document(value.label));
   if (value.header.has_value()) {
-    map.emplace("header", smithy::Document((*value.header)));
+    map.emplace("header", opal::Document((*value.header)));
   }
   if (value.query.has_value()) {
-    map.emplace("query", smithy::Document((*value.query)));
+    map.emplace("query", opal::Document((*value.query)));
   }
   if (value.body.has_value()) {
-    map.emplace("body", smithy::Document((*value.body)));
+    map.emplace("body", opal::Document((*value.body)));
   }
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<RoundTripOutput> DeserializeRoundTripOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("RoundTripOutput: expected a map on the wire");
+opal::Outcome<RoundTripOutput> DeserializeRoundTripOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("RoundTripOutput: expected a map on the wire");
   RoundTripOutput out;
   {
-    const smithy::Document* member = doc.Find("label");
+    const opal::Document* member = doc.Find("label");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("RoundTripOutput: missing required member: label");
+      return opal::Error::Serialization("RoundTripOutput: missing required member: label");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("RoundTripOutput.label: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("RoundTripOutput.label: unexpected type on the wire");
     out.label = member->as_string();
   }
   {
-    const smithy::Document* member = doc.Find("header");
+    const opal::Document* member = doc.Find("header");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("RoundTripOutput.header: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("RoundTripOutput.header: unexpected type on the wire");
       parsed_member = member->as_string();
       out.header = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("query");
+    const opal::Document* member = doc.Find("query");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("RoundTripOutput.query: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("RoundTripOutput.query: unexpected type on the wire");
       parsed_member = member->as_string();
       out.query = std::move(parsed_member);
     }
   }
   {
-    const smithy::Document* member = doc.Find("body");
+    const opal::Document* member = doc.Find("body");
     if (member != nullptr && !member->is_null()) {
       std::string parsed_member{};
-      if (!member->is_string()) return smithy::Error::Serialization("RoundTripOutput.body: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("RoundTripOutput.body: unexpected type on the wire");
       parsed_member = member->as_string();
       out.body = std::move(parsed_member);
     }
@@ -1201,35 +1201,35 @@ smithy::Outcome<RoundTripOutput> DeserializeRoundTripOutput(const smithy::Docume
   return out;
 }
 
-smithy::Document SerializeVersionInput(const VersionInput& /*value*/) {
-  smithy::DocumentMap map;
-  return smithy::Document(std::move(map));
+opal::Document SerializeVersionInput(const VersionInput& /*value*/) {
+  opal::DocumentMap map;
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<VersionInput> DeserializeVersionInput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("VersionInput: expected a map on the wire");
+opal::Outcome<VersionInput> DeserializeVersionInput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("VersionInput: expected a map on the wire");
   VersionInput out;
   return out;
 }
 
-smithy::Document SerializeVersionOutput(const VersionOutput& value) {
-  smithy::DocumentMap map;
-  map.emplace("version", smithy::Document(value.version));
-  return smithy::Document(std::move(map));
+opal::Document SerializeVersionOutput(const VersionOutput& value) {
+  opal::DocumentMap map;
+  map.emplace("version", opal::Document(value.version));
+  return opal::Document(std::move(map));
 }
 
-smithy::Outcome<VersionOutput> DeserializeVersionOutput(const smithy::Document& doc) {
-  if (!doc.is_map()) return smithy::Error::Serialization("VersionOutput: expected a map on the wire");
+opal::Outcome<VersionOutput> DeserializeVersionOutput(const opal::Document& doc) {
+  if (!doc.is_map()) return opal::Error::Serialization("VersionOutput: expected a map on the wire");
   VersionOutput out;
   {
-    const smithy::Document* member = doc.Find("version");
+    const opal::Document* member = doc.Find("version");
     if (member == nullptr || member->is_null()) {
-      return smithy::Error::Serialization("VersionOutput: missing required member: version");
+      return opal::Error::Serialization("VersionOutput: missing required member: version");
     }
-    if (!member->is_string()) return smithy::Error::Serialization("VersionOutput.version: unexpected type on the wire");
+    if (!member->is_string()) return opal::Error::Serialization("VersionOutput.version: unexpected type on the wire");
     out.version = member->as_string();
   }
   return out;
 }
 
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

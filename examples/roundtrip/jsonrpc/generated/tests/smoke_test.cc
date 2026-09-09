@@ -27,7 +27,7 @@ PutSinkRpcOutput MinimalPutSinkRpcOutput() {
 
 class SmokeHandler : public RoundTripJsonRpcHandler {
   public:
-    smithy::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalPutSinkRpcOutput();
     }
@@ -35,9 +35,9 @@ class SmokeHandler : public RoundTripJsonRpcHandler {
 
 RoundTripJsonRpcClient MakeClient(std::shared_ptr<RoundTripJsonRpcHandler> handler) {
   RoundTripJsonRpcServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -60,9 +60,9 @@ TEST(RoundTripJsonRpcSmokeTest, PutSinkRpcRoundTrips) {
 TEST(RoundTripJsonRpcSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("SinkNotFound", "smoke");
+        opal::Error error = opal::Error::Modeled("SinkNotFound", "smoke");
             auto detail = [] {
           SinkNotFound v{};
           return v;
@@ -80,7 +80,7 @@ TEST(RoundTripJsonRpcSmokeTest, ModeledErrorsMapAcrossTheWire) {
   }();
   const auto outcome = client.PutSinkRpc(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkNotFound");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<SinkNotFound>(), nullptr);

@@ -10,7 +10,7 @@
 
 #include "smithy/http/beast_transport.h"
 
-namespace smithy::testing {
+namespace opal::testing {
 
 // One copy of the ADR-0013 test recorder for the runtime suites and the
 // consumer module's tests (the tls_test_identity pattern): a mutex-guarded
@@ -43,6 +43,6 @@ struct ConnectionEventRecorder {
   }
 };
 
-}  // namespace smithy::testing
+}  // namespace opal::testing
 
 #endif  // SMITHY_TESTING_CONNECTION_EVENT_RECORDER_H_

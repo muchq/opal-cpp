@@ -67,14 +67,14 @@ final class ClientGenerator {
           w, context, service, streamingOperations(), /* serverSide= */ false);
     }
     w.write("/// $L client for $L.", protocol.name(), service.getId().toString());
-    w.write("/// Modeled service errors surface as smithy::Error with kind kModeled,");
+    w.write("/// Modeled service errors surface as opal::Error with kind kModeled,");
     w.write("/// code() set to the error shape name, and the deserialized error");
     w.write("/// structure attached. Dispatch on them through the per-operation");
     w.write("/// <Operation>Errors listings below rather than comparing code() text.");
     w.openBlock("class $L {", name);
     w.write("public:").indent();
     w.write("/// Fails when the endpoint cannot be parsed and no transport is injected.");
-    w.write("static smithy::Outcome<$L> Create(smithy::ClientConfig config);", name);
+    w.write("static opal::Outcome<$L> Create(opal::ClientConfig config);", name);
     w.write("");
     for (OperationShape operation : operations()) {
       boolean documented = operation.hasTrait(DocumentationTrait.class);
@@ -109,7 +109,7 @@ final class ClientGenerator {
           w.write("/// surfaces through Receive() as a modeled error, the unary shape.");
         }
         w.write(
-            "smithy::Outcome<$L> $L(const $L& input$L) const;",
+            "opal::Outcome<$L> $L(const $L& input$L) const;",
             EventStreamCodeGen.clientStreamAlias(operation),
             CppReservedWords.escape(operation.getId().getName()),
             inputType,
@@ -117,7 +117,7 @@ final class ClientGenerator {
         continue;
       }
       w.write(
-          "smithy::Outcome<$L> $L(const $L& input$L) const;",
+          "opal::Outcome<$L> $L(const $L& input$L) const;",
           outputType,
           CppReservedWords.escape(operation.getId().getName()),
           inputType,
@@ -137,15 +137,15 @@ final class ClientGenerator {
     w.write("").dedent();
     w.write("private:").indent();
     w.write(
-        "$L(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> "
+        "$L(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> "
             + "transport, std::string path_prefix);",
         name);
     w.write(
-        "smithy::Outcome<smithy::http::HttpResponse> "
-            + "Send(smithy::http::HttpRequest request) const;");
+        "opal::Outcome<opal::http::HttpResponse> "
+            + "Send(opal::http::HttpRequest request) const;");
     w.write("");
-    w.write("smithy::ClientConfig config_;");
-    w.write("std::shared_ptr<smithy::http::HttpClient> transport_;");
+    w.write("opal::ClientConfig config_;");
+    w.write("std::shared_ptr<opal::http::HttpClient> transport_;");
     w.write("std::string path_prefix_;").dedent();
     w.closeBlock("};");
     w.write("");
@@ -161,11 +161,11 @@ final class ClientGenerator {
       w.write("public:").indent();
       w.write("/// The next page, std::nullopt once pagination is complete, or the");
       w.write("/// first failed call's error (pagination then stops).");
-      w.write("smithy::Outcome<std::optional<$L>> Next();", outputType);
+      w.write("opal::Outcome<std::optional<$L>> Next();", outputType);
       w.write("");
       w.write("using Page = $L;", outputType);
       w.write("/// Single-pass range over pages — contract in smithy/client/pagination.h.");
-      String iterator = "smithy::PageIterator<" + paginatorName(operation) + ">";
+      String iterator = "opal::PageIterator<" + paginatorName(operation) + ">";
       w.write("$1L begin() { return $1L(this); }", iterator);
       w.write("$L end() { return {}; }", iterator);
       w.write("").dedent();
@@ -223,7 +223,7 @@ final class ClientGenerator {
             .toList();
 
     String opName = CppReservedWords.escape(operation.getId().getName());
-    w.write("/// The modeled errors of $L, matched from a smithy::Error so dispatch is", opName);
+    w.write("/// The modeled errors of $L, matched from a opal::Error so dispatch is", opName);
     w.write("/// typed and exhaustive instead of string-compared. FromError() is empty()");
     w.write("/// when the error is none of this operation's modeled errors (transport,");
     w.write("/// serialization, unknown, or another operation's error).");
@@ -244,9 +244,9 @@ final class ClientGenerator {
     w.write("/// Matches `error` against this operation's modeled errors. An engaged");
     w.write("/// member carries the deserialized error detail, default-initialized when");
     w.write("/// the error arrived without one.");
-    w.openBlock("static $L FromError(const smithy::Error& error) {", listingName);
+    w.openBlock("static $L FromError(const opal::Error& error) {", listingName);
     w.write("$L result;", listingName);
-    w.write("if (error.kind() != smithy::ErrorKind::kModeled) return result;");
+    w.write("if (error.kind() != opal::ErrorKind::kModeled) return result;");
     for (int i = 0; i < errors.size(); ++i) {
       StructureShape error = errors.get(i);
       String typeName = context.cppSymbols().toSymbol(error).getName();
@@ -333,7 +333,7 @@ final class ClientGenerator {
                         + "? \"?\" : \"&\";");
                 w.write(
                     "request.target += \"$L=\" + "
-                        + "smithy::http::EncodeQueryComponent(config_.api_key());",
+                        + "opal::http::EncodeQueryComponent(config_.api_key());",
                     trait.getName());
               }
               w.closeBlock("}");
@@ -358,31 +358,31 @@ final class ClientGenerator {
     }
     ProtocolSupport.closeHelpersNamespace(w);
 
-    w.openBlock("smithy::Outcome<$L> $L::Create(smithy::ClientConfig config) {", name, name);
-    w.write("std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;");
+    w.openBlock("opal::Outcome<$L> $L::Create(opal::ClientConfig config) {", name, name);
+    w.write("std::shared_ptr<opal::http::HttpClient> transport = config.http_client;");
     w.write("std::string prefix;");
     w.openBlock("if (!config.endpoint.empty()) {");
-    w.write("auto endpoint = smithy::http::ParseEndpoint(config.endpoint);");
+    w.write("auto endpoint = opal::http::ParseEndpoint(config.endpoint);");
     w.write("if (!endpoint) return std::move(endpoint).error();");
     w.write("prefix = endpoint->path_prefix;");
     w.openBlock("if (transport == nullptr) {");
     w.write("// The built-in socket transport is plaintext-only; https needs a");
-    w.write("// TLS-capable transport (e.g. smithy::http::BeastHttpClient).");
+    w.write("// TLS-capable transport (e.g. opal::http::BeastHttpClient).");
     w.openBlock("if (endpoint->tls()) {");
     w.write(
-        "return smithy::Error::Validation($S);",
+        "return opal::Error::Validation($S);",
         name
             + ": https endpoints need a TLS-capable transport"
-            + " (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+            + " (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
     w.closeBlock("}");
     w.write(
-        "transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, "
+        "transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, "
             + "endpoint->port, config.request_timeout_ms);");
     w.closeBlock("}");
     w.closeBlock("}");
     w.openBlock("if (transport == nullptr) {");
     w.write(
-        "return smithy::Error::Validation($S);",
+        "return opal::Error::Validation($S);",
         name + ": config needs an endpoint or an http_client");
     w.closeBlock("}");
     w.write("return $L(std::move(config), std::move(transport), std::move(prefix));", name);
@@ -390,8 +390,8 @@ final class ClientGenerator {
     w.write("");
 
     w.openBlock(
-        "$L::$L(smithy::ClientConfig config, "
-            + "std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)",
+        "$L::$L(opal::ClientConfig config, "
+            + "std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)",
         name,
         name);
     w.write(": config_(std::move(config)),");
@@ -401,8 +401,8 @@ final class ClientGenerator {
     w.write("");
 
     w.openBlock(
-        "smithy::Outcome<smithy::http::HttpResponse> $L::Send("
-            + "smithy::http::HttpRequest request) const {",
+        "opal::Outcome<opal::http::HttpResponse> $L::Send("
+            + "opal::http::HttpRequest request) const {",
         name);
     w.write("// Operations with a non-document response payload set their own accept.");
     w.write(
@@ -415,7 +415,7 @@ final class ClientGenerator {
     w.write("request.headers.Set(\"content-length\", std::to_string(request.body.size()));");
     w.closeBlock("}");
     w.write(
-        "return smithy::SendWithRetries(*transport_, request, config_.retry, "
+        "return opal::SendWithRetries(*transport_, request, config_.retry, "
             + "config_.interceptors);");
     w.closeBlock("}");
     w.write("");
@@ -432,7 +432,7 @@ final class ClientGenerator {
                   .toSymbol(ProtocolSupport.outputShape(context, operation))
                   .getName();
       w.openBlock(
-          "smithy::Outcome<$L> $L::$L(const $L& input) const {",
+          "opal::Outcome<$L> $L::$L(const $L& input) const {",
           outputType,
           name,
           CppReservedWords.escape(operation.getId().getName()),
@@ -476,7 +476,7 @@ final class ClientGenerator {
     // The output token is always optional: Smithy's paginated validator
     // rejects @required output tokens at assembly (pinned by
     // ConditionalWiringCoverageTest), so there is no plain-member arm here.
-    w.openBlock("smithy::Outcome<std::optional<$L>> $L::Next() {", outputType, pager);
+    w.openBlock("opal::Outcome<std::optional<$L>> $L::Next() {", outputType, pager);
     w.write("if (done_) return std::optional<$L>();", outputType);
     w.write("auto page = client_.$L(input_);", opName);
     w.openBlock("if (!page) {");

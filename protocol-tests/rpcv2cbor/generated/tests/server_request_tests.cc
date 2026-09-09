@@ -8,11 +8,11 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/rpcv2cbor/client.h"
-#include "smithy/protocoltests/rpcv2cbor/server.h"
+#include "opal/protocoltests/rpcv2cbor/client.h"
+#include "opal/protocoltests/rpcv2cbor/server.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::rpcv2cbor {
+namespace opal::protocoltests::rpcv2cbor {
 
 // Generated from smithy.test#httpRequestTests (server cases): the wire
 // request is routed into the generated server and the parsed input is
@@ -123,72 +123,72 @@ SparseNullsOperationOutput MinimalSparseNullsOperationOutput() {
 
 class RecordingHandler : public RpcV2ProtocolHandler {
   public:
-    smithy::Outcome<EmptyInputOutputOutput> EmptyInputOutput(const EmptyInputOutputInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EmptyInputOutputOutput> EmptyInputOutput(const EmptyInputOutputInput& input, const opal::server::RequestContext&) override {
       lastEmptyInputOutput = input;
       return MinimalEmptyInputOutputOutput();
     }
     std::optional<EmptyInputOutputInput> lastEmptyInputOutput;
-    smithy::Outcome<Float16Output> Float16(const Float16Input& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<Float16Output> Float16(const Float16Input& input, const opal::server::RequestContext&) override {
       lastFloat16 = input;
       return MinimalFloat16Output();
     }
     std::optional<Float16Input> lastFloat16;
-    smithy::Outcome<FractionalSecondsOutput> FractionalSeconds(const FractionalSecondsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<FractionalSecondsOutput> FractionalSeconds(const FractionalSecondsInput& input, const opal::server::RequestContext&) override {
       lastFractionalSeconds = input;
       return MinimalFractionalSecondsOutput();
     }
     std::optional<FractionalSecondsInput> lastFractionalSeconds;
-    smithy::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(const GreetingWithErrorsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(const GreetingWithErrorsInput& input, const opal::server::RequestContext&) override {
       lastGreetingWithErrors = input;
       return MinimalGreetingWithErrorsOutput();
     }
     std::optional<GreetingWithErrorsInput> lastGreetingWithErrors;
-    smithy::Outcome<NoInputOutputOutput> NoInputOutput(const NoInputOutputInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoInputOutputOutput> NoInputOutput(const NoInputOutputInput& input, const opal::server::RequestContext&) override {
       lastNoInputOutput = input;
       return MinimalNoInputOutputOutput();
     }
     std::optional<NoInputOutputInput> lastNoInputOutput;
-    smithy::Outcome<OperationWithDefaultsOutput> OperationWithDefaults(const OperationWithDefaultsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OperationWithDefaultsOutput> OperationWithDefaults(const OperationWithDefaultsInput& input, const opal::server::RequestContext&) override {
       lastOperationWithDefaults = input;
       return MinimalOperationWithDefaultsOutput();
     }
     std::optional<OperationWithDefaultsInput> lastOperationWithDefaults;
-    smithy::Outcome<OptionalInputOutputOutput> OptionalInputOutput(const OptionalInputOutputInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OptionalInputOutputOutput> OptionalInputOutput(const OptionalInputOutputInput& input, const opal::server::RequestContext&) override {
       lastOptionalInputOutput = input;
       return MinimalOptionalInputOutputOutput();
     }
     std::optional<OptionalInputOutputInput> lastOptionalInputOutput;
-    smithy::Outcome<RecursiveShapesOutput> RecursiveShapes(const RecursiveShapesInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RecursiveShapesOutput> RecursiveShapes(const RecursiveShapesInput& input, const opal::server::RequestContext&) override {
       lastRecursiveShapes = input;
       return MinimalRecursiveShapesOutput();
     }
     std::optional<RecursiveShapesInput> lastRecursiveShapes;
-    smithy::Outcome<RpcV2CborDenseMapsOutput> RpcV2CborDenseMaps(const RpcV2CborDenseMapsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborDenseMapsOutput> RpcV2CborDenseMaps(const RpcV2CborDenseMapsInput& input, const opal::server::RequestContext&) override {
       lastRpcV2CborDenseMaps = input;
       return MinimalRpcV2CborDenseMapsOutput();
     }
     std::optional<RpcV2CborDenseMapsInput> lastRpcV2CborDenseMaps;
-    smithy::Outcome<RpcV2CborListsOutput> RpcV2CborLists(const RpcV2CborListsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborListsOutput> RpcV2CborLists(const RpcV2CborListsInput& input, const opal::server::RequestContext&) override {
       lastRpcV2CborLists = input;
       return MinimalRpcV2CborListsOutput();
     }
     std::optional<RpcV2CborListsInput> lastRpcV2CborLists;
-    smithy::Outcome<RpcV2CborSparseMapsOutput> RpcV2CborSparseMaps(const RpcV2CborSparseMapsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborSparseMapsOutput> RpcV2CborSparseMaps(const RpcV2CborSparseMapsInput& input, const opal::server::RequestContext&) override {
       lastRpcV2CborSparseMaps = input;
       return MinimalRpcV2CborSparseMapsOutput();
     }
     std::optional<RpcV2CborSparseMapsInput> lastRpcV2CborSparseMaps;
-    smithy::Outcome<RpcV2CborUnionsOutput> RpcV2CborUnions(const RpcV2CborUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborUnionsOutput> RpcV2CborUnions(const RpcV2CborUnionsInput& input, const opal::server::RequestContext&) override {
       lastRpcV2CborUnions = input;
       return MinimalRpcV2CborUnionsOutput();
     }
     std::optional<RpcV2CborUnionsInput> lastRpcV2CborUnions;
-    smithy::Outcome<SimpleScalarPropertiesOutput> SimpleScalarProperties(const SimpleScalarPropertiesInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<SimpleScalarPropertiesOutput> SimpleScalarProperties(const SimpleScalarPropertiesInput& input, const opal::server::RequestContext&) override {
       lastSimpleScalarProperties = input;
       return MinimalSimpleScalarPropertiesOutput();
     }
     std::optional<SimpleScalarPropertiesInput> lastSimpleScalarProperties;
-    smithy::Outcome<SparseNullsOperationOutput> SparseNullsOperation(const SparseNullsOperationInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<SparseNullsOperationOutput> SparseNullsOperation(const SparseNullsOperationInput& input, const opal::server::RequestContext&) override {
       lastSparseNullsOperation = input;
       return MinimalSparseNullsOperationOutput();
     }
@@ -201,14 +201,14 @@ class RecordingHandler : public RpcV2ProtocolHandler {
 TEST(RpcV2ProtocolServerRequestTest, empty_input) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/EmptyInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v/8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v/8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastEmptyInputOutput.has_value()) << response.status << " " << response.body;
   const EmptyInputOutputInput expected = [] {
   EmptyInputOutputInput v{};
@@ -221,13 +221,13 @@ TEST(RpcV2ProtocolServerRequestTest, empty_input) {
 TEST(RpcV2ProtocolServerRequestTest, empty_input_no_body) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/EmptyInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastEmptyInputOutput.has_value()) << response.status << " " << response.body;
   const EmptyInputOutputInput expected = [] {
   EmptyInputOutputInput v{};
@@ -241,13 +241,13 @@ TEST(RpcV2ProtocolServerRequestTest, empty_input_no_body) {
 TEST(RpcV2ProtocolServerRequestTest, empty_input_no_body_has_accept) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/EmptyInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastEmptyInputOutput.has_value()) << response.status << " " << response.body;
   const EmptyInputOutputInput expected = [] {
   EmptyInputOutputInput v{};
@@ -260,12 +260,12 @@ TEST(RpcV2ProtocolServerRequestTest, empty_input_no_body_has_accept) {
 TEST(RpcV2ProtocolServerRequestTest, no_input) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/NoInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastNoInputOutput.has_value()) << response.status << " " << response.body;
   const NoInputOutputInput expected = [] {
   NoInputOutputInput v{};
@@ -278,14 +278,14 @@ TEST(RpcV2ProtocolServerRequestTest, no_input) {
 TEST(RpcV2ProtocolServerRequestTest, NoInputServerAllowsEmptyCbor) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/NoInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v/8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v/8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastNoInputOutput.has_value()) << response.status << " " << response.body;
   const NoInputOutputInput expected = [] {
   NoInputOutputInput v{};
@@ -299,13 +299,13 @@ TEST(RpcV2ProtocolServerRequestTest, NoInputServerAllowsEmptyCbor) {
 TEST(RpcV2ProtocolServerRequestTest, NoInputServerAllowsEmptyBody) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/NoInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastNoInputOutput.has_value()) << response.status << " " << response.body;
   const NoInputOutputInput expected = [] {
   NoInputOutputInput v{};
@@ -318,14 +318,14 @@ TEST(RpcV2ProtocolServerRequestTest, NoInputServerAllowsEmptyBody) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServerPopulatesDefaultsWhenMissingInRequestBody) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/OperationWithDefaults";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2hkZWZhdWx0c6D/");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2hkZWZhdWx0c6D/");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastOperationWithDefaults.has_value()) << response.status << " " << response.body;
   const OperationWithDefaultsInput expected = [] {
   OperationWithDefaultsInput v{};
@@ -334,8 +334,8 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServerPopulatesDefaultsWhenMissing
   v.defaultString = "hi";
   v.defaultBoolean = true;
   v.defaultList = std::vector<std::string>{};
-  v.defaultTimestamp = smithy::Timestamp::FromEpochMilliseconds(0LL);
-  v.defaultBlob = smithy::Blob::FromString("abc");
+  v.defaultTimestamp = opal::Timestamp::FromEpochMilliseconds(0LL);
+  v.defaultBlob = opal::Blob::FromString("abc");
   v.defaultByte = 1;
   v.defaultShort = 1;
   v.defaultInteger = 10;
@@ -347,7 +347,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServerPopulatesDefaultsWhenMissing
   v.defaultIntEnum = static_cast<TestIntEnum>(1);
   v.emptyString = "";
   v.falseBoolean = false;
-  v.emptyBlob = smithy::Blob::FromString("");
+  v.emptyBlob = opal::Blob::FromString("");
   v.zeroByte = 0;
   v.zeroShort = 0;
   v.zeroInteger = 0;
@@ -367,14 +367,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServerPopulatesDefaultsWhenMissing
 TEST(RpcV2ProtocolServerRequestTest, optional_input) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/OptionalInputOutput";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v/8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v/8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastOptionalInputOutput.has_value()) << response.status << " " << response.body;
   const OptionalInputOutputInput expected = [] {
   OptionalInputOutputInput v{};
@@ -387,14 +387,14 @@ TEST(RpcV2ProtocolServerRequestTest, optional_input) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborRecursiveShapes) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RecursiveShapes";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2ZuZXN0ZWS/Y2Zvb2RGb28xZm5lc3RlZL9jYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyv2Nmb29kRm9vMmZuZXN0ZWS/Y2JhcmRCYXIy//////8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2ZuZXN0ZWS/Y2Zvb2RGb28xZm5lc3RlZL9jYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyv2Nmb29kRm9vMmZuZXN0ZWS/Y2JhcmRCYXIy//////8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRecursiveShapes.has_value()) << response.status << " " << response.body;
   const RecursiveShapesInput expected = [] {
   RecursiveShapesInput v{};
@@ -427,14 +427,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborRecursiveShapes) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborMaps) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("oW5kZW5zZVN0cnVjdE1hcKJjZm9voWJoaWV0aGVyZWNiYXqhYmhpY2J5ZQ==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("oW5kZW5zZVN0cnVjdE1hcKJjZm9voWJoaWV0aGVyZWNiYXqhYmhpY2J5ZQ==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborDenseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborDenseMapsInput expected = [] {
   RpcV2CborDenseMapsInput v{};
@@ -456,14 +456,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborMaps) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesZeroValuesInMaps) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("om5kZW5zZU51bWJlck1hcKFheABvZGVuc2VCb29sZWFuTWFwoWF49A==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("om5kZW5zZU51bWJlck1hcKFheABvZGVuc2VCb29sZWFuTWFwoWF49A==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborDenseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborDenseMapsInput expected = [] {
   RpcV2CborDenseMapsInput v{};
@@ -478,14 +478,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesZeroValuesInMaps) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesDenseSetMap) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("oWtkZW5zZVNldE1hcKJheIBheYJhYWFi");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("oWtkZW5zZVNldE1hcKJheIBheYJhYWFi");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborDenseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborDenseMapsInput expected = [] {
   RpcV2CborDenseMapsInput v{};
@@ -499,14 +499,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesDenseSetMap) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborLists) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborLists";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2pzdHJpbmdMaXN0gmNmb29jYmFyaXN0cmluZ1NldIJjZm9vY2JhcmtpbnRlZ2VyTGlzdIIBAmtib29sZWFuTGlzdIL19G10aW1lc3RhbXBMaXN0gsH7QdTX+/OAAADB+0HU1/vzgAAAaGVudW1MaXN0gmNGb29hMGtpbnRFbnVtTGlzdIIBAnBuZXN0ZWRTdHJpbmdMaXN0goJjZm9vY2JhcoJjYmF6Y3F1eG1zdHJ1Y3R1cmVMaXN0gqJhYWExYWJhMqJhYWEzYWJhNGhibG9iTGlzdIJDZm9vQ2Jhcv8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2pzdHJpbmdMaXN0gmNmb29jYmFyaXN0cmluZ1NldIJjZm9vY2JhcmtpbnRlZ2VyTGlzdIIBAmtib29sZWFuTGlzdIL19G10aW1lc3RhbXBMaXN0gsH7QdTX+/OAAADB+0HU1/vzgAAAaGVudW1MaXN0gmNGb29hMGtpbnRFbnVtTGlzdIIBAnBuZXN0ZWRTdHJpbmdMaXN0goJjZm9vY2JhcoJjYmF6Y3F1eG1zdHJ1Y3R1cmVMaXN0gqJhYWExYWJhMqJhYWEzYWJhNGhibG9iTGlzdIJDZm9vQ2Jhcv8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborLists.has_value()) << response.status << " " << response.body;
   const RpcV2CborListsInput expected = [] {
   RpcV2CborListsInput v{};
@@ -514,7 +514,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborLists) {
   v.stringSet = std::vector<std::string>{"foo", "bar"};
   v.integerList = std::vector<std::int32_t>{1, 2};
   v.booleanList = std::vector<bool>{true, false};
-  v.timestampList = std::vector<smithy::Timestamp>{smithy::Timestamp::FromEpochMilliseconds(1398796238000LL), smithy::Timestamp::FromEpochMilliseconds(1398796238000LL)};
+  v.timestampList = std::vector<opal::Timestamp>{opal::Timestamp::FromEpochMilliseconds(1398796238000LL), opal::Timestamp::FromEpochMilliseconds(1398796238000LL)};
   v.enumList = std::vector<FooEnum>{FooEnum::FromString("Foo"), FooEnum::FromString("0")};
   v.intEnumList = std::vector<IntegerEnum>{static_cast<IntegerEnum>(1), static_cast<IntegerEnum>(2)};
   v.nestedStringList = std::vector<std::vector<std::string>>{std::vector<std::string>{"foo", "bar"}, std::vector<std::string>{"baz", "qux"}};
@@ -529,7 +529,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborLists) {
   v.b = "4";
   return v;
 }()};
-  v.blobList = std::vector<smithy::Blob>{smithy::Blob::FromString("foo"), smithy::Blob::FromString("bar")};
+  v.blobList = std::vector<opal::Blob>{opal::Blob::FromString("foo"), opal::Blob::FromString("bar")};
   return v;
 }();
   EXPECT_EQ(*handler->lastRpcV2CborLists, expected);
@@ -539,14 +539,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborLists) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborListsEmpty) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborLists";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2pzdHJpbmdMaXN0n///");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2pzdHJpbmdMaXN0n///");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborLists.has_value()) << response.status << " " << response.body;
   const RpcV2CborListsInput expected = [] {
   RpcV2CborListsInput v{};
@@ -560,14 +560,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborListsEmpty) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborListsEmptyUsingDefiniteLength) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborLists";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("oWpzdHJpbmdMaXN0gA==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("oWpzdHJpbmdMaXN0gA==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborLists.has_value()) << response.status << " " << response.body;
   const RpcV2CborListsInput expected = [] {
   RpcV2CborListsInput v{};
@@ -581,14 +581,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborListsEmptyUsingDefiniteLength) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteStringInsideIndefiniteList) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborLists";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2pzdHJpbmdMaXN0n394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n//8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2pzdHJpbmdMaXN0n394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n//8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborLists.has_value()) << response.status << " " << response.body;
   const RpcV2CborListsInput expected = [] {
   RpcV2CborListsInput v{};
@@ -602,14 +602,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteStringInsideIndefiniteLi
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteStringInsideDefiniteList) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborLists";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("oWpzdHJpbmdMaXN0g394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("oWpzdHJpbmdMaXN0g394HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcsdyB3aGljaCB3aWxsIGJlIGNodW5rZWQsbiBvbiBlYWNoIGNvbW1h/394NUFub3RoZXIgZXhhbXBsZSBpbmRlZmluaXRlIHN0cmluZyB3aXRoIG9ubHkgb25lIGNodW5r/3ZUaGlzIGlzIGEgcGxhaW4gc3RyaW5n");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborLists.has_value()) << response.status << " " << response.body;
   const RpcV2CborListsInput expected = [] {
   RpcV2CborListsInput v{};
@@ -623,14 +623,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteStringInsideDefiniteList
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSparseMaps) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v29zcGFyc2VTdHJ1Y3RNYXC/Y2Zvb79iaGlldGhlcmX/Y2Jher9iaGljYnll////");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v29zcGFyc2VTdHJ1Y3RNYXC/Y2Zvb79iaGlldGhlcmX/Y2Jher9iaGljYnll////");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborSparseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborSparseMapsInput expected = [] {
   RpcV2CborSparseMapsInput v{};
@@ -652,14 +652,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSparseMaps) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesNullMapValues) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v3BzcGFyc2VCb29sZWFuTWFwv2F49v9vc3BhcnNlTnVtYmVyTWFwv2F49v9vc3BhcnNlU3RyaW5nTWFwv2F49v9vc3BhcnNlU3RydWN0TWFwv2F49v//");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v3BzcGFyc2VCb29sZWFuTWFwv2F49v9vc3BhcnNlTnVtYmVyTWFwv2F49v9vc3BhcnNlU3RyaW5nTWFwv2F49v9vc3BhcnNlU3RydWN0TWFwv2F49v//");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborSparseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborSparseMapsInput expected = [] {
   RpcV2CborSparseMapsInput v{};
@@ -676,14 +676,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesNullMapValues) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesSparseSetMap) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL///8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL///8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborSparseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborSparseMapsInput expected = [] {
   RpcV2CborSparseMapsInput v{};
@@ -697,14 +697,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesSparseSetMap) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesSparseSetMapAndRetainsNull) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL/YXr2//8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL/YXr2//8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborSparseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborSparseMapsInput expected = [] {
   RpcV2CborSparseMapsInput v{};
@@ -718,14 +718,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesSparseSetMapAndRetainsNu
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesZeroValuesInSparseMaps) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v29zcGFyc2VOdW1iZXJNYXC/YXgA/3BzcGFyc2VCb29sZWFuTWFwv2F49P//");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v29zcGFyc2VOdW1iZXJNYXC/YXgA/3BzcGFyc2VCb29sZWFuTWFwv2F49P//");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborSparseMaps.has_value()) << response.status << " " << response.body;
   const RpcV2CborSparseMapsInput expected = [] {
   RpcV2CborSparseMapsInput v{};
@@ -740,14 +740,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesZeroValuesInSparseMaps) 
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesUnionValue) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborUnions";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("omhjb250ZW50c6Frc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("omhjb250ZW50c6Frc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborUnions.has_value()) << response.status << " " << response.body;
   const RpcV2CborUnionsInput expected = [] {
   RpcV2CborUnionsInput v{};
@@ -762,14 +762,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesUnionValue) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesNestedUnionValue) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/RpcV2CborUnions";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("omhjb250ZW50c6FqdW5pb25WYWx1ZaFrc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("omhjb250ZW50c6FqdW5pb25WYWx1ZaFrc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastRpcV2CborUnions.has_value()) << response.status << " " << response.body;
   const RpcV2CborUnionsInput expected = [] {
   RpcV2CborUnionsInput v{};
@@ -784,14 +784,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSerializesNestedUnionValue) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSimpleScalarProperties) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -804,7 +804,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSimpleScalarProperties) {
   v.longValue = 9873LL;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*handler->lastSimpleScalarProperties, expected);
@@ -816,14 +816,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSimpleScalarProperties) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSimpleScalarPropertiesUsingIndefiniteLength) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("qmlieXRlVmFsdWUFf2Zkb3VibGVlVmFsdWX/+z/+OVgQYk3Tf2VmYWxzZWdCb29sZWFuZVZhbHVl//RqZmxvYXRWYWx1ZfpA9AAAbGludGVnZXJWYWx1ZRkBAGlsb25nVmFsdWUZJpFqc2hvcnRWYWx1ZRkmqn9mc3RyaW5nZVZhbHVl/2ZzaW1wbGVwdHJ1ZUJvb2xlYW5WYWx1ZfVpYmxvYlZhbHVlQ2Zvbw==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("qmlieXRlVmFsdWUFf2Zkb3VibGVlVmFsdWX/+z/+OVgQYk3Tf2VmYWxzZWdCb29sZWFuZVZhbHVl//RqZmxvYXRWYWx1ZfpA9AAAbGludGVnZXJWYWx1ZRkBAGlsb25nVmFsdWUZJpFqc2hvcnRWYWx1ZRkmqn9mc3RyaW5nZVZhbHVl/2ZzaW1wbGVwdHJ1ZUJvb2xlYW5WYWx1ZfVpYmxvYlZhbHVlQ2Zvbw==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -836,7 +836,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSimpleScalarPropertiesUsingIndefin
   v.longValue = 9873LL;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*handler->lastSimpleScalarProperties, expected);
@@ -846,14 +846,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSimpleScalarPropertiesUsingIndefin
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServerDoesntDeSerializeNullStructureValues) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2tzdHJpbmdWYWx1Zfb/");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2tzdHJpbmdWYWx1Zfb/");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -866,14 +866,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServerDoesntDeSerializeNullStructu
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSupportsInfinityFloatInputs) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2tkb3VibGVWYWx1Zft/8AAAAAAAAGpmbG9hdFZhbHVl+n+AAAD/");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2tkb3VibGVWYWx1Zft/8AAAAAAAAGpmbG9hdFZhbHVl+n+AAAD/");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -888,14 +888,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSupportsInfinityFloatInputs) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSupportsNegativeInfinityFloatInputs) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2tkb3VibGVWYWx1Zfv/8AAAAAAAAGpmbG9hdFZhbHVl+v+AAAD/");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2tkb3VibGVWYWx1Zfv/8AAAAAAAAGpmbG9hdFZhbHVl+v+AAAD/");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -910,14 +910,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSupportsNegativeInfinityFloatInput
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteLengthStringsCanBeDeserialized) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("oWtzdHJpbmdWYWx1ZX94HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcscSBjaHVua2VkIG9uIGNvbW1h/w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("oWtzdHJpbmdWYWx1ZX94HUFuIGV4YW1wbGUgaW5kZWZpbml0ZSBzdHJpbmcscSBjaHVua2VkIG9uIGNvbW1h/w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -931,18 +931,18 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteLengthStringsCanBeDeseri
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteLengthByteStringsCanBeDeserialized) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("oWlibG9iVmFsdWVfWCJBbiBleGFtcGxlIGluZGVmaW5pdGUtYnl0ZSBzdHJpbmcsUSBjaHVua2VkIG9uIGNvbW1h/w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("oWlibG9iVmFsdWVfWCJBbiBleGFtcGxlIGluZGVmaW5pdGUtYnl0ZSBzdHJpbmcsUSBjaHVua2VkIG9uIGNvbW1h/w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
-  v.blobValue = smithy::Blob::FromString("An example indefinite-byte string, chunked on comma");
+  v.blobValue = opal::Blob::FromString("An example indefinite-byte string, chunked on comma");
   return v;
 }();
   EXPECT_EQ(*handler->lastSimpleScalarProperties, expected);
@@ -952,14 +952,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborIndefiniteLengthByteStringsCanBeDe
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSupportsUpcastingData) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2tkb3VibGVWYWx1Zfk+AGpmbG9hdFZhbHVl+UegbGludGVnZXJWYWx1ZRg4aWxvbmdWYWx1ZRkBAGpzaG9ydFZhbHVlCv8=");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2tkb3VibGVWYWx1Zfk+AGpmbG9hdFZhbHVl+UegbGludGVnZXJWYWx1ZRg4aWxvbmdWYWx1ZRkBAGpzaG9ydFZhbHVlCv8=");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -979,14 +979,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSupportsUpcastingData) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborExtraFieldsInTheBodyShouldBeSkippedByServers) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABrZXh0cmFPYmplY3S/c2luZGVmaW5pdGVMZW5ndGhNYXC/a3dpdGhBbkFycmF5nwECA///cWRlZmluaXRlTGVuZ3RoTWFwo3J3aXRoQURlZmluaXRlQXJyYXmDAQIDeB1hbmRTb21lSW5kZWZpbml0ZUxlbmd0aFN0cmluZ3gfdGhhdCBoYXMsIGJlZW4gY2h1bmtlZCBvbiBjb21tYWxub3JtYWxTdHJpbmdjZm9vanNob3J0VmFsdWUZJw9uc29tZU90aGVyRmllbGR2dGhpcyBzaG91bGQgYmUgc2tpcHBlZP9saW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABrZXh0cmFPYmplY3S/c2luZGVmaW5pdGVMZW5ndGhNYXC/a3dpdGhBbkFycmF5nwECA///cWRlZmluaXRlTGVuZ3RoTWFwo3J3aXRoQURlZmluaXRlQXJyYXmDAQIDeB1hbmRTb21lSW5kZWZpbml0ZUxlbmd0aFN0cmluZ3gfdGhhdCBoYXMsIGJlZW4gY2h1bmtlZCBvbiBjb21tYWxub3JtYWxTdHJpbmdjZm9vanNob3J0VmFsdWUZJw9uc29tZU90aGVyRmllbGR2dGhpcyBzaG91bGQgYmUgc2tpcHBlZP9saW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -999,7 +999,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborExtraFieldsInTheBodyShouldBeSkippe
   v.longValue = 9873LL;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*handler->lastSimpleScalarProperties, expected);
@@ -1009,13 +1009,13 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborExtraFieldsInTheBodyShouldBeSkippe
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServersShouldHandleNoAcceptHeader) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SimpleScalarProperties";
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSimpleScalarProperties.has_value()) << response.status << " " << response.body;
   const SimpleScalarPropertiesInput expected = [] {
   SimpleScalarPropertiesInput v{};
@@ -1028,7 +1028,7 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServersShouldHandleNoAcceptHeader)
   v.longValue = 9873LL;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   EXPECT_EQ(*handler->lastSimpleScalarProperties, expected);
@@ -1038,14 +1038,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborServersShouldHandleNoAcceptHeader)
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSparseMapsSerializeNullValues) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SparseNullsOperation";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v29zcGFyc2VTdHJpbmdNYXC/Y2Zvb/b//w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v29zcGFyc2VTdHJpbmdNYXC/Y2Zvb/b//w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSparseNullsOperation.has_value()) << response.status << " " << response.body;
   const SparseNullsOperationInput expected = [] {
   SparseNullsOperationInput v{};
@@ -1059,14 +1059,14 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSparseMapsSerializeNullValues) {
 TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSparseListsSerializeNull) {
   auto handler = std::make_shared<RecordingHandler>();
   RpcV2ProtocolServer server(handler);
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/RpcV2Protocol/operation/SparseNullsOperation";
   request.headers.Set("Accept", "application/cbor");
   request.headers.Set("Content-Type", "application/cbor");
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
-  request.body = smithy::testing::FromBase64("v3BzcGFyc2VTdHJpbmdMaXN0n/b//w==");
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  request.body = opal::testing::FromBase64("v3BzcGFyc2VTdHJpbmdMaXN0n/b//w==");
+  const opal::http::HttpResponse response = server.Handler()(request);
   ASSERT_TRUE(handler->lastSparseNullsOperation.has_value()) << response.status << " " << response.body;
   const SparseNullsOperationInput expected = [] {
   SparseNullsOperationInput v{};
@@ -1076,4 +1076,4 @@ TEST(RpcV2ProtocolServerRequestTest, RpcV2CborSparseListsSerializeNull) {
   EXPECT_EQ(*handler->lastSparseNullsOperation, expected);
 }
 
-}  // namespace smithy::protocoltests::rpcv2cbor
+}  // namespace opal::protocoltests::rpcv2cbor

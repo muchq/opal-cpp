@@ -2,14 +2,14 @@
 
 How to configure generated smithy-cpp clients and servers for production use:
 timeouts, retries, and request compression. Every knob lives on
-`smithy::ClientConfig` (`smithy/client/config.h`), so the guidance below
+`opal::ClientConfig` (`smithy/client/config.h`), so the guidance below
 applies to every generated client the same way.
 
 ```cpp
 #include "myservice/client.h"
 #include "smithy/client/config.h"
 
-smithy::ClientConfig config;
+opal::ClientConfig config;
 config.endpoint = "http://api.example.com:8080";
 config.request_timeout_ms = 5000;
 config.retry.max_attempts = 5;
@@ -33,7 +33,7 @@ caller wait is roughly `max_attempts × timeout` plus backoff sleeps.
 
 ## Retries
 
-Every generated client sends through `smithy::SendWithRetries`
+Every generated client sends through `opal::SendWithRetries`
 (`smithy/client/retry.h`). Two failure classes are retried:
 
 - **Transport errors flagged retryable** — connection refused/reset,
@@ -77,7 +77,7 @@ default; 0 compresses everything). The client appends `gzip` to any existing
 `Content-Encoding` header value. Nothing is configured per call — model the
 trait and the generated client and server both handle it:
 
-- **Client:** compresses via `smithy::GzipCompress` (`//runtime:compression`,
+- **Client:** compresses via `opal::GzipCompress` (`//runtime:compression`,
   zlib) after serialization, before send.
 - **Server:** generated routes for `@requestCompression` operations
   transparently gunzip requests arriving with `Content-Encoding: gzip`
@@ -109,12 +109,12 @@ Server-side, the matching guards ship as middleware
 (`smithy/server/middleware.h`):
 
 ```cpp
-transport.Start(smithy::server::Chain(
-    {smithy::server::RequireBearerAuth([](const std::string& token) {
+transport.Start(opal::server::Chain(
+    {opal::server::RequireBearerAuth([](const std::string& token) {
       return TokenIsValid(token);  // 401 otherwise
     })},
     server.Handler()));
-// Or: smithy::server::RequireApiKeyHeader("x-api-key", /*scheme=*/"", validator)
+// Or: opal::server::RequireApiKeyHeader("x-api-key", /*scheme=*/"", validator)
 ```
 
 Vendor-specific signing schemes (e.g. SigV4) are out of scope by design;
@@ -125,7 +125,7 @@ implement them as an `Interceptor` (below).
 Operations modeled with `@paginated` (top-level string tokens) get a
 generated paginator: `client.PaginateListCities(input)` returns a
 `ListCitiesPaginator` that is a single-pass range (issue #49) — iteration
-yields one `smithy::Outcome<Page>&` per page, and a failed call is yielded
+yields one `opal::Outcome<Page>&` per page, and a failed call is yielded
 exactly once before the range ends by itself, so the loop needs no manual
 token or nullopt protocol:
 
@@ -150,13 +150,13 @@ every HTTP attempt a generated client makes — auth headers, tracing ids,
 request/response logging — without touching generated code:
 
 ```cpp
-class BearerAuth final : public smithy::Interceptor {
+class BearerAuth final : public opal::Interceptor {
  public:
-  void ModifyBeforeTransmit(smithy::http::HttpRequest& request, int attempt) override {
+  void ModifyBeforeTransmit(opal::http::HttpRequest& request, int attempt) override {
     request.headers.Set("authorization", "Bearer " + LoadToken());
   }
-  void ReadAfterTransmit(const smithy::http::HttpRequest& request,
-                         const smithy::Outcome<smithy::http::HttpResponse>& outcome,
+  void ReadAfterTransmit(const opal::http::HttpRequest& request,
+                         const opal::Outcome<opal::http::HttpResponse>& outcome,
                          int attempt) override {
     LogAttempt(request.target, attempt, outcome.ok() ? outcome->status : -1);
   }
@@ -173,7 +173,7 @@ the caller's view. Hooks must not throw.
 ## Server middleware
 
 Generated servers expose their router as a plain
-`smithy::http::RequestHandler`, so cross-cutting server behavior — auth
+`opal::http::RequestHandler`, so cross-cutting server behavior — auth
 checks, request logging, metrics — composes as middleware outside the
 generated code (`smithy/server/middleware.h`), with any transport:
 
@@ -191,16 +191,16 @@ auto db = std::make_shared<MyDbPool>(/* ... */);
 // and every request keys as its TCP peer. Parse() rejects a malformed CIDR
 // with an Error::Validation, so fail startup rather than deploy a boundary
 // that silently widens or narrows.
-auto trusted_result = smithy::http::TrustedProxies::Parse({"10.0.0.0/8"});
+auto trusted_result = opal::http::TrustedProxies::Parse({"10.0.0.0/8"});
 if (!trusted_result) { /* report trusted_result.error(); refuse to start */ }
-const smithy::http::TrustedProxies trusted = *std::move(trusted_result);
+const opal::http::TrustedProxies trusted = *std::move(trusted_result);
 
-transport.Start(smithy::server::Chain(
+transport.Start(opal::server::Chain(
     {// Outermost: shed abusive traffic before it costs anything. The
      // framework derives the client behind the trust boundary and keys
      // admission on it — never the raw header, which any client can write
      // (smithy/http/forwarded.h has the derivation contract).
-     smithy::server::PerClientRateLimit(
+     opal::server::PerClientRateLimit(
          [limiter](const std::string& client) { return limiter->Allow(client); },
          trusted, std::chrono::seconds(30)),
      // Observe everything admitted — health probes included, reporting
@@ -209,8 +209,8 @@ transport.Start(smithy::server::Chain(
      // observation reports the peer while the limiter keyed on the
      // forwarded client, and the log cannot answer a question about the
      // limiter's own decision.
-     smithy::server::Observe(
-         [](const smithy::server::RequestObservation& o) {
+     opal::server::Observe(
+         [](const opal::server::RequestObservation& o) {
            // One access-log record: o.method, o.target, o.operation,
            // o.status, o.duration, o.trace_parent, o.request_bytes,
            // o.response_bytes, o.handler_threw (a contained crash, not a
@@ -218,7 +218,7 @@ transport.Start(smithy::server::Chain(
            // .source provenance, which is the bucket the limiter keyed on.
            // Also gauge -1; count 1; latency o.duration.
          },
-         [](const smithy::server::RequestStart& s) {
+         [](const opal::server::RequestStart& s) {
            // gauge +1 (labeled by s.method/s.target; the operation is not
            // known until the router runs).
          },
@@ -226,12 +226,12 @@ transport.Start(smithy::server::Chain(
      // Liveness: GET or HEAD /livez -> 200 {"status":"healthy"}. A HEAD
      // gets that body's Content-Length and none of its octets, framed by
      // the transport; everything else passes through to the router.
-     smithy::server::HealthEndpoint("/livez"),
+     opal::server::HealthEndpoint("/livez"),
      // Readiness: the same endpoint with checks. Every probe runs on every
      // request (no caching — a cached 200 would hide a dependency outage);
      // any failure answers 503 {"status":"unhealthy","failing":["db"]}.
      // A throwing probe counts as failing, never unwinds into the transport.
-     smithy::server::HealthEndpoint(
+     opal::server::HealthEndpoint(
          "/readyz", {{"db", [db] { return db->Alive(); }}})},
     server.Handler()));
 ```
@@ -269,7 +269,7 @@ logged and swallowed.
 **Watch the trust boundary itself.** A drifted trust set (the proxy's
 address changed; the CIDR didn't) fails silently: the spoof defense ignores
 the header on every request and all traffic collapses onto the proxy's one
-key. The fingerprint is visible in `smithy::http::DeriveClient` — the
+key. The fingerprint is visible in `opal::http::DeriveClient` — the
 richer form of `ClientAddress` that also reports *how* the address was
 derived. `Observe` reports it directly — `o.client.source`, derived against
 the `TrustedProxies` you passed it — so counting it needs no extra
@@ -287,10 +287,10 @@ proxied traffic onto one key (the issue-#104 accident, config edition):
 
 ```cpp
 const char* cidrs = std::getenv("TRUSTED_PROXY_CIDRS");
-smithy::http::TrustedProxies trusted = smithy::http::TrustedProxies::None();
+opal::http::TrustedProxies trusted = opal::http::TrustedProxies::None();
 if (cidrs != nullptr) {
   // the comma-list splitter from smithy/http/headers.h
-  auto parsed = smithy::http::TrustedProxies::Parse(smithy::http::SplitHeaderListValues(cidrs));
+  auto parsed = opal::http::TrustedProxies::Parse(opal::http::SplitHeaderListValues(cidrs));
   if (!parsed) { /* log parsed.error(); refuse to start */ }
   trusted = *std::move(parsed);
 }
@@ -315,12 +315,12 @@ int main(int argc, char** argv) {
   pthread_sigmask(SIG_BLOCK, &shutdown_signals, nullptr);
 
   BookstoreServer server(std::make_shared<InMemoryBookstore>());
-  smithy::http::BeastServerTransport transport({
+  opal::http::BeastServerTransport transport({
       .address = "0.0.0.0",
       .port = argc > 1 ? std::atoi(argv[1]) : 8080,  // 0 binds an ephemeral port
       .drain_timeout_seconds = 10,
   });
-  smithy::Outcome<smithy::Unit> started = transport.Start(server.Handler());
+  opal::Outcome<opal::Unit> started = transport.Start(server.Handler());
   if (!started.ok()) {
     std::fprintf(stderr, "bookstore: start failed: %s\n", started.error().message().c_str());
     return 1;
@@ -388,14 +388,14 @@ configuration, no dependency — so the line goes wherever your logs already
 go, and `Observe` stays the one clock for metrics and the log alike:
 
 ```cpp
-transport.Start(smithy::server::Chain(
-    {smithy::server::Observe(
-         [](const smithy::server::RequestObservation& o) {
-           std::clog << smithy::server::FormatAccessLog(o, {{"service_name", "todo-service"}})
+transport.Start(opal::server::Chain(
+    {opal::server::Observe(
+         [](const opal::server::RequestObservation& o) {
+           std::clog << opal::server::FormatAccessLog(o, {{"service_name", "todo-service"}})
                      << '\n';
          },
          nullptr, nullptr, trusted),
-     smithy::server::PerClientRateLimit(allow, trusted)},
+     opal::server::PerClientRateLimit(allow, trusted)},
     server.Handler()));
 ```
 
@@ -436,8 +436,8 @@ one more than anyone can reconcile.
 
 ```cpp
 // Metrics/logging: one callback per HTTP attempt (retries visible).
-config.interceptors.push_back(smithy::ObserveAttempts(
-    [](const smithy::AttemptObservation& a) {
+config.interceptors.push_back(opal::ObserveAttempts(
+    [](const opal::AttemptObservation& a) {
       // a.method, a.target, a.attempt, a.status (-1 = transport error),
       // a.error_message
     }));
@@ -445,7 +445,7 @@ config.interceptors.push_back(smithy::ObserveAttempts(
 // Distributed tracing: sets a W3C traceparent header on every attempt that
 // lacks one. Pass a callback returning your application's active trace
 // context to join an existing trace; omit it to start fresh roots.
-config.interceptors.push_back(smithy::PropagateTraceContext());
+config.interceptors.push_back(opal::PropagateTraceContext());
 ```
 
 `smithy/http/trace_context.h` has the underlying helpers —
@@ -458,10 +458,10 @@ needs no client library — it is a few lines of text over HTTP, so it costs
 zero dependencies. Two middleware compose around the generated handler:
 
 ```cpp
-auto metrics = std::make_shared<smithy::server::MetricsRegistry>(
-    smithy::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
-transport.Start(smithy::server::Chain({smithy::server::MetricsEndpoint(metrics),
-                                       smithy::server::RecordMetrics(metrics)},
+auto metrics = std::make_shared<opal::server::MetricsRegistry>(
+    opal::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
+transport.Start(opal::server::Chain({opal::server::MetricsEndpoint(metrics),
+                                       opal::server::RecordMetrics(metrics)},
                                       server.Handler()));
 ```
 
@@ -571,7 +571,7 @@ auto orders = metrics->NewCounter("orders_processed_total", "Orders processed.")
 // ladder for a histogram of bytes or queue depth yields meaningless bins.
 // For a request-shaped duration, the shared ladder is the right one.
 auto latency = metrics->NewHistogram("order_pipeline_duration_microseconds", "Pipeline time.",
-                                     smithy::server::HttpLatencyBuckets());
+                                     opal::server::HttpLatencyBuckets());
 auto depth = metrics->NewGauge("queue_depth", "Pending jobs.");
 
 orders.Increment({{"region", "us-east"}});
@@ -610,7 +610,7 @@ still reading and before any handler chain exists — so `RecordMetrics` never
 sees them and an over-limit flood would be invisible in the counters:
 
 ```cpp
-options.on_rejected = smithy::server::RecordRejections(metrics);
+options.on_rejected = opal::server::RecordRejections(metrics);
 ```
 
 These count as requests (`route="unmatched"`, with `413`/`431` as the
@@ -651,10 +651,10 @@ Every knob lives on the one `ClientConfig` (issue #49):
 pool size come from the config, so nothing is configured twice:
 
 ```cpp
-smithy::ClientConfig config;
+opal::ClientConfig config;
 config.endpoint = "https://api.example.com";   // identity + path prefix
 config.tls.ca_pem = corp_ca_pem;               // only when not publicly trusted
-auto transport = smithy::http::BeastHttpClient::FromConfig(config);
+auto transport = opal::http::BeastHttpClient::FromConfig(config);
 if (!transport) { /* bad URL */ }
 config.http_client = *transport;               // the wire
 auto client = MyServiceClient::Create(std::move(config));
@@ -711,7 +711,7 @@ and from a broken session (`TransportError`), and it is the only failure that
 leaves the stream usable — which is what separates it from `Close()`, the
 other way to end a wait (that one ends the session for good, and reports the
 peer's own close). The bound is always real: the overload is pure virtual on
-`smithy::http::WebSocket`, so every session — the two shipped transports, the
+`opal::http::WebSocket`, so every session — the two shipped transports, the
 delegating wrappers, and any socket you implement yourself — answers the
 deadline or does not compile. There is no default that quietly blocks
 forever. The same overload exists one layer down, on `WebSocket` itself, for
@@ -749,9 +749,9 @@ streams, and the dial goes out anonymous. Use the modeled auth traits
 headers to the upgrade request:
 
 ```cpp
-config.websocket_dialer = [](smithy::http::WebSocketDialRequest request) {
+config.websocket_dialer = [](opal::http::WebSocketDialRequest request) {
   request.headers.Set("authorization", "Bearer " + FetchToken());
-  return smithy::http::BeastWebSocketClient::Dialer()(request);
+  return opal::http::BeastWebSocketClient::Dialer()(request);
 };
 ```
 
@@ -840,7 +840,7 @@ any other header — a token there is neither modeled, nor validated, nor
 private.
 
 **Browser-facing endpoints need an Origin allowlist.**
-`smithy::server::RequireOrigin({"https://muchq.com"})` returns a
+`opal::server::RequireOrigin({"https://muchq.com"})` returns a
 `websocket_gate` that refuses (403) upgrades whose `Origin` is present and
 not listed — scheme + host + port exact — and admits requests with no
 Origin header at all (non-browser clients don't send one; the attack this
@@ -860,7 +860,7 @@ and the whole loop is made of pieces this guide already taught. Server
 side, enable grace on the registry and split the handler's exits:
 
 ```cpp
-smithy::server::SessionRegistry<RoomEvents>::Options options;
+opal::server::SessionRegistry<RoomEvents>::Options options;
 options.grace_period = std::chrono::seconds{300};
 options.on_expired = [&](const std::string& id) {
   // The deferred cleanup: collect the game, tell the room. Runs exactly
@@ -891,7 +891,7 @@ whole dance is one registry call (ADR-0022) — the blessed admission call
 every example makes:
 
 ```cpp
-using Registry = smithy::server::SessionRegistry<RoomEvents>;
+using Registry = opal::server::SessionRegistry<RoomEvents>;
 
 const auto admission = registry.ResumeOrAdd(
     id, [&stream] { return stream.Share(); }, std::chrono::seconds(1));

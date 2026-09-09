@@ -8,11 +8,11 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/jsonrpc2/client.h"
-#include "smithy/protocoltests/jsonrpc2/server.h"
+#include "opal/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/server.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
 // Generated from smithy.test#httpMalformedRequestTests: each malformed
 // wire request is routed into the generated server, which must reject
@@ -42,24 +42,24 @@ PutConstrainedOutput MinimalPutConstrainedOutput() {
 
 class RecordingHandler : public JsonRpc2ProtocolHandler {
   public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       lastEchoPayload = input;
       return MinimalEchoPayloadOutput();
     }
     std::optional<EchoPayloadInput> lastEchoPayload;
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const opal::server::RequestContext&) override {
       lastNoArgs = input;
       return MinimalNoArgsOutput();
     }
     std::optional<NoArgsInput> lastNoArgs;
-    smithy::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const opal::server::RequestContext&) override {
       lastPutConstrained = input;
       return MinimalPutConstrainedOutput();
     }
@@ -71,141 +71,141 @@ class RecordingHandler : public JsonRpc2ProtocolHandler {
 // An unparseable body answers the reserved -32700 Parse error with a null id.
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsInvalidJson) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"request body is not valid JSON\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":null}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"request body is not valid JSON\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":null}", response.body)) << response.body;
 }
 
 // A JSON body that is not an object is an invalid request (-32600).
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsNonObjectEnvelope) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "[1,2,3]";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"request is not a JSON-RPC 2.0 call\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":null}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"request is not a JSON-RPC 2.0 call\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":null}", response.body)) << response.body;
 }
 
 // jsonrpc must be the string "2.0"; the id is still echoed once parsed.
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsWrongVersion) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"1.0\",\"method\":\"EchoPayload\",\"id\":7}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"expected jsonrpc: \\\"2.0\\\"\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":7}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"expected jsonrpc: \\\"2.0\\\"\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":7}", response.body)) << response.body;
 }
 
 // A call without a string method member is an invalid request (-32600).
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsMissingMethod) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"id\":3}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"expected a string method member\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":3}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"expected a string method member\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":3}", response.body)) << response.body;
 }
 
 // A method naming no operation answers -32601 Method not found.
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsUnknownMethod) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"DoesNotExist\",\"id\":4}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32601,\"message\":\"unknown method: DoesNotExist\",\"data\":{\"__type\":\"UnknownOperationException\"}},\"id\":4}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32601,\"message\":\"unknown method: DoesNotExist\",\"data\":{\"__type\":\"UnknownOperationException\"}},\"id\":4}", response.body)) << response.body;
 }
 
 // params must be an object when present (-32602 Invalid params).
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsNonObjectParams) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"params\":5,\"id\":6}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32602,\"message\":\"params must be an object\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":6}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32602,\"message\":\"params must be an object\",\"data\":{\"__type\":\"SerializationException\"}},\"id\":6}", response.body)) << response.body;
 }
 
 // A present Content-Type must carry application/json.
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2RejectsWrongContentType) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "text/plain");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"EchoPayload\",\"id\":1}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"expected content-type: application/json\",\"data\":{\"__type\":\"UnsupportedMediaTypeException\"}},\"id\":null}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"expected content-type: application/json\",\"data\":{\"__type\":\"UnsupportedMediaTypeException\"}},\"id\":null}", response.body)) << response.body;
 }
 
 // Constraint violations answer a 400-coded error envelope carrying smithy.framework#ValidationException identity and the fieldList.
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2ValidationFailure) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"PutConstrained\",\"params\":{\"name\":\"\"},\"id\":9}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":400,\"message\":\"1 validation error detected. Value with length 0 at '/name' failed to satisfy constraint: Member must have length between 1 and 8, inclusive\",\"data\":{\"__type\":\"smithy.framework#ValidationException\",\"fieldList\":[{\"message\":\"Value with length 0 at '/name' failed to satisfy constraint: Member must have length between 1 and 8, inclusive\",\"path\":\"/name\"}]}},\"id\":9}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":400,\"message\":\"1 validation error detected. Value with length 0 at '/name' failed to satisfy constraint: Member must have length between 1 and 8, inclusive\",\"data\":{\"__type\":\"smithy.framework#ValidationException\",\"fieldList\":[{\"message\":\"Value with length 0 at '/name' failed to satisfy constraint: Member must have length between 1 and 8, inclusive\",\"path\":\"/name\"}]}},\"id\":9}", response.body)) << response.body;
 }
 
 // @pattern violations report the suite-exact message with the pattern text.
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2PatternMismatch) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"PutConstrained\",\"params\":{\"name\":\"ok\",\"slug\":\"Not Valid!\"},\"id\":10}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":400,\"message\":\"1 validation error detected. Value at '/slug' failed to satisfy constraint: Member must satisfy regular expression pattern: ^[a-z0-9-]+$\",\"data\":{\"__type\":\"smithy.framework#ValidationException\",\"fieldList\":[{\"message\":\"Value at '/slug' failed to satisfy constraint: Member must satisfy regular expression pattern: ^[a-z0-9-]+$\",\"path\":\"/slug\"}]}},\"id\":10}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":400,\"message\":\"1 validation error detected. Value at '/slug' failed to satisfy constraint: Member must satisfy regular expression pattern: ^[a-z0-9-]+$\",\"data\":{\"__type\":\"smithy.framework#ValidationException\",\"fieldList\":[{\"message\":\"Value at '/slug' failed to satisfy constraint: Member must satisfy regular expression pattern: ^[a-z0-9-]+$\",\"path\":\"/slug\"}]}},\"id\":10}", response.body)) << response.body;
 }
 
 // When the pattern is susceptible to catastrophic backtracking, the server answers promptly instead of hanging while evaluating it (linear-time engine).
 TEST(JsonRpc2ProtocolServerMalformedTest, JsonRpc2PatternReDoSInput) {
   JsonRpc2ProtocolServer server(std::make_shared<RecordingHandler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
   request.body = "{\"jsonrpc\":\"2.0\",\"method\":\"PutConstrained\",\"params\":{\"name\":\"ok\",\"evilDigits\":\"00000000000000000000000000000000000000000000000000!\"},\"id\":11}";
-  const smithy::http::HttpResponse response = server.Handler()(request);
+  const opal::http::HttpResponse response = server.Handler()(request);
   EXPECT_EQ(response.status, 200) << response.body;
   EXPECT_EQ(response.headers.Get("content-type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":400,\"message\":\"1 validation error detected. Value at '/evilDigits' failed to satisfy constraint: Member must satisfy regular expression pattern: ^([0-9]+)+$\",\"data\":{\"__type\":\"smithy.framework#ValidationException\",\"fieldList\":[{\"message\":\"Value at '/evilDigits' failed to satisfy constraint: Member must satisfy regular expression pattern: ^([0-9]+)+$\",\"path\":\"/evilDigits\"}]}},\"id\":11}", response.body)) << response.body;
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":400,\"message\":\"1 validation error detected. Value at '/evilDigits' failed to satisfy constraint: Member must satisfy regular expression pattern: ^([0-9]+)+$\",\"data\":{\"__type\":\"smithy.framework#ValidationException\",\"fieldList\":[{\"message\":\"Value at '/evilDigits' failed to satisfy constraint: Member must satisfy regular expression pattern: ^([0-9]+)+$\",\"path\":\"/evilDigits\"}]}},\"id\":11}", response.body)) << response.body;
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

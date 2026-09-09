@@ -42,7 +42,7 @@ TEST(UnionAccessorTest, CaseNameTracksTheEngagedMember) {
 }
 
 TEST(UnionAccessorTest, VisitDispatchesOverMembersAndEmptyState) {
-  const auto describe = smithy::Overloaded{
+  const auto describe = opal::Overloaded{
       [](const PendingStatus& p) { return "pending:" + std::to_string(p.position); },
       [](const ReadyStatus&) { return std::string("ready"); },
       [](const CancelledStatus&) { return std::string("cancelled"); },

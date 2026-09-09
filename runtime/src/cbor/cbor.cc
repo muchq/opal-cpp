@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace smithy::cbor {
+namespace opal::cbor {
 namespace {
 
 // --- Encoding ---------------------------------------------------------------
@@ -345,4 +345,4 @@ Outcome<Document> Decode(const Blob& bytes) {
   return Decoder(bytes.data(), bytes.size()).DecodeDocument();
 }
 
-}  // namespace smithy::cbor
+}  // namespace opal::cbor

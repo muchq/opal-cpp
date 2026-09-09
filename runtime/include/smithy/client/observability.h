@@ -9,7 +9,7 @@
 #include "smithy/client/interceptor.h"
 #include "smithy/http/trace_context.h"
 
-namespace smithy {
+namespace opal {
 
 // One HTTP attempt made by a generated client, as seen by ObserveAttempts.
 struct AttemptObservation {
@@ -32,10 +32,10 @@ std::shared_ptr<Interceptor> ObserveAttempts(
 // context is generated per attempt. Register alongside your other
 // interceptors:
 //
-//   config.interceptors.push_back(smithy::PropagateTraceContext());
+//   config.interceptors.push_back(opal::PropagateTraceContext());
 std::shared_ptr<Interceptor> PropagateTraceContext(
     std::function<std::optional<http::TraceContext>()> current = nullptr);
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CLIENT_OBSERVABILITY_H_

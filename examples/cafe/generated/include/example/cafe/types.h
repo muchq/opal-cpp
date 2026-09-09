@@ -32,7 +32,7 @@ struct AlternativeMilk {
     out += sep;
     sep = ", ";
     out += ".kind = ";
-    smithy::DebugAppend(out, this->kind);
+    opal::DebugAppend(out, this->kind);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -55,7 +55,7 @@ struct GetOrderInput {
     out += sep;
     sep = ", ";
     out += ".orderId = ";
-    smithy::DebugAppend(out, this->orderId);
+    opal::DebugAppend(out, this->orderId);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -143,7 +143,7 @@ struct CancelledStatus {
       out += sep;
       sep = ", ";
       out += ".reason = ";
-      smithy::DebugAppend(out, *this->reason);
+      opal::DebugAppend(out, *this->reason);
     }
     out += '}';
   }
@@ -167,7 +167,7 @@ struct PendingStatus {
     out += sep;
     sep = ", ";
     out += ".position = ";
-    smithy::DebugAppend(out, this->position);
+    opal::DebugAppend(out, this->position);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -181,7 +181,7 @@ struct PendingStatus {
 
 
 struct ReadyStatus {
-  smithy::Timestamp readyAt{};
+  opal::Timestamp readyAt{};
 
   /// Debug rendering for logs and tests — for humans, never parse it.
   void AppendDebugTo(std::string& out) const {
@@ -190,7 +190,7 @@ struct ReadyStatus {
     out += sep;
     sep = ", ";
     out += ".readyAt = ";
-    smithy::DebugAppend(out, this->readyAt);
+    opal::DebugAppend(out, this->readyAt);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -268,15 +268,15 @@ class OrderStatus {
       switch (value_.index()) {
         case 1:
           out += "pending = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         case 2:
           out += "ready = ";
-          smithy::DebugAppend(out, std::get<2>(value_));
+          opal::DebugAppend(out, std::get<2>(value_));
           break;
         case 3:
           out += "cancelled = ";
-          smithy::DebugAppend(out, std::get<3>(value_));
+          opal::DebugAppend(out, std::get<3>(value_));
           break;
         default:
           break;
@@ -295,7 +295,7 @@ class OrderStatus {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("OrderStatus", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("OrderStatus", requested, case_name());
       }
     }
 
@@ -315,15 +315,15 @@ struct GetOrderOutput {
     out += sep;
     sep = ", ";
     out += ".orderId = ";
-    smithy::DebugAppend(out, this->orderId);
+    opal::DebugAppend(out, this->orderId);
     out += sep;
     sep = ", ";
     out += ".coffeeType = ";
-    smithy::DebugAppend(out, this->coffeeType);
+    opal::DebugAppend(out, this->coffeeType);
     out += sep;
     sep = ", ";
     out += ".status = ";
-    smithy::DebugAppend(out, this->status);
+    opal::DebugAppend(out, this->status);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -347,7 +347,7 @@ struct OrderNotFound {
     out += sep;
     sep = ", ";
     out += ".orderId = ";
-    smithy::DebugAppend(out, this->orderId);
+    opal::DebugAppend(out, this->orderId);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -370,7 +370,7 @@ struct DairyMilk {
     out += sep;
     sep = ", ";
     out += ".percentFat = ";
-    smithy::DebugAppend(out, this->percentFat);
+    opal::DebugAppend(out, this->percentFat);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -388,18 +388,18 @@ class MilkOption {
   public:
     MilkOption() = default;
 
-    static MilkOption FromNone(smithy::Unit value) {
+    static MilkOption FromNone(opal::Unit value) {
       MilkOption result;
       result.value_.emplace<1>(std::move(value));
       return result;
     }
     bool is_none() const { return value_.index() == 1; }
-    const smithy::Unit& as_none() const {
+    const opal::Unit& as_none() const {
       require_is(1, "none");
       return std::get<1>(value_);
     }
     /// The engaged member, or nullptr when another member (or none) is set.
-    const smithy::Unit* as_none_or_null() const { return std::get_if<1>(&value_); }
+    const opal::Unit* as_none_or_null() const { return std::get_if<1>(&value_); }
 
     static MilkOption FromDairy(DairyMilk value) {
       MilkOption result;
@@ -449,15 +449,15 @@ class MilkOption {
       switch (value_.index()) {
         case 1:
           out += "none = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         case 2:
           out += "dairy = ";
-          smithy::DebugAppend(out, std::get<2>(value_));
+          opal::DebugAppend(out, std::get<2>(value_));
           break;
         case 3:
           out += "alternative = ";
-          smithy::DebugAppend(out, std::get<3>(value_));
+          opal::DebugAppend(out, std::get<3>(value_));
           break;
         default:
           break;
@@ -476,11 +476,11 @@ class MilkOption {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("MilkOption", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("MilkOption", requested, case_name());
       }
     }
 
-    std::variant<std::monostate, smithy::Unit, DairyMilk, AlternativeMilk> value_;
+    std::variant<std::monostate, opal::Unit, DairyMilk, AlternativeMilk> value_;
 };
 
 
@@ -496,12 +496,12 @@ struct OrderCoffeeInput {
     out += sep;
     sep = ", ";
     out += ".coffeeType = ";
-    smithy::DebugAppend(out, this->coffeeType);
+    opal::DebugAppend(out, this->coffeeType);
     if (this->milk.has_value()) {
       out += sep;
       sep = ", ";
       out += ".milk = ";
-      smithy::DebugAppend(out, *this->milk);
+      opal::DebugAppend(out, *this->milk);
     }
     if (this->clientToken.has_value()) {
       out += sep;
@@ -532,11 +532,11 @@ struct OrderCoffeeOutput {
     out += sep;
     sep = ", ";
     out += ".orderId = ";
-    smithy::DebugAppend(out, this->orderId);
+    opal::DebugAppend(out, this->orderId);
     out += sep;
     sep = ", ";
     out += ".status = ";
-    smithy::DebugAppend(out, this->status);
+    opal::DebugAppend(out, this->status);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -561,7 +561,7 @@ struct OutOfBeans {
       out += sep;
       sep = ", ";
       out += ".message = ";
-      smithy::DebugAppend(out, *this->message);
+      opal::DebugAppend(out, *this->message);
     }
     out += '}';
   }
@@ -584,7 +584,7 @@ template <>
 struct std::hash<example::cafe::AlternativeMilk> {
   std::size_t operator()(const example::cafe::AlternativeMilk& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.kind));
+    seed = opal::HashCombine(seed, opal::HashValue(value.kind));
     return seed;
   }
 };
@@ -593,7 +593,7 @@ template <>
 struct std::hash<example::cafe::GetOrderInput> {
   std::size_t operator()(const example::cafe::GetOrderInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.orderId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.orderId));
     return seed;
   }
 };
@@ -601,8 +601,8 @@ struct std::hash<example::cafe::GetOrderInput> {
 template <>
 struct std::hash<example::cafe::CoffeeType> {
   std::size_t operator()(const example::cafe::CoffeeType& value) const noexcept {
-    return smithy::HashCombine(static_cast<std::size_t>(value.value_),
-                               smithy::HashValue(value.unknown_));
+    return opal::HashCombine(static_cast<std::size_t>(value.value_),
+                               opal::HashValue(value.unknown_));
   }
 };
 
@@ -610,7 +610,7 @@ template <>
 struct std::hash<example::cafe::CancelledStatus> {
   std::size_t operator()(const example::cafe::CancelledStatus& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.reason));
+    seed = opal::HashCombine(seed, opal::HashValue(value.reason));
     return seed;
   }
 };
@@ -619,7 +619,7 @@ template <>
 struct std::hash<example::cafe::PendingStatus> {
   std::size_t operator()(const example::cafe::PendingStatus& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.position));
+    seed = opal::HashCombine(seed, opal::HashValue(value.position));
     return seed;
   }
 };
@@ -628,7 +628,7 @@ template <>
 struct std::hash<example::cafe::ReadyStatus> {
   std::size_t operator()(const example::cafe::ReadyStatus& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.readyAt));
+    seed = opal::HashCombine(seed, opal::HashValue(value.readyAt));
     return seed;
   }
 };
@@ -637,8 +637,8 @@ template <>
 struct std::hash<example::cafe::OrderStatus> {
   std::size_t operator()(const example::cafe::OrderStatus& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -646,9 +646,9 @@ template <>
 struct std::hash<example::cafe::GetOrderOutput> {
   std::size_t operator()(const example::cafe::GetOrderOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.orderId));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.coffeeType));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.status));
+    seed = opal::HashCombine(seed, opal::HashValue(value.orderId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.coffeeType));
+    seed = opal::HashCombine(seed, opal::HashValue(value.status));
     return seed;
   }
 };
@@ -657,7 +657,7 @@ template <>
 struct std::hash<example::cafe::OrderNotFound> {
   std::size_t operator()(const example::cafe::OrderNotFound& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.orderId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.orderId));
     return seed;
   }
 };
@@ -666,7 +666,7 @@ template <>
 struct std::hash<example::cafe::DairyMilk> {
   std::size_t operator()(const example::cafe::DairyMilk& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.percentFat));
+    seed = opal::HashCombine(seed, opal::HashValue(value.percentFat));
     return seed;
   }
 };
@@ -675,8 +675,8 @@ template <>
 struct std::hash<example::cafe::MilkOption> {
   std::size_t operator()(const example::cafe::MilkOption& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -684,9 +684,9 @@ template <>
 struct std::hash<example::cafe::OrderCoffeeInput> {
   std::size_t operator()(const example::cafe::OrderCoffeeInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.coffeeType));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.milk));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.clientToken));
+    seed = opal::HashCombine(seed, opal::HashValue(value.coffeeType));
+    seed = opal::HashCombine(seed, opal::HashValue(value.milk));
+    seed = opal::HashCombine(seed, opal::HashValue(value.clientToken));
     return seed;
   }
 };
@@ -695,8 +695,8 @@ template <>
 struct std::hash<example::cafe::OrderCoffeeOutput> {
   std::size_t operator()(const example::cafe::OrderCoffeeOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.orderId));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.status));
+    seed = opal::HashCombine(seed, opal::HashValue(value.orderId));
+    seed = opal::HashCombine(seed, opal::HashValue(value.status));
     return seed;
   }
 };
@@ -705,7 +705,7 @@ template <>
 struct std::hash<example::cafe::OutOfBeans> {
   std::size_t operator()(const example::cafe::OutOfBeans& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
     return seed;
   }
 };

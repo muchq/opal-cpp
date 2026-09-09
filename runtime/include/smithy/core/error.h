@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-namespace smithy {
+namespace opal {
 
 // Broad classification of a failure, used for retry and reporting decisions.
 enum class ErrorKind {
@@ -85,6 +85,6 @@ class Error {
   std::any detail_;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_ERROR_H_

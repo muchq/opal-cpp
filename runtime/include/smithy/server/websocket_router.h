@@ -14,7 +14,7 @@
 #include "smithy/http/websocket.h"
 #include "smithy/server/router.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // A streaming operation's serve callback: the upgrade request, the routing
 // context built from it (labels + query + the request pointer — exactly
@@ -143,6 +143,6 @@ class WebSocketRouter {
   Seam seam_ = Seam::kNone;
 };
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_WEBSOCKET_ROUTER_H_

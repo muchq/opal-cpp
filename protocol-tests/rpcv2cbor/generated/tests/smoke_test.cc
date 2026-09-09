@@ -4,12 +4,12 @@
 #include <memory>
 #include <utility>
 
+#include "opal/protocoltests/rpcv2cbor/client.h"
+#include "opal/protocoltests/rpcv2cbor/server.h"
 #include "smithy/client/config.h"
 #include "smithy/http/loopback.h"
-#include "smithy/protocoltests/rpcv2cbor/client.h"
-#include "smithy/protocoltests/rpcv2cbor/server.h"
 
-namespace smithy::protocoltests::rpcv2cbor {
+namespace opal::protocoltests::rpcv2cbor {
 
 // Smoke tests for the generated RpcV2Protocol service: the generated client calls the
 // generated server over the in-memory loopback transport. A passing suite
@@ -118,59 +118,59 @@ SparseNullsOperationOutput MinimalSparseNullsOperationOutput() {
 
 class SmokeHandler : public RpcV2ProtocolHandler {
   public:
-    smithy::Outcome<EmptyInputOutputOutput> EmptyInputOutput(const EmptyInputOutputInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EmptyInputOutputOutput> EmptyInputOutput(const EmptyInputOutputInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalEmptyInputOutputOutput();
     }
-    smithy::Outcome<Float16Output> Float16(const Float16Input& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<Float16Output> Float16(const Float16Input& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalFloat16Output();
     }
-    smithy::Outcome<FractionalSecondsOutput> FractionalSeconds(const FractionalSecondsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<FractionalSecondsOutput> FractionalSeconds(const FractionalSecondsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalFractionalSecondsOutput();
     }
-    smithy::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(const GreetingWithErrorsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(const GreetingWithErrorsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGreetingWithErrorsOutput();
     }
-    smithy::Outcome<NoInputOutputOutput> NoInputOutput(const NoInputOutputInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoInputOutputOutput> NoInputOutput(const NoInputOutputInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalNoInputOutputOutput();
     }
-    smithy::Outcome<OperationWithDefaultsOutput> OperationWithDefaults(const OperationWithDefaultsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OperationWithDefaultsOutput> OperationWithDefaults(const OperationWithDefaultsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalOperationWithDefaultsOutput();
     }
-    smithy::Outcome<OptionalInputOutputOutput> OptionalInputOutput(const OptionalInputOutputInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OptionalInputOutputOutput> OptionalInputOutput(const OptionalInputOutputInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalOptionalInputOutputOutput();
     }
-    smithy::Outcome<RecursiveShapesOutput> RecursiveShapes(const RecursiveShapesInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RecursiveShapesOutput> RecursiveShapes(const RecursiveShapesInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalRecursiveShapesOutput();
     }
-    smithy::Outcome<RpcV2CborDenseMapsOutput> RpcV2CborDenseMaps(const RpcV2CborDenseMapsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborDenseMapsOutput> RpcV2CborDenseMaps(const RpcV2CborDenseMapsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalRpcV2CborDenseMapsOutput();
     }
-    smithy::Outcome<RpcV2CborListsOutput> RpcV2CborLists(const RpcV2CborListsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborListsOutput> RpcV2CborLists(const RpcV2CborListsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalRpcV2CborListsOutput();
     }
-    smithy::Outcome<RpcV2CborSparseMapsOutput> RpcV2CborSparseMaps(const RpcV2CborSparseMapsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborSparseMapsOutput> RpcV2CborSparseMaps(const RpcV2CborSparseMapsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalRpcV2CborSparseMapsOutput();
     }
-    smithy::Outcome<RpcV2CborUnionsOutput> RpcV2CborUnions(const RpcV2CborUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RpcV2CborUnionsOutput> RpcV2CborUnions(const RpcV2CborUnionsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalRpcV2CborUnionsOutput();
     }
-    smithy::Outcome<SimpleScalarPropertiesOutput> SimpleScalarProperties(const SimpleScalarPropertiesInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<SimpleScalarPropertiesOutput> SimpleScalarProperties(const SimpleScalarPropertiesInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalSimpleScalarPropertiesOutput();
     }
-    smithy::Outcome<SparseNullsOperationOutput> SparseNullsOperation(const SparseNullsOperationInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<SparseNullsOperationOutput> SparseNullsOperation(const SparseNullsOperationInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalSparseNullsOperationOutput();
     }
@@ -178,9 +178,9 @@ class SmokeHandler : public RpcV2ProtocolHandler {
 
 RpcV2ProtocolClient MakeClient(std::shared_ptr<RpcV2ProtocolHandler> handler) {
   RpcV2ProtocolServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -346,9 +346,9 @@ TEST(RpcV2ProtocolSmokeTest, SparseNullsOperationRoundTrips) {
 TEST(RpcV2ProtocolSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(const GreetingWithErrorsInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<GreetingWithErrorsOutput> GreetingWithErrors(const GreetingWithErrorsInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("InvalidGreeting", "smoke");
+        opal::Error error = opal::Error::Modeled("InvalidGreeting", "smoke");
             auto detail = [] {
           InvalidGreeting v{};
           return v;
@@ -365,10 +365,10 @@ TEST(RpcV2ProtocolSmokeTest, ModeledErrorsMapAcrossTheWire) {
   }();
   const auto outcome = client.GreetingWithErrors(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "InvalidGreeting");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<InvalidGreeting>(), nullptr);
 }
 
-}  // namespace smithy::protocoltests::rpcv2cbor
+}  // namespace opal::protocoltests::rpcv2cbor

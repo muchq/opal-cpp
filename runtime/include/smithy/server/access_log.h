@@ -7,7 +7,7 @@
 
 #include "smithy/server/middleware.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // The structured access log (issue #203): one RequestObservation in, one
 // line of JSON out. A pure function — no I/O, no sink, no configuration, no
@@ -82,6 +82,6 @@ using AccessLogFields = std::vector<std::pair<std::string, std::string>>;
 std::string FormatAccessLog(const RequestObservation& observation,
                             const AccessLogFields& extra = {});
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_ACCESS_LOG_H_

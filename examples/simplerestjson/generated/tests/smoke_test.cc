@@ -37,11 +37,11 @@ GetBookOutput MinimalGetBookOutput() {
 
 class SmokeHandler : public BookstoreHandler {
   public:
-    smithy::Outcome<AddBookOutput> AddBook(const AddBookInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddBookOutput> AddBook(const AddBookInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalAddBookOutput();
     }
-    smithy::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetBookOutput();
     }
@@ -49,9 +49,9 @@ class SmokeHandler : public BookstoreHandler {
 
 BookstoreClient MakeClient(std::shared_ptr<BookstoreHandler> handler) {
   BookstoreServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -87,9 +87,9 @@ TEST(BookstoreSmokeTest, GetBookRoundTrips) {
 TEST(BookstoreSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("BookNotFound", "smoke");
+        opal::Error error = opal::Error::Modeled("BookNotFound", "smoke");
             auto detail = [] {
           BookNotFound v{};
           return v;
@@ -109,7 +109,7 @@ TEST(BookstoreSmokeTest, ModeledErrorsMapAcrossTheWire) {
   input.isbn = "smoke";
   const auto outcome = client.GetBook(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "BookNotFound");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<BookNotFound>(), nullptr);

@@ -8,22 +8,22 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/rpcv2cbor/client.h"
+#include "opal/protocoltests/rpcv2cbor/client.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::rpcv2cbor {
+namespace opal::protocoltests::rpcv2cbor {
 
 // Generated from smithy.test#httpRequestTests (client cases).
 namespace {
 
 struct Fixture {
-  std::shared_ptr<smithy::testing::CapturingTransport> transport;
+  std::shared_ptr<opal::testing::CapturingTransport> transport;
   RpcV2ProtocolClient client;
 };
 
 Fixture MakeFixture(const std::string& endpoint = "") {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   config.endpoint = endpoint;
@@ -42,15 +42,15 @@ TEST(RpcV2ProtocolRequestTest, empty_input) {
   return v;
 }();
   (void)fixture.client.EmptyInputOutput(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/EmptyInputOutput");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/EmptyInputOutput");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_FALSE(request.headers.Has("X-Amz-Target"));
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v/8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v/8=", request.body));
 }
 
 // Body is empty and no Content-Type header if no input
@@ -61,9 +61,9 @@ TEST(RpcV2ProtocolRequestTest, no_input) {
   return v;
 }();
   (void)fixture.client.NoInputOutput(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/NoInputOutput");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/NoInputOutput");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_FALSE(request.headers.Has("Content-Type"));
@@ -83,14 +83,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientPopulatesDefaultValuesInInput) {
   return v;
 }();
   (void)fixture.client.OperationWithDefaults(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2hkZWZhdWx0c79tZGVmYXVsdFN0cmluZ2JoaW5kZWZhdWx0Qm9vbGVhbvVrZGVmYXVsdExpc3Sf/3BkZWZhdWx0VGltZXN0YW1wwQBrZGVmYXVsdEJsb2JDYWJja2RlZmF1bHRCeXRlAWxkZWZhdWx0U2hvcnQBbmRlZmF1bHRJbnRlZ2VyCmtkZWZhdWx0TG9uZxhkbGRlZmF1bHRGbG9hdPo/gAAAbWRlZmF1bHREb3VibGX6P4AAAGpkZWZhdWx0TWFwv/9rZGVmYXVsdEVudW1jRk9PbmRlZmF1bHRJbnRFbnVtAWtlbXB0eVN0cmluZ2BsZmFsc2VCb29sZWFu9GllbXB0eUJsb2JAaHplcm9CeXRlAGl6ZXJvU2hvcnQAa3plcm9JbnRlZ2VyAGh6ZXJvTG9uZwBpemVyb0Zsb2F0+gAAAABqemVyb0RvdWJsZfoAAAAA//8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2hkZWZhdWx0c79tZGVmYXVsdFN0cmluZ2JoaW5kZWZhdWx0Qm9vbGVhbvVrZGVmYXVsdExpc3Sf/3BkZWZhdWx0VGltZXN0YW1wwQBrZGVmYXVsdEJsb2JDYWJja2RlZmF1bHRCeXRlAWxkZWZhdWx0U2hvcnQBbmRlZmF1bHRJbnRlZ2VyCmtkZWZhdWx0TG9uZxhkbGRlZmF1bHRGbG9hdPo/gAAAbWRlZmF1bHREb3VibGX6P4AAAGpkZWZhdWx0TWFwv/9rZGVmYXVsdEVudW1jRk9PbmRlZmF1bHRJbnRFbnVtAWtlbXB0eVN0cmluZ2BsZmFsc2VCb29sZWFu9GllbXB0eUJsb2JAaHplcm9CeXRlAGl6ZXJvU2hvcnQAa3plcm9JbnRlZ2VyAGh6ZXJvTG9uZwBpemVyb0Zsb2F0+gAAAABqemVyb0RvdWJsZfoAAAAA//8=", request.body));
 }
 
 // Client skips top level default values in input.
@@ -101,14 +101,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientSkipsTopLevelDefaultValuesInInput)
   return v;
 }();
   (void)fixture.client.OperationWithDefaults(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v/8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v/8=", request.body));
 }
 
 // Client uses explicitly provided member values over defaults
@@ -121,8 +121,8 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientUsesExplicitlyProvidedMemberValues
   v.defaultString = "bye";
   v.defaultBoolean = true;
   v.defaultList = std::vector<std::string>{"a"};
-  v.defaultTimestamp = smithy::Timestamp::FromEpochMilliseconds(1000LL);
-  v.defaultBlob = smithy::Blob::FromString("hi");
+  v.defaultTimestamp = opal::Timestamp::FromEpochMilliseconds(1000LL);
+  v.defaultBlob = opal::Blob::FromString("hi");
   v.defaultByte = 2;
   v.defaultShort = 2;
   v.defaultInteger = 20;
@@ -134,7 +134,7 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientUsesExplicitlyProvidedMemberValues
   v.defaultIntEnum = static_cast<TestIntEnum>(2);
   v.emptyString = "foo";
   v.falseBoolean = true;
-  v.emptyBlob = smithy::Blob::FromString("hi");
+  v.emptyBlob = opal::Blob::FromString("hi");
   v.zeroByte = 1;
   v.zeroShort = 1;
   v.zeroInteger = 1;
@@ -146,14 +146,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientUsesExplicitlyProvidedMemberValues
   return v;
 }();
   (void)fixture.client.OperationWithDefaults(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2hkZWZhdWx0c7dtZGVmYXVsdFN0cmluZ2NieWVuZGVmYXVsdEJvb2xlYW71a2RlZmF1bHRMaXN0gWFhcGRlZmF1bHRUaW1lc3RhbXDB+z/wAAAAAAAAa2RlZmF1bHRCbG9iQmhpa2RlZmF1bHRCeXRlAmxkZWZhdWx0U2hvcnQCbmRlZmF1bHRJbnRlZ2VyFGtkZWZhdWx0TG9uZxjIbGRlZmF1bHRGbG9hdPpAAAAAbWRlZmF1bHREb3VibGX7QAAAAAAAAABqZGVmYXVsdE1hcKFkbmFtZWRKYWNra2RlZmF1bHRFbnVtY0JBUm5kZWZhdWx0SW50RW51bQJrZW1wdHlTdHJpbmdjZm9vbGZhbHNlQm9vbGVhbvVpZW1wdHlCbG9iQmhpaHplcm9CeXRlAWl6ZXJvU2hvcnQBa3plcm9JbnRlZ2VyAWh6ZXJvTG9uZwFpemVyb0Zsb2F0+j+AAABqemVyb0RvdWJsZfs/8AAAAAAAAP8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2hkZWZhdWx0c7dtZGVmYXVsdFN0cmluZ2NieWVuZGVmYXVsdEJvb2xlYW71a2RlZmF1bHRMaXN0gWFhcGRlZmF1bHRUaW1lc3RhbXDB+z/wAAAAAAAAa2RlZmF1bHRCbG9iQmhpa2RlZmF1bHRCeXRlAmxkZWZhdWx0U2hvcnQCbmRlZmF1bHRJbnRlZ2VyFGtkZWZhdWx0TG9uZxjIbGRlZmF1bHRGbG9hdPpAAAAAbWRlZmF1bHREb3VibGX7QAAAAAAAAABqZGVmYXVsdE1hcKFkbmFtZWRKYWNra2RlZmF1bHRFbnVtY0JBUm5kZWZhdWx0SW50RW51bQJrZW1wdHlTdHJpbmdjZm9vbGZhbHNlQm9vbGVhbvVpZW1wdHlCbG9iQmhpaHplcm9CeXRlAWl6ZXJvU2hvcnQBa3plcm9JbnRlZ2VyAWh6ZXJvTG9uZwFpemVyb0Zsb2F0+j+AAABqemVyb0RvdWJsZfs/8AAAAAAAAP8=", request.body));
 }
 
 // Any time a value is provided for a member in the top level of input, it is used, regardless of if its the default.
@@ -166,14 +166,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientUsesExplicitlyProvidedValuesInTopL
   return v;
 }();
   (void)fixture.client.OperationWithDefaults(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v290b3BMZXZlbERlZmF1bHRiaGl0b3RoZXJUb3BMZXZlbERlZmF1bHQA/w==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v290b3BMZXZlbERlZmF1bHRiaGl0b3RoZXJUb3BMZXZlbERlZmF1bHQA/w==", request.body));
 }
 
 // Typically, non top-level members would have defaults filled in, but if they have the clientOptional trait, the defaults should be ignored.
@@ -188,14 +188,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientIgnoresNonTopLevelDefaultsOnMember
   return v;
 }();
   (void)fixture.client.OperationWithDefaults(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OperationWithDefaults");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v3ZjbGllbnRPcHRpb25hbERlZmF1bHRzoP8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v3ZjbGllbnRPcHRpb25hbERlZmF1bHRzoP8=", request.body));
 }
 
 // When input is empty we write CBOR equivalent of {}
@@ -206,14 +206,14 @@ TEST(RpcV2ProtocolRequestTest, optional_input) {
   return v;
 }();
   (void)fixture.client.OptionalInputOutput(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OptionalInputOutput");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/OptionalInputOutput");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_FALSE(request.headers.Has("X-Amz-Target"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v/8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v/8=", request.body));
 }
 
 // Serializes recursive structures
@@ -244,14 +244,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborRecursiveShapes) {
   return v;
 }();
   (void)fixture.client.RecursiveShapes(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RecursiveShapes");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RecursiveShapes");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2ZuZXN0ZWS/Y2Zvb2RGb28xZm5lc3RlZL9jYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyv2Nmb29kRm9vMmZuZXN0ZWS/Y2JhcmRCYXIy//////8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2ZuZXN0ZWS/Y2Zvb2RGb28xZm5lc3RlZL9jYmFyZEJhcjFvcmVjdXJzaXZlTWVtYmVyv2Nmb29kRm9vMmZuZXN0ZWS/Y2JhcmRCYXIy//////8=", request.body));
 }
 
 // Serializes maps
@@ -271,14 +271,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborMaps) {
   return v;
 }();
   (void)fixture.client.RpcV2CborDenseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("oW5kZW5zZVN0cnVjdE1hcKJjZm9voWJoaWV0aGVyZWNiYXqhYmhpY2J5ZQ==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("oW5kZW5zZVN0cnVjdE1hcKJjZm9voWJoaWV0aGVyZWNiYXqhYmhpY2J5ZQ==", request.body));
 }
 
 // Ensure that 0 and false are sent over the wire in all maps and lists
@@ -291,14 +291,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesZeroValuesInMaps) {
   return v;
 }();
   (void)fixture.client.RpcV2CborDenseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("om5kZW5zZU51bWJlck1hcKFheABvZGVuc2VCb29sZWFuTWFwoWF49A==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("om5kZW5zZU51bWJlck1hcKFheABvZGVuc2VCb29sZWFuTWFwoWF49A==", request.body));
 }
 
 // A request that contains a dense map of sets.
@@ -310,14 +310,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesDenseSetMap) {
   return v;
 }();
   (void)fixture.client.RpcV2CborDenseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborDenseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("oWtkZW5zZVNldE1hcKJheIBheYJhYWFi", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("oWtkZW5zZVNldE1hcKJheIBheYJhYWFi", request.body));
 }
 
 // Serializes RpcV2 Cbor lists
@@ -329,7 +329,7 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborLists) {
   v.stringSet = std::vector<std::string>{"foo", "bar"};
   v.integerList = std::vector<std::int32_t>{1, 2};
   v.booleanList = std::vector<bool>{true, false};
-  v.timestampList = std::vector<smithy::Timestamp>{smithy::Timestamp::FromEpochMilliseconds(1398796238000LL), smithy::Timestamp::FromEpochMilliseconds(1398796238000LL)};
+  v.timestampList = std::vector<opal::Timestamp>{opal::Timestamp::FromEpochMilliseconds(1398796238000LL), opal::Timestamp::FromEpochMilliseconds(1398796238000LL)};
   v.enumList = std::vector<FooEnum>{FooEnum::FromString("Foo"), FooEnum::FromString("0")};
   v.intEnumList = std::vector<IntegerEnum>{static_cast<IntegerEnum>(1), static_cast<IntegerEnum>(2)};
   v.nestedStringList = std::vector<std::vector<std::string>>{std::vector<std::string>{"foo", "bar"}, std::vector<std::string>{"baz", "qux"}};
@@ -344,18 +344,18 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborLists) {
   v.b = "4";
   return v;
 }()};
-  v.blobList = std::vector<smithy::Blob>{smithy::Blob::FromString("foo"), smithy::Blob::FromString("bar")};
+  v.blobList = std::vector<opal::Blob>{opal::Blob::FromString("foo"), opal::Blob::FromString("bar")};
   return v;
 }();
   (void)fixture.client.RpcV2CborLists(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborLists");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborLists");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2pzdHJpbmdMaXN0gmNmb29jYmFyaXN0cmluZ1NldIJjZm9vY2JhcmtpbnRlZ2VyTGlzdIIBAmtib29sZWFuTGlzdIL19G10aW1lc3RhbXBMaXN0gsH7QdTX+/OAAADB+0HU1/vzgAAAaGVudW1MaXN0gmNGb29hMGtpbnRFbnVtTGlzdIIBAnBuZXN0ZWRTdHJpbmdMaXN0goJjZm9vY2JhcoJjYmF6Y3F1eG1zdHJ1Y3R1cmVMaXN0gqJhYWExYWJhMqJhYWEzYWJhNGhibG9iTGlzdIJDZm9vQ2Jhcv8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2pzdHJpbmdMaXN0gmNmb29jYmFyaXN0cmluZ1NldIJjZm9vY2JhcmtpbnRlZ2VyTGlzdIIBAmtib29sZWFuTGlzdIL19G10aW1lc3RhbXBMaXN0gsH7QdTX+/OAAADB+0HU1/vzgAAAaGVudW1MaXN0gmNGb29hMGtpbnRFbnVtTGlzdIIBAnBuZXN0ZWRTdHJpbmdMaXN0goJjZm9vY2JhcoJjYmF6Y3F1eG1zdHJ1Y3R1cmVMaXN0gqJhYWExYWJhMqJhYWEzYWJhNGhibG9iTGlzdIJDZm9vQ2Jhcv8=", request.body));
 }
 
 // Serializes empty JSON lists
@@ -367,14 +367,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborListsEmpty) {
   return v;
 }();
   (void)fixture.client.RpcV2CborLists(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborLists");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborLists");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2pzdHJpbmdMaXN0n///", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2pzdHJpbmdMaXN0n///", request.body));
 }
 
 // Serializes empty JSON definite length lists
@@ -386,14 +386,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborListsEmptyUsingDefiniteLength) {
   return v;
 }();
   (void)fixture.client.RpcV2CborLists(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborLists");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborLists");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("oWpzdHJpbmdMaXN0gA==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("oWpzdHJpbmdMaXN0gA==", request.body));
 }
 
 // Serializes sparse maps
@@ -413,14 +413,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSparseMaps) {
   return v;
 }();
   (void)fixture.client.RpcV2CborSparseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v29zcGFyc2VTdHJ1Y3RNYXC/Y2Zvb79iaGlldGhlcmX/Y2Jher9iaGljYnll////", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v29zcGFyc2VTdHJ1Y3RNYXC/Y2Zvb79iaGlldGhlcmX/Y2Jher9iaGljYnll////", request.body));
 }
 
 // Serializes null map values in sparse maps
@@ -435,14 +435,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesNullMapValues) {
   return v;
 }();
   (void)fixture.client.RpcV2CborSparseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v3BzcGFyc2VCb29sZWFuTWFwv2F49v9vc3BhcnNlTnVtYmVyTWFwv2F49v9vc3BhcnNlU3RyaW5nTWFwv2F49v9vc3BhcnNlU3RydWN0TWFwv2F49v//", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v3BzcGFyc2VCb29sZWFuTWFwv2F49v9vc3BhcnNlTnVtYmVyTWFwv2F49v9vc3BhcnNlU3RyaW5nTWFwv2F49v9vc3BhcnNlU3RydWN0TWFwv2F49v//", request.body));
 }
 
 // A request that contains a sparse map of sets
@@ -454,14 +454,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesSparseSetMap) {
   return v;
 }();
   (void)fixture.client.RpcV2CborSparseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL///8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL///8=", request.body));
 }
 
 // A request that contains a sparse map of sets.
@@ -473,14 +473,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesSparseSetMapAndRetainsNull) {
   return v;
 }();
   (void)fixture.client.RpcV2CborSparseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL/YXr2//8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2xzcGFyc2VTZXRNYXC/YXif/2F5n2FhYWL/YXr2//8=", request.body));
 }
 
 // Ensure that 0 and false are sent over the wire in all maps and lists
@@ -493,14 +493,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesZeroValuesInSparseMaps) {
   return v;
 }();
   (void)fixture.client.RpcV2CborSparseMaps(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborSparseMaps");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v29zcGFyc2VOdW1iZXJNYXC/YXgA/3BzcGFyc2VCb29sZWFuTWFwv2F49P//", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v29zcGFyc2VOdW1iZXJNYXC/YXgA/3BzcGFyc2VCb29sZWFuTWFwv2F49P//", request.body));
 }
 
 // Serializes a union followed by another structure member
@@ -513,14 +513,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesUnionValue) {
   return v;
 }();
   (void)fixture.client.RpcV2CborUnions(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborUnions");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborUnions");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("omhjb250ZW50c6Frc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("omhjb250ZW50c6Frc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy", request.body));
 }
 
 // Serializes a nested union followed by another structure member
@@ -533,14 +533,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSerializesNestedUnionValue) {
   return v;
 }();
   (void)fixture.client.RpcV2CborUnions(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborUnions");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/RpcV2CborUnions");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("omhjb250ZW50c6FqdW5pb25WYWx1ZaFrc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("omhjb250ZW50c6FqdW5pb25WYWx1ZaFrc3RyaW5nVmFsdWVjZm9vam90aGVyVmFsdWVjYmFy", request.body));
 }
 
 // Serializes simple scalar properties
@@ -557,18 +557,18 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSimpleScalarProperties) {
   v.longValue = 9873LL;
   v.shortValue = 9898;
   v.stringValue = "simple";
-  v.blobValue = smithy::Blob::FromString("foo");
+  v.blobValue = opal::Blob::FromString("foo");
   return v;
 }();
   (void)fixture.client.SimpleScalarProperties(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2lieXRlVmFsdWUFa2RvdWJsZVZhbHVl+z/+OVgQYk3TcWZhbHNlQm9vbGVhblZhbHVl9GpmbG9hdFZhbHVl+kD0AABsaW50ZWdlclZhbHVlGQEAaWxvbmdWYWx1ZRkmkWpzaG9ydFZhbHVlGSaqa3N0cmluZ1ZhbHVlZnNpbXBsZXB0cnVlQm9vbGVhblZhbHVl9WlibG9iVmFsdWVDZm9v/w==", request.body));
 }
 
 // RpcV2 Cbor should not serialize null structure values
@@ -579,14 +579,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborClientDoesntSerializeNullStructureValues
   return v;
 }();
   (void)fixture.client.SimpleScalarProperties(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v/8=", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v/8=", request.body));
 }
 
 // Supports handling NaN float values.
@@ -599,14 +599,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSupportsNaNFloatInputs) {
   return v;
 }();
   (void)fixture.client.SimpleScalarProperties(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2tkb3VibGVWYWx1Zft/+AAAAAAAAGpmbG9hdFZhbHVl+n/AAAD/", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2tkb3VibGVWYWx1Zft/+AAAAAAAAGpmbG9hdFZhbHVl+n/AAAD/", request.body));
 }
 
 // Supports handling Infinity float values.
@@ -619,14 +619,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSupportsInfinityFloatInputs) {
   return v;
 }();
   (void)fixture.client.SimpleScalarProperties(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2tkb3VibGVWYWx1Zft/8AAAAAAAAGpmbG9hdFZhbHVl+n+AAAD/", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2tkb3VibGVWYWx1Zft/8AAAAAAAAGpmbG9hdFZhbHVl+n+AAAD/", request.body));
 }
 
 // Supports handling Infinity float values.
@@ -639,14 +639,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSupportsNegativeInfinityFloatInputs) {
   return v;
 }();
   (void)fixture.client.SimpleScalarProperties(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SimpleScalarProperties");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v2tkb3VibGVWYWx1Zfv/8AAAAAAAAGpmbG9hdFZhbHVl+v+AAAD/", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v2tkb3VibGVWYWx1Zfv/8AAAAAAAAGpmbG9hdFZhbHVl+v+AAAD/", request.body));
 }
 
 // Serializes null values in maps
@@ -658,14 +658,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSparseMapsSerializeNullValues) {
   return v;
 }();
   (void)fixture.client.SparseNullsOperation(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SparseNullsOperation");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SparseNullsOperation");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v29zcGFyc2VTdHJpbmdNYXC/Y2Zvb/b//w==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v29zcGFyc2VTdHJpbmdNYXC/Y2Zvb/b//w==", request.body));
 }
 
 // Serializes null values in lists
@@ -677,14 +677,14 @@ TEST(RpcV2ProtocolRequestTest, RpcV2CborSparseListsSerializeNull) {
   return v;
 }();
   (void)fixture.client.SparseNullsOperation(input);
-  const smithy::http::HttpRequest& request = fixture.transport->last_request;
+  const opal::http::HttpRequest& request = fixture.transport->last_request;
   EXPECT_EQ(request.method, "POST");
-  EXPECT_EQ(smithy::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SparseNullsOperation");
+  EXPECT_EQ(opal::testing::UriPath(request.target), "/service/RpcV2Protocol/operation/SparseNullsOperation");
   EXPECT_EQ(request.headers.Get("Accept").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("Content-Type").value_or("<missing>"), "application/cbor");
   EXPECT_EQ(request.headers.Get("smithy-protocol").value_or("<missing>"), "rpc-v2-cbor");
   EXPECT_TRUE(request.headers.Has("Content-Length"));
-  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("v3BzcGFyc2VTdHJpbmdMaXN0n/b//w==", request.body));
+  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("v3BzcGFyc2VTdHJpbmdMaXN0n/b//w==", request.body));
 }
 
-}  // namespace smithy::protocoltests::rpcv2cbor
+}  // namespace opal::protocoltests::rpcv2cbor

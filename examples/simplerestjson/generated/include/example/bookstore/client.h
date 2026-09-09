@@ -23,28 +23,28 @@
 namespace example::bookstore {
 
 /// simpleRestJson client for example.bookstore#Bookstore.
-/// Modeled service errors surface as smithy::Error with kind kModeled,
+/// Modeled service errors surface as opal::Error with kind kModeled,
 /// code() set to the error shape name, and the deserialized error
 /// structure attached. Dispatch on them through the per-operation
 /// <Operation>Errors listings below rather than comparing code() text.
 class BookstoreClient {
   public:
     /// Fails when the endpoint cannot be parsed and no transport is injected.
-    static smithy::Outcome<BookstoreClient> Create(smithy::ClientConfig config);
+    static opal::Outcome<BookstoreClient> Create(opal::ClientConfig config);
 
-    smithy::Outcome<AddBookOutput> AddBook(const AddBookInput& input) const;
-    smithy::Outcome<GetBookOutput> GetBook(const GetBookInput& input) const;
+    opal::Outcome<AddBookOutput> AddBook(const AddBookInput& input) const;
+    opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input) const;
 
   private:
-    BookstoreClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix);
-    smithy::Outcome<smithy::http::HttpResponse> Send(smithy::http::HttpRequest request) const;
+    BookstoreClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix);
+    opal::Outcome<opal::http::HttpResponse> Send(opal::http::HttpRequest request) const;
 
-    smithy::ClientConfig config_;
-    std::shared_ptr<smithy::http::HttpClient> transport_;
+    opal::ClientConfig config_;
+    std::shared_ptr<opal::http::HttpClient> transport_;
     std::string path_prefix_;
 };
 
-/// The modeled errors of GetBook, matched from a smithy::Error so dispatch is
+/// The modeled errors of GetBook, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -55,9 +55,9 @@ class GetBookErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static GetBookErrors FromError(const smithy::Error& error) {
+    static GetBookErrors FromError(const opal::Error& error) {
       GetBookErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "BookNotFound") {
         const auto* detail = error.detail<BookNotFound>();
         result.value_.emplace<1>(detail != nullptr ? *detail : BookNotFound{});
@@ -96,7 +96,7 @@ class GetBookErrors {
       switch (value_.index()) {
         case 1:
           out += "book_not_found = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -115,7 +115,7 @@ class GetBookErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("GetBookErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("GetBookErrors", requested, case_name());
       }
     }
 
@@ -132,8 +132,8 @@ template <>
 struct std::hash<example::bookstore::GetBookErrors> {
   std::size_t operator()(const example::bookstore::GetBookErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 

@@ -13,31 +13,31 @@
 namespace example::bookstore {
 
 /// Implement one method per operation. Return a modeled error as
-/// smithy::Error::Modeled("<ErrorShapeName>", message), optionally with the
+/// opal::Error::Modeled("<ErrorShapeName>", message), optionally with the
 /// typed error structure attached via set_detail() so it serializes fully.
 /// The context carries the raw request and routing captures — see
-/// smithy::server::RequestContext; leave the parameter unnamed when unused.
+/// opal::server::RequestContext; leave the parameter unnamed when unused.
 /// Implementations must be thread-safe: transports may invoke any mix of
 /// operations concurrently on the one handler instance.
 class BookstoreHandler {
   public:
     virtual ~BookstoreHandler() = default;
 
-    virtual smithy::Outcome<AddBookOutput> AddBook(const AddBookInput& input, const smithy::server::RequestContext& context) = 0;
-    virtual smithy::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<AddBookOutput> AddBook(const AddBookInput& input, const opal::server::RequestContext& context) = 0;
+    virtual opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input, const opal::server::RequestContext& context) = 0;
 };
 
 /// simpleRestJson server for example.bookstore#Bookstore: routing, deserialization, handler dispatch,
 /// response serialization, and modeled-error mapping. Pass Handler() to any
-/// smithy::http::HttpServerTransport.
+/// opal::http::HttpServerTransport.
 class BookstoreServer {
   public:
     explicit BookstoreServer(std::shared_ptr<BookstoreHandler> handler);
 
-    smithy::http::RequestHandler Handler() const;
+    opal::http::RequestHandler Handler() const;
 
   private:
-    std::shared_ptr<smithy::server::Router> router_;
+    std::shared_ptr<opal::server::Router> router_;
 };
 
 }  // namespace example::bookstore

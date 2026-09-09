@@ -14,7 +14,7 @@
 
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 EventEnvelope ParseOrDie(const Message& message) {
@@ -173,4 +173,4 @@ TEST(EnvelopeTest, EnvelopesRenderThroughTheDebugPrinter) {
 }
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

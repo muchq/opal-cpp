@@ -222,25 +222,25 @@ final class ProtocolTestGenerator {
     t.append("  (void)fixture.client.")
         .append(CppReservedWords.escape(operation.getId().getName()))
         .append("(input);\n");
-    t.append("  const smithy::http::HttpRequest& request = fixture.transport->last_request;\n");
+    t.append("  const opal::http::HttpRequest& request = fixture.transport->last_request;\n");
     t.append("  EXPECT_EQ(request.method, ")
         .append(CppLiterals.stringLiteral(testCase.getMethod()))
         .append(");\n");
-    t.append("  EXPECT_EQ(smithy::testing::UriPath(request.target), ")
+    t.append("  EXPECT_EQ(opal::testing::UriPath(request.target), ")
         .append(CppLiterals.stringLiteral(testCase.getUri()))
         .append(");\n");
     if (!testCase.getQueryParams().isEmpty()) {
-      t.append("  EXPECT_TRUE(smithy::testing::QueryContains(request.target, ")
+      t.append("  EXPECT_TRUE(opal::testing::QueryContains(request.target, ")
           .append(stringVector(testCase.getQueryParams()))
           .append("));\n");
     }
     if (!testCase.getForbidQueryParams().isEmpty()) {
-      t.append("  EXPECT_TRUE(smithy::testing::QueryForbidsKeys(request.target, ")
+      t.append("  EXPECT_TRUE(opal::testing::QueryForbidsKeys(request.target, ")
           .append(stringVector(testCase.getForbidQueryParams()))
           .append("));\n");
     }
     if (!testCase.getRequireQueryParams().isEmpty()) {
-      t.append("  EXPECT_TRUE(smithy::testing::QueryRequiresKeys(request.target, ")
+      t.append("  EXPECT_TRUE(opal::testing::QueryRequiresKeys(request.target, ")
           .append(stringVector(testCase.getRequireQueryParams()))
           .append("));\n");
     }
@@ -276,12 +276,12 @@ final class ProtocolTestGenerator {
     // would spuriously fail (e.g. alloy's RoundTrip response).
     String type = mediaType.orElse(protocol.contentType());
     if (type.equals("application/json") || type.endsWith("+json")) {
-      return "  EXPECT_TRUE(smithy::testing::JsonBodyEquals("
+      return "  EXPECT_TRUE(opal::testing::JsonBodyEquals("
           + CppLiterals.stringLiteral(body)
           + ", request.body));\n";
     }
     if (type.equals("application/cbor")) {
-      return "  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("
+      return "  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("
           + CppLiterals.stringLiteral(body)
           + ", request.body));\n";
     }
@@ -380,7 +380,7 @@ final class ProtocolTestGenerator {
     String body = testCase.getBody().orElse("");
     String mediaType = testCase.getBodyMediaType().orElse("");
     if (mediaType.equals("application/cbor")) {
-      t.append("  fixture.transport->next_response.body = smithy::testing::FromBase64(")
+      t.append("  fixture.transport->next_response.body = opal::testing::FromBase64(")
           .append(CppLiterals.stringLiteral(body))
           .append(");\n");
     } else {
@@ -456,13 +456,13 @@ final class ProtocolTestGenerator {
     w.write("namespace {");
     w.write("");
     w.openBlock("struct Fixture {");
-    w.write("std::shared_ptr<smithy::testing::CapturingTransport> transport;");
+    w.write("std::shared_ptr<opal::testing::CapturingTransport> transport;");
     w.write("$L client;", client);
     w.closeBlock("};");
     w.write("");
     w.openBlock("Fixture MakeFixture(const std::string& endpoint = \"\") {");
-    w.write("auto transport = std::make_shared<smithy::testing::CapturingTransport>();");
-    w.write("smithy::ClientConfig config;");
+    w.write("auto transport = std::make_shared<opal::testing::CapturingTransport>();");
+    w.write("opal::ClientConfig config;");
     w.write("config.retry.max_attempts = 1;  // wire-exact tests: no retries");
     w.write("config.http_client = transport;");
     w.write("config.endpoint = endpoint;");
@@ -560,7 +560,7 @@ final class ProtocolTestGenerator {
       Optional<String> body,
       Optional<String> mediaType) {
     StringBuilder t = new StringBuilder();
-    t.append("  smithy::http::HttpRequest request;\n");
+    t.append("  opal::http::HttpRequest request;\n");
     t.append("  request.method = ").append(CppLiterals.stringLiteral(method)).append(";\n");
     StringBuilder target = new StringBuilder(uri);
     if (!queryParams.isEmpty()) {
@@ -578,7 +578,7 @@ final class ProtocolTestGenerator {
     }
     if (body.isPresent() && !body.get().isEmpty()) {
       if (mediaType.orElse(protocol.contentType()).equals("application/cbor")) {
-        t.append("  request.body = smithy::testing::FromBase64(")
+        t.append("  request.body = opal::testing::FromBase64(")
             .append(CppLiterals.stringLiteral(body.get()))
             .append(");\n");
       } else {
@@ -646,7 +646,7 @@ final class ProtocolTestGenerator {
             testCase.getHeaders(),
             testCase.getBody(),
             testCase.getBodyMediaType()));
-    t.append("  const smithy::http::HttpResponse response = server.Handler()(request);\n");
+    t.append("  const opal::http::HttpResponse response = server.Handler()(request);\n");
     t.append("  ASSERT_TRUE(handler->last")
         .append(opName)
         .append(".has_value()) << response.status << \" \" << response.body;\n");
@@ -734,9 +734,9 @@ final class ProtocolTestGenerator {
   /** A routable wire request for the operation, captured from the generated client. */
   private void writeMinimalRequestHelper(CppWriter w, OperationShape operation) {
     String opName = CppReservedWords.escape(operation.getId().getName());
-    w.openBlock("smithy::http::HttpRequest MinimalRequestFor$L() {", opName);
-    w.write("auto transport = std::make_shared<smithy::testing::CapturingTransport>();");
-    w.write("smithy::ClientConfig config;");
+    w.openBlock("opal::http::HttpRequest MinimalRequestFor$L() {", opName);
+    w.write("auto transport = std::make_shared<opal::testing::CapturingTransport>();");
+    w.write("opal::ClientConfig config;");
     w.write("config.retry.max_attempts = 1;  // wire-exact tests: no retries");
     w.write("config.http_client = transport;");
     w.write("auto client = *$L::Create(std::move(config));", clientType());
@@ -797,7 +797,7 @@ final class ProtocolTestGenerator {
         .append(") {\n");
     t.append("  class Handler final : public RecordingHandler {\n");
     t.append("   public:\n");
-    t.append("    smithy::Outcome<")
+    t.append("    opal::Outcome<")
         .append(outputType)
         .append("> ")
         .append(opName)
@@ -812,7 +812,7 @@ final class ProtocolTestGenerator {
           .append(literals.expression(outputOf(operation), testCase.getParams()))
           .append(";\n");
     } else {
-      t.append("      smithy::Error error = smithy::Error::Modeled(")
+      t.append("      opal::Error error = opal::Error::Modeled(")
           .append(CppLiterals.stringLiteral(error.getId().getName()))
           .append(", \"\");\n");
       t.append("      error.set_detail(")
@@ -823,7 +823,7 @@ final class ProtocolTestGenerator {
     t.append("    }\n");
     t.append("  };\n");
     t.append("  ").append(serverType()).append(" server(std::make_shared<Handler>());\n");
-    t.append("  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestFor")
+    t.append("  const opal::http::HttpResponse response = server.Handler()(MinimalRequestFor")
         .append(opName)
         .append("());\n");
     t.append("  EXPECT_EQ(response.status, ").append(testCase.getCode()).append(");\n");
@@ -838,11 +838,11 @@ final class ProtocolTestGenerator {
     if (body != null && !body.isEmpty()) {
       String mediaType = testCase.getBodyMediaType().orElse(protocol.contentType());
       if (mediaType.equals("application/json") || mediaType.endsWith("+json")) {
-        t.append("  EXPECT_TRUE(smithy::testing::JsonBodyEquals(")
+        t.append("  EXPECT_TRUE(opal::testing::JsonBodyEquals(")
             .append(CppLiterals.stringLiteral(body))
             .append(", response.body));\n");
       } else if (mediaType.equals("application/cbor")) {
-        t.append("  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64(")
+        t.append("  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64(")
             .append(CppLiterals.stringLiteral(body))
             .append(", response.body));\n");
       } else {
@@ -913,7 +913,7 @@ final class ProtocolTestGenerator {
             request.getHeaders(),
             request.getBody(),
             request.getBodyMediaType()));
-    t.append("  const smithy::http::HttpResponse response = server.Handler()(request);\n");
+    t.append("  const opal::http::HttpResponse response = server.Handler()(request);\n");
     t.append("  EXPECT_EQ(response.status, ")
         .append(response.getCode())
         .append(") << response.body;\n");
@@ -930,7 +930,7 @@ final class ProtocolTestGenerator {
 
   private String malformedBodyAssertion(HttpMalformedResponseBodyDefinition body) {
     if (body.getMessageRegex().isPresent()) {
-      return "  EXPECT_TRUE(smithy::testing::BodyMessageMatches("
+      return "  EXPECT_TRUE(opal::testing::BodyMessageMatches("
           + CppLiterals.stringLiteral(body.getMessageRegex().get())
           + ", response.body)) << response.body;\n";
     }
@@ -940,12 +940,12 @@ final class ProtocolTestGenerator {
     }
     String mediaType = body.getMediaType();
     if (mediaType.equals("application/json") || mediaType.endsWith("+json")) {
-      return "  EXPECT_TRUE(smithy::testing::JsonBodyEquals("
+      return "  EXPECT_TRUE(opal::testing::JsonBodyEquals("
           + CppLiterals.stringLiteral(contents)
           + ", response.body)) << response.body;\n";
     }
     if (mediaType.equals("application/cbor")) {
-      return "  EXPECT_TRUE(smithy::testing::CborBodyEqualsBase64("
+      return "  EXPECT_TRUE(opal::testing::CborBodyEqualsBase64("
           + CppLiterals.stringLiteral(contents)
           + ", response.body));\n";
     }

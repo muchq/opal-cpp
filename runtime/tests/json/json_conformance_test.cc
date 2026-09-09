@@ -1,5 +1,5 @@
 // Runs the vendored JSONTestSuite parsing corpus (nst/JSONTestSuite, see
-// tests/json/jsontestsuite/PROVENANCE.md) through smithy::json::Decode. The
+// tests/json/jsontestsuite/PROVENANCE.md) through opal::json::Decode. The
 // suite is the canonical bank for "does the parser agree with RFC 8259 and
 // never crash on hostile input" — the class of bug that produced the
 // nesting-depth stack overflow this test was added with.
@@ -20,7 +20,7 @@
 #include "smithy/json/json.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
-namespace smithy::json {
+namespace opal::json {
 
 // Defined in the generated json_conformance_index.cc (a genrule lists the
 // vendored corpus filenames): runfiles directory enumeration is not portable,
@@ -88,4 +88,4 @@ INSTANTIATE_TEST_SUITE_P(JSONTestSuite, JsonConformanceTest, testing::ValuesIn(C
                          });
 
 }  // namespace
-}  // namespace smithy::json
+}  // namespace opal::json

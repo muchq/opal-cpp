@@ -35,12 +35,12 @@ KitchenSink MakeSink() {
   sink.big = 9876543210LL;
   sink.ratio = 0.5F;
   sink.precise = 3.14159265358979;
-  sink.blob = smithy::Blob::FromString("0123456789abcdef0123456789abcdef");
+  sink.blob = opal::Blob::FromString("0123456789abcdef0123456789abcdef");
   sink.priority = Priority::Value::kHigh;
   sink.weight = Weight::kHeavy;
-  sink.dateTime = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
-  sink.httpDate = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
-  sink.epoch = smithy::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  sink.dateTime = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  sink.httpDate = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
+  sink.epoch = opal::Timestamp::FromEpochMilliseconds(1515531081000LL);
   sink.names = std::vector<std::string>{"alpha", "beta", "gamma", "delta", "epsilon"};
   sink.uniqueNames = std::vector<std::string>{"one", "two", "three"};
   sink.sparseNumbers =
@@ -61,7 +61,7 @@ void BM_SerializeToDocument(benchmark::State& state) {
 BENCHMARK(BM_SerializeToDocument);
 
 void BM_DeserializeFromDocument(benchmark::State& state) {
-  const smithy::Document doc = example::roundtrip::rest::SerializeKitchenSink(MakeSink());
+  const opal::Document doc = example::roundtrip::rest::SerializeKitchenSink(MakeSink());
   for (auto _ : state) {
     benchmark::DoNotOptimize(example::roundtrip::rest::DeserializeKitchenSink(doc));
   }
@@ -69,10 +69,10 @@ void BM_DeserializeFromDocument(benchmark::State& state) {
 BENCHMARK(BM_DeserializeFromDocument);
 
 void BM_JsonEncode(benchmark::State& state) {
-  const smithy::Document doc = example::roundtrip::rest::SerializeKitchenSink(MakeSink());
+  const opal::Document doc = example::roundtrip::rest::SerializeKitchenSink(MakeSink());
   std::size_t bytes = 0;
   for (auto _ : state) {
-    std::string text = smithy::json::Encode(doc);
+    std::string text = opal::json::Encode(doc);
     bytes += text.size();
     benchmark::DoNotOptimize(text);
   }
@@ -82,10 +82,10 @@ BENCHMARK(BM_JsonEncode);
 
 void BM_JsonDecode(benchmark::State& state) {
   const std::string text =
-      smithy::json::Encode(example::roundtrip::rest::SerializeKitchenSink(MakeSink()));
+      opal::json::Encode(example::roundtrip::rest::SerializeKitchenSink(MakeSink()));
   std::size_t bytes = 0;
   for (auto _ : state) {
-    benchmark::DoNotOptimize(smithy::json::Decode(text));
+    benchmark::DoNotOptimize(opal::json::Decode(text));
     bytes += text.size();
   }
   state.SetBytesProcessed(static_cast<std::int64_t>(bytes));
@@ -93,10 +93,10 @@ void BM_JsonDecode(benchmark::State& state) {
 BENCHMARK(BM_JsonDecode);
 
 void BM_CborEncode(benchmark::State& state) {
-  const smithy::Document doc = example::roundtrip::rest::SerializeKitchenSink(MakeSink());
+  const opal::Document doc = example::roundtrip::rest::SerializeKitchenSink(MakeSink());
   std::size_t bytes = 0;
   for (auto _ : state) {
-    smithy::Blob wire = smithy::cbor::Encode(doc);
+    opal::Blob wire = opal::cbor::Encode(doc);
     bytes += wire.size();
     benchmark::DoNotOptimize(wire);
   }
@@ -105,11 +105,11 @@ void BM_CborEncode(benchmark::State& state) {
 BENCHMARK(BM_CborEncode);
 
 void BM_CborDecode(benchmark::State& state) {
-  const smithy::Blob wire =
-      smithy::cbor::Encode(example::roundtrip::rest::SerializeKitchenSink(MakeSink()));
+  const opal::Blob wire =
+      opal::cbor::Encode(example::roundtrip::rest::SerializeKitchenSink(MakeSink()));
   std::size_t bytes = 0;
   for (auto _ : state) {
-    benchmark::DoNotOptimize(smithy::cbor::Decode(wire));
+    benchmark::DoNotOptimize(opal::cbor::Decode(wire));
     bytes += wire.size();
   }
   state.SetBytesProcessed(static_cast<std::int64_t>(bytes));
@@ -120,8 +120,8 @@ void BM_FullPivotRoundTripJson(benchmark::State& state) {
   const KitchenSink sink = MakeSink();
   for (auto _ : state) {
     const std::string text =
-        smithy::json::Encode(example::roundtrip::rest::SerializeKitchenSink(sink));
-    auto doc = smithy::json::Decode(text);
+        opal::json::Encode(example::roundtrip::rest::SerializeKitchenSink(sink));
+    auto doc = opal::json::Decode(text);
     benchmark::DoNotOptimize(example::roundtrip::rest::DeserializeKitchenSink(*doc));
   }
 }

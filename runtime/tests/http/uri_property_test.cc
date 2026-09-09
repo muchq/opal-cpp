@@ -8,7 +8,7 @@
 
 #include "smithy/http/uri.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 std::string RandomBytes(std::mt19937_64& rng, int max_length) {
@@ -72,4 +72,4 @@ TEST(UriPropertyTest, GreedyEncodingPreservesSlashesOnly) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

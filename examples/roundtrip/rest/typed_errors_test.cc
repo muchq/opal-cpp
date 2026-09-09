@@ -3,7 +3,7 @@
 // against the roundtrip rest golden, whose DescribeSink carries two modeled
 // errors — including DescribeSinkError, the operation-named collision
 // fixture the plural listing name exists to dodge. The wire half (server
-// error → client smithy::Error with code + typed detail) is already pinned
+// error → client opal::Error with code + typed detail) is already pinned
 // by the generated integration tests; this suite pins the typed view over
 // that Error.
 
@@ -19,8 +19,8 @@
 namespace example::roundtrip::rest {
 namespace {
 
-smithy::Error SinkNotFoundError() {
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", "no sink: s1");
+opal::Error SinkNotFoundError() {
+  opal::Error error = opal::Error::Modeled("SinkNotFound", "no sink: s1");
   error.set_detail(SinkNotFound{.message = "no sink: s1", .resourceType = "sink"});
   return error;
 }
@@ -37,7 +37,7 @@ TEST(TypedErrorsTest, MatchesTheModeledErrorAndCarriesTheDetail) {
 
 TEST(TypedErrorsTest, DetailLessCodeMatchStillDispatchesWithDefaultFields) {
   const auto typed =
-      DescribeSinkErrors::FromError(smithy::Error::Modeled("DescribeSinkError", "gone"));
+      DescribeSinkErrors::FromError(opal::Error::Modeled("DescribeSinkError", "gone"));
   ASSERT_TRUE(typed.is_describe_sink_error());
   EXPECT_EQ(typed.as_describe_sink_error().message, "");
 }
@@ -46,24 +46,24 @@ TEST(TypedErrorsTest, OtherCodesAndOtherKindsStayEmpty) {
   // Another operation's modeled error: CreateSink's quota error is not in
   // DescribeSink's listing.
   EXPECT_TRUE(
-      DescribeSinkErrors::FromError(smithy::Error::Modeled("SinkQuotaExceeded", "full")).empty());
+      DescribeSinkErrors::FromError(opal::Error::Modeled("SinkQuotaExceeded", "full")).empty());
   // The kind gates matching: a non-modeled error never engages a member,
   // even with a matching code string.
   EXPECT_TRUE(DescribeSinkErrors::FromError(
-                  smithy::Error(smithy::ErrorKind::kTransport, "SinkNotFound", "spoofed"))
+                  opal::Error(opal::ErrorKind::kTransport, "SinkNotFound", "spoofed"))
                   .empty());
-  EXPECT_TRUE(DescribeSinkErrors::FromError(smithy::Error::Transport("boom")).empty());
+  EXPECT_TRUE(DescribeSinkErrors::FromError(opal::Error::Transport("boom")).empty());
 }
 
 TEST(TypedErrorsTest, VisitDispatchesExhaustivelyIncludingTheEmptyState) {
-  const auto describe = smithy::Overloaded{
+  const auto describe = opal::Overloaded{
       [](const SinkNotFound& e) { return "not-found:" + e.message; },
       [](const DescribeSinkError&) { return std::string("gone"); },
       [](std::monostate) { return std::string("unmodeled"); },
   };
   EXPECT_EQ(DescribeSinkErrors::FromError(SinkNotFoundError()).visit(describe),
             "not-found:no sink: s1");
-  EXPECT_EQ(DescribeSinkErrors::FromError(smithy::Error::Transport("boom")).visit(describe),
+  EXPECT_EQ(DescribeSinkErrors::FromError(opal::Error::Transport("boom")).visit(describe),
             "unmodeled");
 }
 

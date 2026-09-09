@@ -9,7 +9,7 @@
 #include <limits>
 #include <string>
 
-namespace smithy {
+namespace opal {
 namespace {
 
 TEST(TimestampOrderingTest, ProvidesTheFullComparisonSet) {
@@ -24,8 +24,8 @@ TEST(TimestampOrderingTest, ProvidesTheFullComparisonSet) {
 }
 
 TEST(TimestampParseTest, EpochSecondsIsStrict) {
-  using smithy::Timestamp;
-  using smithy::TimestampFormat;
+  using opal::Timestamp;
+  using opal::TimestampFormat;
   EXPECT_TRUE(Timestamp::Parse("1515531081", TimestampFormat::kEpochSeconds).ok());
   EXPECT_TRUE(Timestamp::Parse("1515531081.123", TimestampFormat::kEpochSeconds).ok());
   EXPECT_TRUE(Timestamp::Parse("-5", TimestampFormat::kEpochSeconds).ok());
@@ -276,4 +276,4 @@ TEST(TimestampTest, RejectsInvalidEpochSeconds) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

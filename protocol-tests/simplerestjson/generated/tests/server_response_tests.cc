@@ -8,11 +8,11 @@
 #include <string>
 #include <utility>
 
-#include "smithy/protocoltests/simplerestjson/client.h"
-#include "smithy/protocoltests/simplerestjson/server.h"
+#include "opal/protocoltests/simplerestjson/client.h"
+#include "opal/protocoltests/simplerestjson/server.h"
 #include "smithy/testing/protocol_test.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 
 // Generated from smithy.test#httpResponseTests (server cases): a stub
 // handler returns the expected params and the wire response the server
@@ -114,76 +114,76 @@ VersionOutput MinimalVersionOutput() {
 
 class RecordingHandler : public PizzaAdminServiceHandler {
   public:
-    smithy::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const opal::server::RequestContext&) override {
       lastAddMenuItem = input;
       return MinimalAddMenuItemOutput();
     }
     std::optional<AddMenuItemInput> lastAddMenuItem;
-    smithy::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput& input, const opal::server::RequestContext&) override {
       lastCustomCode = input;
       return MinimalCustomCodeOutput();
     }
     std::optional<CustomCodeInput> lastCustomCode;
-    smithy::Outcome<GetEnumOutput> GetEnum(const GetEnumInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetEnumOutput> GetEnum(const GetEnumInput& input, const opal::server::RequestContext&) override {
       lastGetEnum = input;
       return MinimalGetEnumOutput();
     }
     std::optional<GetEnumInput> lastGetEnum;
-    smithy::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput& input, const opal::server::RequestContext&) override {
       lastGetIntEnum = input;
       return MinimalGetIntEnumOutput();
     }
     std::optional<GetIntEnumInput> lastGetIntEnum;
-    smithy::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const opal::server::RequestContext&) override {
       lastGetMenu = input;
       return MinimalGetMenuOutput();
     }
     std::optional<GetMenuInput> lastGetMenu;
-    smithy::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput& input, const opal::server::RequestContext&) override {
       lastHeaderEndpoint = input;
       return MinimalHeaderEndpointOutput();
     }
     std::optional<HeaderEndpointInput> lastHeaderEndpoint;
-    smithy::Outcome<HealthOutput> Health(const HealthInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HealthOutput> Health(const HealthInput& input, const opal::server::RequestContext&) override {
       lastHealth = input;
       return MinimalHealthOutput();
     }
     std::optional<HealthInput> lastHealth;
-    smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const opal::server::RequestContext&) override {
       lastHttpPayloadRequiredWithDefault = input;
       return MinimalHttpPayloadRequiredWithDefaultOutput();
     }
     std::optional<HttpPayloadRequiredWithDefaultInput> lastHttpPayloadRequiredWithDefault;
-    smithy::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const opal::server::RequestContext&) override {
       lastHttpPayloadWithDefault = input;
       return MinimalHttpPayloadWithDefaultOutput();
     }
     std::optional<HttpPayloadWithDefaultInput> lastHttpPayloadWithDefault;
-    smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const opal::server::RequestContext&) override {
       lastOpenUnions = input;
       return MinimalOpenUnionsOutput();
     }
     std::optional<OpenUnionsInput> lastOpenUnions;
-    smithy::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput& input, const opal::server::RequestContext&) override {
       lastPreserveOrder = input;
       return MinimalPreserveOrderOutput();
     }
     std::optional<PreserveOrderInput> lastPreserveOrder;
-    smithy::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput& input, const opal::server::RequestContext&) override {
       lastRoundTrip = input;
       return MinimalRoundTripOutput();
     }
     std::optional<RoundTripInput> lastRoundTrip;
-    smithy::Outcome<VersionOutput> Version(const VersionInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<VersionOutput> Version(const VersionInput& input, const opal::server::RequestContext&) override {
       lastVersion = input;
       return MinimalVersionOutput();
     }
     std::optional<VersionInput> lastVersion;
 };
 
-smithy::http::HttpRequest MinimalRequestForAddMenuItem() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForAddMenuItem() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -205,9 +205,9 @@ smithy::http::HttpRequest MinimalRequestForAddMenuItem() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForCustomCode() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForCustomCode() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -219,9 +219,9 @@ smithy::http::HttpRequest MinimalRequestForCustomCode() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForGetEnum() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForGetEnum() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -234,9 +234,9 @@ smithy::http::HttpRequest MinimalRequestForGetEnum() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForGetIntEnum() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForGetIntEnum() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -249,9 +249,9 @@ smithy::http::HttpRequest MinimalRequestForGetIntEnum() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForGetMenu() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForGetMenu() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -264,9 +264,9 @@ smithy::http::HttpRequest MinimalRequestForGetMenu() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForHeaderEndpoint() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForHeaderEndpoint() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -278,9 +278,9 @@ smithy::http::HttpRequest MinimalRequestForHeaderEndpoint() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForHttpPayloadRequiredWithDefault() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForHttpPayloadRequiredWithDefault() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -292,9 +292,9 @@ smithy::http::HttpRequest MinimalRequestForHttpPayloadRequiredWithDefault() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForHttpPayloadWithDefault() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForHttpPayloadWithDefault() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -306,9 +306,9 @@ smithy::http::HttpRequest MinimalRequestForHttpPayloadWithDefault() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForOpenUnions() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForOpenUnions() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -321,9 +321,9 @@ smithy::http::HttpRequest MinimalRequestForOpenUnions() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForPreserveOrder() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForPreserveOrder() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -335,9 +335,9 @@ smithy::http::HttpRequest MinimalRequestForPreserveOrder() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForRoundTrip() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForRoundTrip() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -350,9 +350,9 @@ smithy::http::HttpRequest MinimalRequestForRoundTrip() {
   return transport->last_request;
 }
 
-smithy::http::HttpRequest MinimalRequestForVersion() {
-  auto transport = std::make_shared<smithy::testing::CapturingTransport>();
-  smithy::ClientConfig config;
+opal::http::HttpRequest MinimalRequestForVersion() {
+  auto transport = std::make_shared<opal::testing::CapturingTransport>();
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *PizzaAdminServiceClient::Create(std::move(config));
@@ -370,29 +370,29 @@ smithy::http::HttpRequest MinimalRequestForVersion() {
 TEST(PizzaAdminServiceServerResponseTest, AddMenuItemResult) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   AddMenuItemOutput v{};
   v.itemId = "1";
-  v.added = smithy::Timestamp::FromEpochMilliseconds(1576540098000LL);
+  v.added = opal::Timestamp::FromEpochMilliseconds(1576540098000LL);
   return v;
 }();
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForAddMenuItem());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForAddMenuItem());
   EXPECT_EQ(response.status, 201);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_EQ(response.headers.Get("X-ADDED-AT").value_or("<missing>"), "1576540098");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("\"1\"", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("\"1\"", response.body));
 }
 
 // respect the httpResponseCode trait
 TEST(PizzaAdminServiceServerResponseTest, CustomCodeOutput) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   CustomCodeOutput v{};
@@ -402,15 +402,15 @@ TEST(PizzaAdminServiceServerResponseTest, CustomCodeOutput) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForCustomCode());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForCustomCode());
   EXPECT_EQ(response.status, 399);
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{}", response.body));
 }
 
 TEST(PizzaAdminServiceServerResponseTest, GetEnumOutput) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<GetEnumOutput> GetEnum(const GetEnumInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetEnumOutput> GetEnum(const GetEnumInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   GetEnumOutput v{};
@@ -420,15 +420,15 @@ TEST(PizzaAdminServiceServerResponseTest, GetEnumOutput) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForGetEnum());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForGetEnum());
   EXPECT_EQ(response.status, 200);
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"result\":\"v1\"}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"result\":\"v1\"}", response.body));
 }
 
 TEST(PizzaAdminServiceServerResponseTest, GetIntEnumOutput) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   GetIntEnumOutput v{};
@@ -438,15 +438,15 @@ TEST(PizzaAdminServiceServerResponseTest, GetIntEnumOutput) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForGetIntEnum());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForGetIntEnum());
   EXPECT_EQ(response.status, 200);
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"result\":1}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"result\":1}", response.body));
 }
 
 TEST(PizzaAdminServiceServerResponseTest, GetMenuResponse) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   GetMenuOutput v{};
@@ -467,16 +467,16 @@ TEST(PizzaAdminServiceServerResponseTest, GetMenuResponse) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForGetMenu());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForGetMenu());
   EXPECT_EQ(response.status, 200);
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"a0b0f3a9-81d3-4bf3-8897-a76423116403\" :{\"food\":{\"pizza\": {\"name\":\"margharita\",\"base\":\"T\",\"toppings\":[\"MUSHROOM\", \"TOMATO\"]}},\"price\":9.0}}\n", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"a0b0f3a9-81d3-4bf3-8897-a76423116403\" :{\"food\":{\"pizza\": {\"name\":\"margharita\",\"base\":\"T\",\"toppings\":[\"MUSHROOM\", \"TOMATO\"]}},\"price\":9.0}}\n", response.body));
 }
 
 // tests variety of casing scenarios for reading http headers
 TEST(PizzaAdminServiceServerResponseTest, headerEndpointResponse) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   HeaderEndpointOutput v{};
@@ -489,7 +489,7 @@ TEST(PizzaAdminServiceServerResponseTest, headerEndpointResponse) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForHeaderEndpoint());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForHeaderEndpoint());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("X-Capitalized-Header").value_or("<missing>"), "Capitalized_value");
   EXPECT_EQ(response.headers.Get("X-UPPERCASE-HEADER").value_or("<missing>"), "UPPERCASE_VALUE");
@@ -501,7 +501,7 @@ TEST(PizzaAdminServiceServerResponseTest, headerEndpointResponse) {
 TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonSomeRequiredHttpPayloadWithDefault) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   HttpPayloadRequiredWithDefaultOutput v{};
@@ -511,17 +511,17 @@ TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonSomeRequiredHttpPayloadW
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadRequiredWithDefault());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadRequiredWithDefault());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("\"custom value\"", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("\"custom value\"", response.body));
 }
 
 // Use default value when there is no payload
 TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonNoneRequiredHttpPayloadWithDefault) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   HttpPayloadRequiredWithDefaultOutput v{};
@@ -531,7 +531,7 @@ TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonNoneRequiredHttpPayloadW
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadRequiredWithDefault());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadRequiredWithDefault());
   EXPECT_EQ(response.status, 200);
 }
 
@@ -539,7 +539,7 @@ TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonNoneRequiredHttpPayloadW
 TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonSomeHttpPayloadWithDefault) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   HttpPayloadWithDefaultOutput v{};
@@ -549,17 +549,17 @@ TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonSomeHttpPayloadWithDefau
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadWithDefault());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadWithDefault());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("\"custom value\"", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("\"custom value\"", response.body));
 }
 
 // Use default value when there is no payload
 TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonNoneHttpPayloadWithDefault) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   HttpPayloadWithDefaultOutput v{};
@@ -569,7 +569,7 @@ TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonNoneHttpPayloadWithDefau
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadWithDefault());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForHttpPayloadWithDefault());
   EXPECT_EQ(response.status, 200);
 }
 
@@ -577,7 +577,7 @@ TEST(PizzaAdminServiceServerResponseTest, SimpleRestJsonNoneHttpPayloadWithDefau
 TEST(PizzaAdminServiceServerResponseTest, OpenUnionsKnownTaggedUnionCase) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   OpenUnionsOutput v{};
@@ -587,45 +587,45 @@ TEST(PizzaAdminServiceServerResponseTest, OpenUnionsKnownTaggedUnionCase) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"tagged\": {\"str\": \"string value\"}}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"tagged\": {\"str\": \"string value\"}}", response.body));
 }
 
 // Return an unknown tagged union value in an open union
 TEST(PizzaAdminServiceServerResponseTest, OpenUnionsUnknownTaggedUnionCase) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   OpenUnionsOutput v{};
   v.data = OpenUnionsPayload::FromTagged(OpenTaggedUnion::FromOther([] {
-  smithy::DocumentMap map;
+  opal::DocumentMap map;
   map.emplace("whatisthis", [] {
-  smithy::DocumentMap map;
-  map.emplace("nested", smithy::Document(std::string("something different")));
-  return smithy::Document(std::move(map));
+  opal::DocumentMap map;
+  map.emplace("nested", opal::Document(std::string("something different")));
+  return opal::Document(std::move(map));
 }());
-  return smithy::Document(std::move(map));
+  return opal::Document(std::move(map));
 }()));
   return v;
 }();
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"tagged\": {\"whatisthis\": {\"nested\": \"something different\"}}}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"tagged\": {\"whatisthis\": {\"nested\": \"something different\"}}}", response.body));
 }
 
 // Return a known discriminated union value in an open union
 TEST(PizzaAdminServiceServerResponseTest, OpenUnionsKnownDiscriminatedUnionCase) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   OpenUnionsOutput v{};
@@ -639,70 +639,70 @@ TEST(PizzaAdminServiceServerResponseTest, OpenUnionsKnownDiscriminatedUnionCase)
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"smol\", \"content\": \"some string\"}}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"smol\", \"content\": \"some string\"}}", response.body));
 }
 
 // Return an unknown discriminated union value in an open union
 TEST(PizzaAdminServiceServerResponseTest, OpenUnionsUnknownDiscriminatedUnionCase) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   OpenUnionsOutput v{};
   v.data = OpenUnionsPayload::FromDiscriminated(OpenDiscriminatedUnion::FromOther([] {
-  smithy::DocumentMap map;
-  map.emplace("key", smithy::Document(std::string("mysterious_and_important")));
-  map.emplace("extras", smithy::Document(std::int64_t{42}));
-  return smithy::Document(std::move(map));
+  opal::DocumentMap map;
+  map.emplace("key", opal::Document(std::string("mysterious_and_important")));
+  map.emplace("extras", opal::Document(std::int64_t{42}));
+  return opal::Document(std::move(map));
 }()));
   return v;
 }();
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForOpenUnions());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"mysterious_and_important\", \"extras\": 42}}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"discriminated\": {\"key\": \"mysterious_and_important\", \"extras\": 42}}", response.body));
 }
 
 TEST(PizzaAdminServiceServerResponseTest, PreserveKeyOrderResponse) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   PreserveOrderOutput v{};
   v.map = std::map<std::string, std::int32_t>{{"a", 1}, {"d", 2}, {"e", 3}, {"b", 4}};
   v.document = [] {
-  smithy::DocumentMap map;
-  map.emplace("foo", smithy::Document(std::int64_t{1}));
-  map.emplace("a", smithy::Document(std::string("b")));
+  opal::DocumentMap map;
+  map.emplace("foo", opal::Document(std::int64_t{1}));
+  map.emplace("a", opal::Document(std::string("b")));
   map.emplace("c", [] {
-  smithy::DocumentList list;
-  return smithy::Document(std::move(list));
+  opal::DocumentList list;
+  return opal::Document(std::move(list));
 }());
-  map.emplace("bar", smithy::Document(nullptr));
-  return smithy::Document(std::move(map));
+  map.emplace("bar", opal::Document(nullptr));
+  return opal::Document(std::move(map));
 }();
   return v;
 }();
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForPreserveOrder());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForPreserveOrder());
   EXPECT_EQ(response.status, 200);
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"map\":{\"a\":1,\"d\":2,\"e\":3,\"b\":4},\"document\":{\"foo\":1,\"a\":\"b\",\"c\":[],\"bar\":null}}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"map\":{\"a\":1,\"d\":2,\"e\":3,\"b\":4},\"document\":{\"foo\":1,\"a\":\"b\",\"c\":[],\"bar\":null}}", response.body));
 }
 
 TEST(PizzaAdminServiceServerResponseTest, RoundTripDataResponse) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   RoundTripOutput v{};
@@ -715,16 +715,16 @@ TEST(PizzaAdminServiceServerResponseTest, RoundTripDataResponse) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForRoundTrip());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForRoundTrip());
   EXPECT_EQ(response.status, 200);
   EXPECT_EQ(response.headers.Get("HEADER").value_or("<missing>"), "the header");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"label\":\"thelabel\",\"query\":\"the query\",\"body\":\"the body\"}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"label\":\"thelabel\",\"query\":\"the query\",\"body\":\"the body\"}", response.body));
 }
 
 TEST(PizzaAdminServiceServerResponseTest, VersionOutput) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<VersionOutput> Version(const VersionInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<VersionOutput> Version(const VersionInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return [] {
   VersionOutput v{};
@@ -734,17 +734,17 @@ TEST(PizzaAdminServiceServerResponseTest, VersionOutput) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForVersion());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForVersion());
   EXPECT_EQ(response.status, 200);
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("\"1.0\"", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("\"1.0\"", response.body));
 }
 
 TEST(PizzaAdminServiceServerErrorTest, NotFoundError) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const opal::server::RequestContext&) override {
       (void)input;
-      smithy::Error error = smithy::Error::Modeled("NotFoundError", "");
+      opal::Error error = opal::Error::Modeled("NotFoundError", "");
       error.set_detail([] {
   NotFoundError v{};
   v.name = "unknown";
@@ -754,20 +754,20 @@ TEST(PizzaAdminServiceServerErrorTest, NotFoundError) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForGetMenu());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForGetMenu());
   EXPECT_EQ(response.status, 404);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_EQ(response.headers.Get("X-Error-Type").value_or("<missing>"), "NotFoundError");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"name\":\"unknown\"}\n", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"name\":\"unknown\"}\n", response.body));
 }
 
 // the payload produced on price error
 TEST(PizzaAdminServiceServerErrorTest, PriceErrorTest) {
   class Handler final : public RecordingHandler {
    public:
-    smithy::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const opal::server::RequestContext&) override {
       (void)input;
-      smithy::Error error = smithy::Error::Modeled("PriceError", "");
+      opal::Error error = opal::Error::Modeled("PriceError", "");
       error.set_detail([] {
   PriceError v{};
   v.message = "Price must be greater than 0";
@@ -778,11 +778,11 @@ TEST(PizzaAdminServiceServerErrorTest, PriceErrorTest) {
     }
   };
   PizzaAdminServiceServer server(std::make_shared<Handler>());
-  const smithy::http::HttpResponse response = server.Handler()(MinimalRequestForAddMenuItem());
+  const opal::http::HttpResponse response = server.Handler()(MinimalRequestForAddMenuItem());
   EXPECT_EQ(response.status, 400);
   EXPECT_EQ(response.headers.Get("Content-Type").value_or("<missing>"), "application/json");
   EXPECT_EQ(response.headers.Get("X-CODE").value_or("<missing>"), "400");
-  EXPECT_TRUE(smithy::testing::JsonBodyEquals("{\"message\":\"Price must be greater than 0\"}", response.body));
+  EXPECT_TRUE(opal::testing::JsonBodyEquals("{\"message\":\"Price must be greater than 0\"}", response.body));
 }
 
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

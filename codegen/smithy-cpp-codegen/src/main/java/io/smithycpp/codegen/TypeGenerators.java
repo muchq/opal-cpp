@@ -246,7 +246,7 @@ final class TypeGenerators {
         if (context.model().expectShape(member.getTarget()).hasTrait(SensitiveTrait.class)) {
           writer.write("out += \"[REDACTED]\";");
         } else {
-          writer.write("smithy::DebugAppend(out, $Lthis->$L);", optional ? "*" : "", memberName);
+          writer.write("opal::DebugAppend(out, $Lthis->$L);", optional ? "*" : "", memberName);
         }
         if (optional) {
           writer.closeBlock("}");
@@ -310,7 +310,7 @@ final class TypeGenerators {
       epilogue.write("std::size_t seed = 0;");
       for (MemberShape member : shape.members()) {
         epilogue.write(
-            "seed = smithy::HashCombine(seed, smithy::HashValue(value.$L));",
+            "seed = opal::HashCombine(seed, opal::HashValue(value.$L));",
             symbols().toMemberName(member));
       }
       epilogue.write("return seed;");
@@ -331,8 +331,8 @@ final class TypeGenerators {
       writer.addInclude("<compare>");
       writer.write("friend auto operator<=>(const $1L&, const $1L&) = default;", name);
     } else {
-      writer.write("// Equality-only: a member type has no ordering (smithy::Document or");
-      writer.write("// recursion via smithy::Boxed) — see generated-types.md.");
+      writer.write("// Equality-only: a member type has no ordering (opal::Document or");
+      writer.write("// recursion via opal::Boxed) — see generated-types.md.");
     }
   }
 
@@ -430,8 +430,8 @@ final class TypeGenerators {
         "std::size_t operator()(const $L::$L& value) const noexcept {",
         writer.cppNamespace(),
         name);
-    epilogue.write("return smithy::HashCombine(static_cast<std::size_t>(value.value_),");
-    epilogue.write("                           smithy::HashValue(value.unknown_));");
+    epilogue.write("return opal::HashCombine(static_cast<std::size_t>(value.value_),");
+    epilogue.write("                           opal::HashValue(value.unknown_));");
     epilogue.closeBlock("}");
     epilogue.closeBlock("};");
     epilogue.write("");
@@ -588,7 +588,7 @@ final class TypeGenerators {
         if (member.sensitive()) {
           writer.write("out += \"[REDACTED]\";");
         } else {
-          writer.write("smithy::DebugAppend(out, std::get<$L>(value_));", i + 1);
+          writer.write("opal::DebugAppend(out, std::get<$L>(value_));", i + 1);
         }
         writer.write("break;");
         writer.dedent();
@@ -613,7 +613,7 @@ final class TypeGenerators {
     writer.write("private:").indent();
     writer.openBlock("void require_is(std::size_t index, const char* requested) const {");
     writer.openBlock("if (value_.index() != index) {");
-    writer.write("smithy::internal::FatalWrongUnionAccess($S, requested, case_name());", name);
+    writer.write("opal::internal::FatalWrongUnionAccess($S, requested, case_name());", name);
     writer.closeBlock("}");
     writer.closeBlock("}");
     writer.write("");
@@ -642,8 +642,8 @@ final class TypeGenerators {
         name);
     epilogue.write("const std::size_t member =");
     epilogue.write(
-        "    std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);");
-    epilogue.write("return smithy::HashCombine(value.value_.index(), member);");
+        "    std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);");
+    epilogue.write("return opal::HashCombine(value.value_.index(), member);");
     epilogue.closeBlock("}");
     epilogue.closeBlock("};");
     epilogue.write("");

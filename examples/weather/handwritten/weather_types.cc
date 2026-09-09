@@ -3,11 +3,11 @@
 namespace example::weather::handwritten {
 namespace {
 
-using smithy::Document;
-using smithy::DocumentList;
-using smithy::DocumentMap;
-using smithy::Error;
-using smithy::Outcome;
+using opal::Document;
+using opal::DocumentList;
+using opal::DocumentMap;
+using opal::Error;
+using opal::Outcome;
 
 Error MissingMember(const char* name) {
   return Error::Serialization(std::string("weather: missing required member: ") + name);
@@ -106,7 +106,7 @@ Outcome<GetForecastOutput> DeserializeGetForecastOutput(const Document& doc) {
 Document SerializeGetCurrentTimeOutput(const GetCurrentTimeOutput& value) {
   DocumentMap map;
   // restJson1 serializes body timestamps as epoch-seconds by default.
-  map.emplace("time", Document::FromTimestamp(value.time, smithy::TimestampFormat::kEpochSeconds));
+  map.emplace("time", Document::FromTimestamp(value.time, opal::TimestampFormat::kEpochSeconds));
   return Document(std::move(map));
 }
 
@@ -116,7 +116,7 @@ Outcome<GetCurrentTimeOutput> DeserializeGetCurrentTimeOutput(const Document& do
   if (time == nullptr) return MissingMember("time");
   GetCurrentTimeOutput out;
   if (time->is_int() || time->is_double()) {
-    out.time = smithy::Timestamp::FromEpochSeconds(time->AsNumber());
+    out.time = opal::Timestamp::FromEpochSeconds(time->AsNumber());
   } else if (time->is_timestamp()) {
     out.time = time->as_timestamp().value;
   } else {

@@ -4,7 +4,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/http/message.h"
 
-namespace smithy {
+namespace opal {
 
 // User-supplied hooks around every HTTP attempt a generated client makes
 // (smithy-rs prior art: client interceptors). Register on
@@ -33,6 +33,6 @@ class Interceptor {
   }
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CLIENT_INTERCEPTOR_H_

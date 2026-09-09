@@ -11,7 +11,7 @@
 #include "smithy/http/headers.h"
 #include "smithy/http/transport.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // A blocking, full-duplex event-stream session over one WebSocket
 // connection (ADR-0015). What travels is eventstream::Message — exactly one
@@ -283,7 +283,7 @@ using WebSocketDialer =
 // the handle only after every Send/Receive has returned — Close() is the
 // cancellation path, destruction is not.
 //
-//   auto socket = smithy::http::BeastWebSocketClient::Dial({
+//   auto socket = opal::http::BeastWebSocketClient::Dial({
 //       .host = "stream.example.com", .port = 443, .tls = true,
 //       .target = "/events",
 //   });
@@ -336,6 +336,6 @@ class BeastWebSocketClient {
   static WebSocketDialer Dialer();
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_WEBSOCKET_H_

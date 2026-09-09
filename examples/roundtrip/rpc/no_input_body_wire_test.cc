@@ -19,14 +19,13 @@ namespace {
 
 class RecordingHandler final : public RoundTripRpcHandler {
  public:
-  smithy::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input,
+                                             const opal::server::RequestContext&) override {
     put_sink_calls++;
     return PutSinkRpcOutput{.sinkId = input.sinkId};
   }
 
-  smithy::Outcome<PingOutput> Ping(const PingInput&,
-                                   const smithy::server::RequestContext&) override {
+  opal::Outcome<PingOutput> Ping(const PingInput&, const opal::server::RequestContext&) override {
     ping_calls++;
     return PingOutput{};
   }
@@ -35,8 +34,8 @@ class RecordingHandler final : public RoundTripRpcHandler {
   int put_sink_calls = 0;
 };
 
-smithy::http::HttpRequest CborRequest(const std::string& operation, std::string body) {
-  return smithy::testing::Rpcv2CborRequest("RoundTripRpc", operation, std::move(body));
+opal::http::HttpRequest CborRequest(const std::string& operation, std::string body) {
+  return opal::testing::Rpcv2CborRequest("RoundTripRpc", operation, std::move(body));
 }
 
 TEST(NoInputBodyTest, GarbageBodyAtANoInputOperationIsIgnored) {
@@ -69,12 +68,12 @@ TEST(NoInputBodyTest, TheSameGarbageAtAModeledInputOperationIsRejected) {
 TEST(NoInputBodyTest, RpcDispatchThreadsTheRequestContext) {
   class ContextProbe final : public RoundTripRpcHandler {
    public:
-    smithy::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput&,
-                                                 const smithy::server::RequestContext&) override {
+    opal::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput&,
+                                               const opal::server::RequestContext&) override {
       return PutSinkRpcOutput{};
     }
-    smithy::Outcome<PingOutput> Ping(const PingInput&,
-                                     const smithy::server::RequestContext& context) override {
+    opal::Outcome<PingOutput> Ping(const PingInput&,
+                                   const opal::server::RequestContext& context) override {
       threaded = context.request != nullptr && context.request->method == "POST" &&
                  context.request->headers.Get("x-probe").value_or("") == "42";
       return PingOutput{};

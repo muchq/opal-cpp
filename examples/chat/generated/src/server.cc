@@ -35,18 +35,18 @@ namespace helpers {
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -54,12 +54,12 @@ namespace helpers {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
@@ -70,31 +70,31 @@ namespace helpers {
   return status >= 200 && status != 204 && status != 205 && status != 304;
 }
 
-smithy::http::HttpResponse JsonError(int status, const std::string& code, const std::string& message, smithy::DocumentMap body) {
-  if (!code.empty()) body.insert_or_assign("__type", smithy::Document(code));
-  if (!message.empty()) body.insert_or_assign("message", smithy::Document(message));
-  smithy::http::HttpResponse response;
+opal::http::HttpResponse JsonError(int status, const std::string& code, const std::string& message, opal::DocumentMap body) {
+  if (!code.empty()) body.insert_or_assign("__type", opal::Document(code));
+  if (!message.empty()) body.insert_or_assign("message", opal::Document(message));
+  opal::http::HttpResponse response;
   response.status = status;
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body)));
+  response.body = opal::json::Encode(opal::Document(std::move(body)));
   return response;
 }
 
 // [[maybe_unused]]: only unary routes map handler errors here; a service
 // whose operations all stream reports errors on the stream instead.
-[[maybe_unused]] smithy::http::HttpResponse ErrorToResponse(const smithy::Error& error) {
+[[maybe_unused]] opal::http::HttpResponse ErrorToResponse(const opal::Error& error) {
   std::vector<std::pair<std::string, std::string>> header_values;
   (void)header_values;
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+  if (error.kind() == opal::ErrorKind::kModeled) {
     if (error.code() == "Kicked") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::Kicked>()) {
         body = SerializeKicked(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       auto response = helpers::JsonError(403, "", "", std::move(body));
       response.headers.Set("x-error-type", error.code());
@@ -103,7 +103,7 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
     }
     return helpers::JsonError(400, error.code(), error.message(), {});
   }
-  if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) {
+  if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) {
     auto response = helpers::JsonError(400, "", error.message(), {});
     response.headers.Set("x-error-type", "SerializationException");
     return response;
@@ -112,7 +112,7 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
   return helpers::JsonError(500, "InternalFailure", "internal failure", {});
 }
 
-smithy::Outcome<types::ConverseInput> ParseConverseInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::ConverseInput> ParseConverseInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -127,7 +127,7 @@ smithy::Outcome<types::ConverseInput> ParseConverseInput(const smithy::http::Htt
   return input;
 }
 
-smithy::Outcome<types::ListRoomsInput> ParseListRoomsInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::ListRoomsInput> ParseListRoomsInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -135,18 +135,18 @@ smithy::Outcome<types::ListRoomsInput> ParseListRoomsInput(const smithy::http::H
   return input;
 }
 
-smithy::http::HttpResponse BuildListRoomsResponse(const types::ListRoomsOutput& output) {
+opal::http::HttpResponse BuildListRoomsResponse(const types::ListRoomsOutput& output) {
   (void)output;
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
-  smithy::DocumentMap body_map;
+  opal::DocumentMap body_map;
   body_map.emplace("rooms", SerializeRoomSummaries(output.rooms));
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  response.body = opal::json::Encode(opal::Document(std::move(body_map)));
   return response;
 }
 
-smithy::Outcome<types::WatchInput> ParseWatchInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::WatchInput> ParseWatchInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -160,52 +160,52 @@ smithy::Outcome<types::WatchInput> ParseWatchInput(const smithy::http::HttpReque
 
 // One event per message (ADR-0016): the engaged member's structure is the
 // payload, its member name the :event-type.
-smithy::Outcome<smithy::eventstream::Message> EncodeConverseEvent(const types::RoomEvents& event) {
+opal::Outcome<opal::eventstream::Message> EncodeConverseEvent(const types::RoomEvents& event) {
   if (event.is_message()) {
-    return smithy::eventstream::MakeEventMessage("message", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeChatMessage(event.as_message()))));
+    return opal::eventstream::MakeEventMessage("message", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeChatMessage(event.as_message()))));
   }
   if (event.is_joined()) {
-    return smithy::eventstream::MakeEventMessage("joined", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeMemberJoined(event.as_joined()))));
+    return opal::eventstream::MakeEventMessage("joined", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeMemberJoined(event.as_joined()))));
   }
   if (event.is_left()) {
-    return smithy::eventstream::MakeEventMessage("left", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeMemberLeft(event.as_left()))));
+    return opal::eventstream::MakeEventMessage("left", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeMemberLeft(event.as_left()))));
   }
-  return smithy::Error::Validation("RoomEvents: no event member engaged");
+  return opal::Error::Validation("RoomEvents: no event member engaged");
 }
 
-smithy::Outcome<types::ChatEvents> DecodeConverseEvent(const smithy::eventstream::Message& message) {
-  auto envelope = smithy::eventstream::ParseEnvelope(message);
+opal::Outcome<types::ChatEvents> DecodeConverseEvent(const opal::eventstream::Message& message) {
+  auto envelope = opal::eventstream::ParseEnvelope(message);
   if (!envelope) return std::move(envelope).error();
-  if (envelope->kind == smithy::eventstream::EventEnvelope::Kind::kException) {
+  if (envelope->kind == opal::eventstream::EventEnvelope::Kind::kException) {
     // Clients send events, never exceptions; treat one as a terminal protocol
     // violation carrying the peer's claimed identity.
-    return smithy::Error::Modeled(envelope->type, "peer sent an exception message");
+    return opal::Error::Modeled(envelope->type, "peer sent an exception message");
   }
   if (envelope->type == "message") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeChatMessage(*doc);
     if (!event) return std::move(event).error();
     return types::ChatEvents::FromMessage(*std::move(event));
   }
   if (envelope->type == "leave") {
-    auto doc = smithy::json::Decode(envelope->payload.ToString());
+    auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeLeaveNotice(*doc);
     if (!event) return std::move(event).error();
     return types::ChatEvents::FromLeave(*std::move(event));
   }
-  return smithy::Error::Serialization("Converse: unknown event type: " + envelope->type);
+  return opal::Error::Serialization("Converse: unknown event type: " + envelope->type);
 }
 
 // A handler failure ends the stream with one exception message before the
 // close (ADR-0016).
-smithy::eventstream::Message BuildConverseExceptionMessage(const smithy::Error& error) {
+opal::eventstream::Message BuildConverseExceptionMessage(const opal::Error& error) {
   std::string type = "InternalFailure";
   // Never leak internal detail on unexpected failures.
   std::string message = "internal failure";
-  smithy::DocumentMap body;
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+  opal::DocumentMap body;
+  if (error.kind() == opal::ErrorKind::kModeled) {
     type = error.code();
     message = error.message();
     if (error.code() == "Kicked") {
@@ -213,16 +213,16 @@ smithy::eventstream::Message BuildConverseExceptionMessage(const smithy::Error& 
         body = SerializeKicked(*detail).as_map();
       }
     }
-  } else if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) {
+  } else if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) {
     type = "SerializationException";
     message = error.message();
   }
   // The typed detail's own message member wins over the generic one.
   const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
   if (!has_message && !message.empty()) {
-    body.emplace("message", smithy::Document(std::move(message)));
+    body.emplace("message", opal::Document(std::move(message)));
   }
-  return smithy::eventstream::MakeExceptionMessage(type, "application/json", smithy::Blob::FromString(smithy::json::Encode(smithy::Document(std::move(body)))));
+  return opal::eventstream::MakeExceptionMessage(type, "application/json", opal::Blob::FromString(opal::json::Encode(opal::Document(std::move(body)))));
 }
 
 // The async route's launch wrapper (ADR-0021): its frame owns the typed
@@ -231,56 +231,56 @@ smithy::eventstream::Message BuildConverseExceptionMessage(const smithy::Error& 
 // this frame (and the stream it owns) outlives the write — closing a
 // busy wire can cancel it. Best-effort, like the blocking route: a send
 // the terminated session refuses is discarded.
-smithy::eventstream::Detached ServeConverseAsync(std::shared_ptr<types::ChatAsyncHandler> handler, types::ConverseInput input, std::shared_ptr<smithy::http::WebSocket> socket) {
+opal::eventstream::Detached ServeConverseAsync(std::shared_ptr<types::ChatAsyncHandler> handler, types::ConverseInput input, std::shared_ptr<opal::http::WebSocket> socket) {
   types::ConverseAsyncServerStream stream(socket, helpers::EncodeConverseEvent, helpers::DecodeConverseEvent);
   auto outcome = co_await handler->Converse(std::move(input), stream);
   if (!outcome.ok()) {
-    (void)co_await smithy::eventstream::SendMessage(socket, helpers::BuildConverseExceptionMessage(outcome.error()));
+    (void)co_await opal::eventstream::SendMessage(socket, helpers::BuildConverseExceptionMessage(outcome.error()));
   }
   stream.Close();
 }
 
 // One event per message (ADR-0016): the engaged member's structure is the
 // payload, its member name the :event-type.
-smithy::Outcome<smithy::eventstream::Message> EncodeWatchEvent(const types::RoomEvents& event) {
+opal::Outcome<opal::eventstream::Message> EncodeWatchEvent(const types::RoomEvents& event) {
   if (event.is_message()) {
-    return smithy::eventstream::MakeEventMessage("message", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeChatMessage(event.as_message()))));
+    return opal::eventstream::MakeEventMessage("message", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeChatMessage(event.as_message()))));
   }
   if (event.is_joined()) {
-    return smithy::eventstream::MakeEventMessage("joined", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeMemberJoined(event.as_joined()))));
+    return opal::eventstream::MakeEventMessage("joined", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeMemberJoined(event.as_joined()))));
   }
   if (event.is_left()) {
-    return smithy::eventstream::MakeEventMessage("left", "application/json", smithy::Blob::FromString(smithy::json::Encode(SerializeMemberLeft(event.as_left()))));
+    return opal::eventstream::MakeEventMessage("left", "application/json", opal::Blob::FromString(opal::json::Encode(SerializeMemberLeft(event.as_left()))));
   }
-  return smithy::Error::Validation("RoomEvents: no event member engaged");
+  return opal::Error::Validation("RoomEvents: no event member engaged");
 }
 
 // Watch models no events in this direction: any received message is a
 // protocol violation and therefore terminal (ADR-0016).
-smithy::Outcome<smithy::eventstream::NoEvents> DecodeWatchEvent(const smithy::eventstream::Message&) {
-  return smithy::Error::Serialization("Watch: no events are modeled in this direction");
+opal::Outcome<opal::eventstream::NoEvents> DecodeWatchEvent(const opal::eventstream::Message&) {
+  return opal::Error::Serialization("Watch: no events are modeled in this direction");
 }
 
 // A handler failure ends the stream with one exception message before the
 // close (ADR-0016).
-smithy::eventstream::Message BuildWatchExceptionMessage(const smithy::Error& error) {
+opal::eventstream::Message BuildWatchExceptionMessage(const opal::Error& error) {
   std::string type = "InternalFailure";
   // Never leak internal detail on unexpected failures.
   std::string message = "internal failure";
-  smithy::DocumentMap body;
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+  opal::DocumentMap body;
+  if (error.kind() == opal::ErrorKind::kModeled) {
     type = error.code();
     message = error.message();
-  } else if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) {
+  } else if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) {
     type = "SerializationException";
     message = error.message();
   }
   // The typed detail's own message member wins over the generic one.
   const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
   if (!has_message && !message.empty()) {
-    body.emplace("message", smithy::Document(std::move(message)));
+    body.emplace("message", opal::Document(std::move(message)));
   }
-  return smithy::eventstream::MakeExceptionMessage(type, "application/json", smithy::Blob::FromString(smithy::json::Encode(smithy::Document(std::move(body)))));
+  return opal::eventstream::MakeExceptionMessage(type, "application/json", opal::Blob::FromString(opal::json::Encode(opal::Document(std::move(body)))));
 }
 
 // The async route's launch wrapper (ADR-0021): its frame owns the typed
@@ -289,11 +289,11 @@ smithy::eventstream::Message BuildWatchExceptionMessage(const smithy::Error& err
 // this frame (and the stream it owns) outlives the write — closing a
 // busy wire can cancel it. Best-effort, like the blocking route: a send
 // the terminated session refuses is discarded.
-smithy::eventstream::Detached ServeWatchAsync(std::shared_ptr<types::ChatAsyncHandler> handler, types::WatchInput input, std::shared_ptr<smithy::http::WebSocket> socket) {
+opal::eventstream::Detached ServeWatchAsync(std::shared_ptr<types::ChatAsyncHandler> handler, types::WatchInput input, std::shared_ptr<opal::http::WebSocket> socket) {
   types::WatchAsyncServerStream stream(socket, helpers::EncodeWatchEvent, helpers::DecodeWatchEvent);
   auto outcome = co_await handler->Watch(std::move(input), stream);
   if (!outcome.ok()) {
-    (void)co_await smithy::eventstream::SendMessage(socket, helpers::BuildWatchExceptionMessage(outcome.error()));
+    (void)co_await opal::eventstream::SendMessage(socket, helpers::BuildWatchExceptionMessage(outcome.error()));
   }
   stream.Close();
 }
@@ -302,12 +302,12 @@ smithy::eventstream::Detached ServeWatchAsync(std::shared_ptr<types::ChatAsyncHa
 }  // namespace
 
 ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
-  : router_(std::make_shared<smithy::server::Router>()),
-    stream_router_(std::make_shared<smithy::server::WebSocketRouter>()) {
+  : router_(std::make_shared<opal::server::Router>()),
+    stream_router_(std::make_shared<opal::server::WebSocketRouter>()) {
   // The route table is derived from the model's @http traits; conflicts are
   // a modeling error surfaced by Router::Add (checked at generation time in a
   // later phase), so registration results are intentionally discarded.
-  (void)router_->Add("GET", "/rooms", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("GET", "/rooms", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     // Content-Type validation per the HTTP binding spec (415), then Accept (406);
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
@@ -317,12 +317,12 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
       error_response.headers.Set("x-error-type", "UnsupportedMediaTypeException");
       return error_response;
     }
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseListRoomsInput(request, context, &validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
     auto outcome = handler->ListRooms(*input, context);
@@ -332,8 +332,8 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
   // Streaming routes (ADR-0016) live on the WebSocket router; the upgrade
   // path bypasses the HTTP chain (ADR-0015), so they never collide with
   // the unary table above.
-  (void)stream_router_->Add("GET", "/rooms/{room}/converse", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, smithy::http::WebSocket& socket) {
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+  (void)stream_router_->Add("GET", "/rooms/{room}/converse", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context, opal::http::WebSocket& socket) {
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseConverseInput(request, context, &validation_failures);
     if (!input) {
       (void)socket.Send(helpers::BuildConverseExceptionMessage(input.error()));
@@ -347,8 +347,8 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
     }
     stream.Close();
   }, "Converse");
-  (void)stream_router_->Add("GET", "/rooms/{room}/watch", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, smithy::http::WebSocket& socket) {
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+  (void)stream_router_->Add("GET", "/rooms/{room}/watch", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context, opal::http::WebSocket& socket) {
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseWatchInput(request, context, &validation_failures);
     if (!input) {
       (void)socket.Send(helpers::BuildWatchExceptionMessage(input.error()));
@@ -365,12 +365,12 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
 }
 
 ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
-  : router_(std::make_shared<smithy::server::Router>()),
-    stream_router_(std::make_shared<smithy::server::WebSocketRouter>()) {
+  : router_(std::make_shared<opal::server::Router>()),
+    stream_router_(std::make_shared<opal::server::WebSocketRouter>()) {
   // The same unary table; every streaming route rides the shared-session
   // seam (ADR-0021) — an AddSession launch point per operation, so serving
   // a stream parks no handler thread.
-  (void)router_->Add("GET", "/rooms", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("GET", "/rooms", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     // Content-Type validation per the HTTP binding spec (415), then Accept (406);
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
@@ -380,20 +380,20 @@ ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
       error_response.headers.Set("x-error-type", "UnsupportedMediaTypeException");
       return error_response;
     }
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseListRoomsInput(request, context, &validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
     auto outcome = handler->ListRooms(*input, context);
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
     return helpers::BuildListRoomsResponse(*outcome);
   }, "ListRooms");
-  (void)stream_router_->AddSession("GET", "/rooms/{room}/converse", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::shared_ptr<smithy::http::WebSocket> socket) {
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+  (void)stream_router_->AddSession("GET", "/rooms/{room}/converse", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::shared_ptr<opal::http::WebSocket> socket) {
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseConverseInput(request, context, &validation_failures);
     if (!input) {
       (void)socket->Send(helpers::BuildConverseExceptionMessage(input.error()));
@@ -402,8 +402,8 @@ ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
     }
     helpers::ServeConverseAsync(handler, *std::move(input), std::move(socket));
   }, "Converse");
-  (void)stream_router_->AddSession("GET", "/rooms/{room}/watch", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::shared_ptr<smithy::http::WebSocket> socket) {
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+  (void)stream_router_->AddSession("GET", "/rooms/{room}/watch", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::shared_ptr<opal::http::WebSocket> socket) {
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseWatchInput(request, context, &validation_failures);
     if (!input) {
       (void)socket->Send(helpers::BuildWatchExceptionMessage(input.error()));
@@ -414,12 +414,12 @@ ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
   }, "Watch");
 }
 
-smithy::http::RequestHandler ChatServer::Handler() const {
+opal::http::RequestHandler ChatServer::Handler() const {
   auto router = router_;
-  return [router](const smithy::http::HttpRequest& request) { return router->Route(request); };
+  return [router](const opal::http::HttpRequest& request) { return router->Route(request); };
 }
 
-std::shared_ptr<smithy::server::WebSocketRouter> ChatServer::StreamRouter() const {
+std::shared_ptr<opal::server::WebSocketRouter> ChatServer::StreamRouter() const {
   return stream_router_;
 }
 

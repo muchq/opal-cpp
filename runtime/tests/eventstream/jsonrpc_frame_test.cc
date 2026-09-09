@@ -16,7 +16,7 @@
 #include "smithy/eventstream/envelope.h"
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 const Document kId(1);
@@ -254,4 +254,4 @@ TEST(JsonRpcFrameTest, TheViolationResponseRendersThePinnedRefusalShape) {
 }
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

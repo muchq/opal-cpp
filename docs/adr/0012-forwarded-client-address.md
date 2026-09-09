@@ -111,7 +111,7 @@ handlers via `context.request`).
   adoption (issue #104) showed the extractor-into-admission *wiring* is
   where silent mutants live (ignoring the trust set, keying on the raw
   peer: both compile, both pass naturally-written tests, both collapse all
-  proxied traffic into one bucket). So `smithy::server::PerClientRateLimit`
+  proxied traffic into one bucket). So `opal::server::PerClientRateLimit`
   ships that wiring — derive, consult the pluggable `allow(client)`
   policy, shed with the shaped 429 — while the limiter itself stays an
   application choice per the middleware contract. Underivable requests

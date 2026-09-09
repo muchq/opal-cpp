@@ -5,7 +5,7 @@
 
 #include "smithy/http/headers.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // Request/response bodies are byte strings for now. The alias exists so the
 // representation can grow into a stream-shaped type for Phase 8 (event
@@ -44,6 +44,6 @@ struct HttpResponse {
   std::string operation{};
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_MESSAGE_H_

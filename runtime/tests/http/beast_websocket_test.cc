@@ -38,11 +38,11 @@
 #include "smithy/testing/tls_test_identity.h"
 #include "smithy/testing/websocket_contract_test.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 using eventstream::Message;
-using smithy::testing::ConnectionEventRecorder;
+using opal::testing::ConnectionEventRecorder;
 
 Message Text(const std::string& kind, const std::string& body) {
   return Message{.headers = {{":event-type", kind}}, .payload = Blob::FromString(body)};
@@ -1110,8 +1110,8 @@ TEST(BeastWebSocketTest, StopUnblocksAServeCallbackMidReceive) {
 
 TEST(BeastWebSocketTest, TlsStreamsCarryMessagesEndToEnd) {
   BeastServerTransport::Options options = EchoOptions();
-  options.tls_certificate_chain_pem = smithy::testing::kTestCertificatePem;
-  options.tls_private_key_pem = smithy::testing::kTestPrivateKeyPem;
+  options.tls_certificate_chain_pem = opal::testing::kTestCertificatePem;
+  options.tls_private_key_pem = opal::testing::kTestPrivateKeyPem;
   BeastServerTransport server(options);
   ASSERT_TRUE(server.Start(NotFoundHandler()).ok());
 
@@ -1119,7 +1119,7 @@ TEST(BeastWebSocketTest, TlsStreamsCarryMessagesEndToEnd) {
   dial.host = "127.0.0.1";
   dial.port = server.port();
   dial.tls = true;
-  dial.tls_options.ca_pem = smithy::testing::kTestCertificatePem;
+  dial.tls_options.ca_pem = opal::testing::kTestCertificatePem;
   auto dialed = BeastWebSocketClient::Dial(dial);
   ASSERT_TRUE(dialed.ok()) << dialed.error().message();
 
@@ -1293,8 +1293,8 @@ TEST(BeastWebSocketTest, TlsDialAgainstAnUntrustedCertificateFailsFastAndNonRetr
   // with verification disabled) — only dialing an UNTRUSTED cert with
   // default options can catch it.
   BeastServerTransport::Options options = EchoOptions();
-  options.tls_certificate_chain_pem = smithy::testing::kTestCertificatePem;
-  options.tls_private_key_pem = smithy::testing::kTestPrivateKeyPem;
+  options.tls_certificate_chain_pem = opal::testing::kTestCertificatePem;
+  options.tls_private_key_pem = opal::testing::kTestPrivateKeyPem;
   BeastServerTransport server(options);
   ASSERT_TRUE(server.Start(NotFoundHandler()).ok());
 
@@ -1635,8 +1635,8 @@ TEST(BeastWebSocketTest, ALargeButLegalMessageRoundTrips) {
 TEST(BeastWebSocketTest, TheGateRefusesOverTlsToo) {
   // The refusal Respond arm on the TLS template instantiation.
   BeastServerTransport::Options options = EchoOptions();
-  options.tls_certificate_chain_pem = smithy::testing::kTestCertificatePem;
-  options.tls_private_key_pem = smithy::testing::kTestPrivateKeyPem;
+  options.tls_certificate_chain_pem = opal::testing::kTestCertificatePem;
+  options.tls_private_key_pem = opal::testing::kTestPrivateKeyPem;
   options.websocket_gate = [](const HttpRequest& request) -> std::optional<HttpResponse> {
     if (request.headers.Get("authorization").value_or("") != "Bearer let-me-in") {
       return PlainResponse(401, "who are you?");
@@ -1650,7 +1650,7 @@ TEST(BeastWebSocketTest, TheGateRefusesOverTlsToo) {
   dial.host = "127.0.0.1";
   dial.port = server.port();
   dial.tls = true;
-  dial.tls_options.ca_pem = smithy::testing::kTestCertificatePem;
+  dial.tls_options.ca_pem = opal::testing::kTestCertificatePem;
   auto refused = BeastWebSocketClient::Dial(dial);
   EXPECT_FALSE(refused.ok());
 
@@ -2012,11 +2012,11 @@ struct BeastContractDriver {
 };
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http
 
 // The instantiation lives where the suite was registered: gtest builds the
 // registration symbols from the bare suite name, so a qualified one does
 // not resolve.
-namespace smithy::testing {
+namespace opal::testing {
 INSTANTIATE_TYPED_TEST_SUITE_P(Beast, WebSocketContractTest, http::BeastContractDriver);
-}  // namespace smithy::testing
+}  // namespace opal::testing

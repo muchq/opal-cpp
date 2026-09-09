@@ -6,7 +6,7 @@
 
 #include "smithy/core/error.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 // Compiled programs are bounded so counted repetition ({n,m} expands by
@@ -666,4 +666,4 @@ bool Regex::Search(std::string_view text, std::size_t* steps) const {
   return false;
 }
 
-}  // namespace smithy
+}  // namespace opal

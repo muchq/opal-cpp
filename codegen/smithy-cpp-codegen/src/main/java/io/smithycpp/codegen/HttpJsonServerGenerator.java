@@ -83,7 +83,7 @@ final class HttpJsonServerGenerator {
         w,
         spec.errorFn(),
         "application/json",
-        "smithy::json::Encode(smithy::Document(std::move(body)))");
+        "opal::json::Encode(opal::Document(std::move(body)))");
     ProtocolSupport.writeServerErrorToResponse(w, context, service, operations, spec);
     validation =
         ValidationGenerator.writeWiring(
@@ -165,10 +165,10 @@ final class HttpJsonServerGenerator {
     HttpBinding prefixHeaders = req.prefixHeaders();
 
     w.openBlock(
-        "smithy::Outcome<$L> $L(const smithy::http::HttpRequest& request, "
+        "opal::Outcome<$L> $L(const opal::http::HttpRequest& request, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
             + " context, "
-            + "std::vector<smithy::server::ValidationFailure>* validation_failures) {",
+            + "std::vector<opal::server::ValidationFailure>* validation_failures) {",
         inputType,
         parseInputFunction(opName));
     w.write("(void)request;");
@@ -188,7 +188,7 @@ final class HttpJsonServerGenerator {
           member,
           "label_value",
           "input." + context.cppSymbols().toMemberName(member),
-          "smithy::TimestampFormat::kDateTime",
+          "opal::TimestampFormat::kDateTime",
           /* push= */ false);
       w.closeBlock("}");
     }
@@ -231,7 +231,7 @@ final class HttpJsonServerGenerator {
               element,
               "value",
               container + ".push_back",
-              "smithy::TimestampFormat::kDateTime",
+              "opal::TimestampFormat::kDateTime",
               /* push= */ true);
         } else {
           HttpBindingCodeGen.writeTextValueInto(
@@ -241,7 +241,7 @@ final class HttpJsonServerGenerator {
               member,
               "value",
               field,
-              "smithy::TimestampFormat::kDateTime",
+              "opal::TimestampFormat::kDateTime",
               /* push= */ false);
         }
         w.write("continue;");
@@ -356,11 +356,11 @@ final class HttpJsonServerGenerator {
     HttpBinding responsePrefixHeaders = resp.prefixHeaders();
 
     w.openBlock(
-        "smithy::http::HttpResponse $L(const $L& output) {",
+        "opal::http::HttpResponse $L(const $L& output) {",
         buildResponseFunction(opName),
         outputType);
     w.write("(void)output;");
-    w.write("smithy::http::HttpResponse response;");
+    w.write("opal::http::HttpResponse response;");
     w.write("response.status = $L;", http.getCode());
     if (responseCode != null) {
       MemberShape codeMember = responseCode.getMember();
@@ -401,10 +401,10 @@ final class HttpJsonServerGenerator {
       HttpBindingCodeGen.writePayloadWrite(
           w, context, serde, operation, responsePayload, "output", "response", false);
     } else {
-      w.write("smithy::DocumentMap body_map;");
+      w.write("opal::DocumentMap body_map;");
       HttpBindingCodeGen.writeDocumentBodyMap(w, serde, responseBody, "output");
       w.write("response.headers.Set(\"content-type\", \"application/json\");");
-      w.write("response.body = smithy::json::Encode(smithy::Document(std::move(body_map)));");
+      w.write("response.body = opal::json::Encode(opal::Document(std::move(body_map)));");
     }
     if (responseCode != null) {
       w.closeBlock("}");
@@ -458,14 +458,14 @@ final class HttpJsonServerGenerator {
     boolean hasResponseContent = !resp.body().isEmpty() || resp.payload() != null;
     boolean compressed = ProtocolSupport.gzipCompressed(operation);
     w.openBlock(
-        "(void)router_->Add($S, $S, [handler](const smithy::http::HttpRequest& $L, "
+        "(void)router_->Add($S, $S, [handler](const opal::http::HttpRequest& $L, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context) -> smithy::http::HttpResponse {",
+            + " context) -> opal::http::HttpResponse {",
         http.getMethod(),
         pattern,
         compressed ? "raw_request" : "request");
     if (compressed) {
-      w.write("smithy::http::HttpRequest request = raw_request;");
+      w.write("opal::http::HttpRequest request = raw_request;");
       ProtocolSupport.writeRequestDecompression(w, operation, "JsonError", "");
     }
     boolean noModeledInput =
@@ -491,9 +491,9 @@ final class HttpJsonServerGenerator {
       // httpRequestTests pin that leniency).
       String condition =
           hasRequestPayload
-              ? "content_type.has_value() ? smithy::http::MediaTypeOf(*content_type) != $S "
+              ? "content_type.has_value() ? opal::http::MediaTypeOf(*content_type) != $S "
                   + ": !request.body.empty()"
-              : "content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != $S";
+              : "content_type.has_value() && opal::http::MediaTypeOf(*content_type) != $S";
       w.openBlock(
           "if (const auto content_type = request.headers.Get(\"content-type\"); "
               + condition
@@ -512,14 +512,14 @@ final class HttpJsonServerGenerator {
       String responseContentType = determined.isEmpty() ? "application/json" : determined;
       w.openBlock(
           "if (const auto accept = request.headers.Get(\"accept\"); accept.has_value() && "
-              + "!smithy::http::AcceptMatches(*accept, $S)) {",
+              + "!opal::http::AcceptMatches(*accept, $S)) {",
           responseContentType);
       w.write("auto error_response = helpers::JsonError(406, \"\", \"not acceptable\", {});");
       writeErrorTypeHeader(w, "error_response", "NotAcceptableException");
       w.write("return error_response;");
       w.closeBlock("}");
     }
-    w.write("std::vector<smithy::server::ValidationFailure> validation_failures;");
+    w.write("std::vector<opal::server::ValidationFailure> validation_failures;");
     w.write(
         "auto input = helpers::$L(request, context, &validation_failures);",
         parseInputFunction(opName));
@@ -557,12 +557,12 @@ final class HttpJsonServerGenerator {
     // whatever method the operation models, and the route must match what
     // arrives.
     w.openBlock(
-        "(void)stream_router_->Add(\"GET\", $S, [handler](const smithy::http::HttpRequest&"
+        "(void)stream_router_->Add(\"GET\", $S, [handler](const opal::http::HttpRequest&"
             + " request, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context, smithy::http::WebSocket& socket) {",
+            + " context, opal::http::WebSocket& socket) {",
         routePattern(http));
-    w.write("std::vector<smithy::server::ValidationFailure> validation_failures;");
+    w.write("std::vector<opal::server::ValidationFailure> validation_failures;");
     w.write(
         "auto input = helpers::$L(request, context, &validation_failures);",
         parseInputFunction(opName));
@@ -599,12 +599,12 @@ final class HttpJsonServerGenerator {
     HttpTrait http = operation.expectTrait(HttpTrait.class);
     String opName = CppReservedWords.escape(operation.getId().getName());
     w.openBlock(
-        "(void)stream_router_->AddSession(\"GET\", $S, [handler](const smithy::http::HttpRequest&"
+        "(void)stream_router_->AddSession(\"GET\", $S, [handler](const opal::http::HttpRequest&"
             + " request, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context, std::shared_ptr<smithy::http::WebSocket> socket) {",
+            + " context, std::shared_ptr<opal::http::WebSocket> socket) {",
         routePattern(http));
-    w.write("std::vector<smithy::server::ValidationFailure> validation_failures;");
+    w.write("std::vector<opal::server::ValidationFailure> validation_failures;");
     w.write(
         "auto input = helpers::$L(request, context, &validation_failures);",
         parseInputFunction(opName));
@@ -637,7 +637,7 @@ final class HttpJsonServerGenerator {
     w.openBlock("if (!validation_failures.empty()) {");
     w.write(
         "(void)$LSend(helpers::Build$LExceptionMessage("
-            + "smithy::Error::Validation(validation_failures.front().message)));",
+            + "opal::Error::Validation(validation_failures.front().message)));",
         socketAccess,
         opName);
     w.write("$LClose();", socketAccess);

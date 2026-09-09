@@ -14,7 +14,7 @@
 
 #include "smithy/core/container_traits.h"
 
-namespace smithy {
+namespace opal {
 
 // Debug printing for generated types (issue #85): every generated type
 // carries `AppendDebugTo(std::string&)` (the one primitive), with
@@ -128,6 +128,6 @@ std::string DebugString(const T& value) {
   return out;
 }
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_PRINT_H_

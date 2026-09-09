@@ -163,7 +163,7 @@ specs and nothing else: no AWS traits, endpoints, auth, or SDK behaviors (see §
 
 ```cpp
 // Client
-smithy::ClientConfig cfg;
+opal::ClientConfig cfg;
 cfg.endpoint = "http://localhost:8080";
 WeatherClient client{cfg};
 auto outcome = client.GetForecast(GetForecastInput{.city = "Seattle"});
@@ -173,7 +173,7 @@ if (outcome) { use(outcome->chanceOfRain); } else { log(outcome.error().message(
 struct MyWeatherService final : WeatherServiceHandler {
   GetForecastOutcome GetForecast(const GetForecastInput& in, const RequestContext& ctx) override;
 };
-smithy::ServerConfig scfg{.port = 8080};
+opal::ServerConfig scfg{.port = 8080};
 WeatherServiceServer server{std::make_shared<MyWeatherService>(), scfg};
 server.serve();   // or server.start() / server.stop() for tests
 ```
@@ -607,7 +607,7 @@ in the error body, (3) client status-code fallback.
   `@protocolDefinition` trait `smithy.cpp.protocols#jsonRpc2`; single POST endpoint,
   `{"jsonrpc":"2.0","method":<operation>,"params":<input>,"id":…}` request and
   `{"jsonrpc":"2.0","result":<output>,"id":…}` / `{"error":{code,message,data}}` response over the
-  `smithy::Document` JSON pivot; JSON-RPC error objects map to modeled errors (`data` carries the
+  `opal::Document` JSON pivot; JSON-RPC error objects map to modeled errors (`data` carries the
   shape). We author its protocol-test model (no external suite exists).
   ✅ Done — `JsonRpc2Protocol` (client + server; the single-endpoint dispatch overrides the new
   `ProtocolGenerator.writeServerRoutes` hook), authored conformance suite under
@@ -636,7 +636,7 @@ client and server — and integration-tested the same way as everything else: ge
 clients drive generated streaming servers in CI.
 
 **Tasks**
-- Design doc + ADR first: streaming API shape for C++ (`smithy::EventStream<Tx, Rx>` with an
+- Design doc + ADR first: streaming API shape for C++ (`opal::EventStream<Tx, Rx>` with an
   async sender/receiver pair; backpressure semantics; cancellation; relationship to the
   `std::future`-based unary API and whether this is the point to introduce a coroutine API).
 - Runtime: event-stream message framing as mandated by the protocol specs (the

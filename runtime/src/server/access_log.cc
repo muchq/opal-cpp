@@ -10,7 +10,7 @@
 #include "smithy/http/forwarded.h"
 #include "smithy/http/trace_context.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 namespace {
 
@@ -173,7 +173,7 @@ void CheckExtraKeys(const AccessLogFields& extra) {
   for (std::size_t i = 0; i < extra.size(); ++i) {
     const std::string& key = extra[i].first;
     if (key.empty()) {
-      smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field key is empty");
+      opal::internal::Fatal("opal::server::FormatAccessLog: extra field key is empty");
     }
     for (std::size_t k = 0; k < key.size();) {
       if (static_cast<unsigned char>(key[k]) < 0x80) {
@@ -182,21 +182,21 @@ void CheckExtraKeys(const AccessLogFields& extra) {
       }
       const std::size_t length = Utf8SequenceLength(key, k);
       if (length == 0) {
-        smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field key '" + key +
-                                "' is not well-formed UTF-8");
+        opal::internal::Fatal("opal::server::FormatAccessLog: extra field key '" + key +
+                              "' is not well-formed UTF-8");
       }
       k += length;
     }
     for (const std::string_view built_in : kBuiltInKeys) {
       if (key == built_in) {
-        smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field '" + key +
-                                "' shadows a built-in field");
+        opal::internal::Fatal("opal::server::FormatAccessLog: extra field '" + key +
+                              "' shadows a built-in field");
       }
     }
     for (std::size_t j = 0; j < i; ++j) {
       if (extra[j].first == key) {
-        smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field '" + key +
-                                "' is given twice");
+        opal::internal::Fatal("opal::server::FormatAccessLog: extra field '" + key +
+                              "' is given twice");
       }
     }
   }
@@ -229,4 +229,4 @@ std::string FormatAccessLog(const RequestObservation& o, const AccessLogFields& 
   return out;
 }
 
-}  // namespace smithy::server
+}  // namespace opal::server

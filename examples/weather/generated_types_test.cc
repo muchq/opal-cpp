@@ -41,7 +41,7 @@ TEST(WeatherGeneratedTypesTest, ErrorShapesAreGenerated) {
 
 TEST(WeatherGeneratedTypesTest, TimestampMembersUseRuntimeType) {
   GetCurrentTimeOutput output;
-  output.time = smithy::Timestamp::FromEpochMilliseconds(1000);
+  output.time = opal::Timestamp::FromEpochMilliseconds(1000);
   EXPECT_EQ(output.time.epoch_milliseconds(), 1000);
 }
 

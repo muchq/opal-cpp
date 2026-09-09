@@ -81,7 +81,7 @@ class ValidationGeneratorTest {
   @Test
   void patternsCompileOnceIntoTheLinearTimeEngine() {
     String server = generateServer(CONSTRAINED_MODEL);
-    assertTrue(server.contains("smithy::Regex::Compile(R\"__smithy(^[a-z]+$)__smithy\")"), server);
+    assertTrue(server.contains("opal::Regex::Compile(R\"__smithy(^[a-z]+$)__smithy\")"), server);
     // The message splices the pattern in as a separate escaped literal (the
     // issue-#43 injection fix), so the text is asserted in its two pieces.
     assertTrue(
@@ -89,7 +89,7 @@ class ValidationGeneratorTest {
             "Member must satisfy regular expression pattern: \" + std::string(\"^[a-z]+$\")"),
         server);
     // static const: compiled once per process, not per request.
-    assertTrue(server.contains("static const smithy::Outcome<smithy::Regex>"), server);
+    assertTrue(server.contains("static const opal::Outcome<opal::Regex>"), server);
   }
 
   @Test
@@ -100,7 +100,7 @@ class ValidationGeneratorTest {
     // upstream suite's exact form ("Member must have length greater than or
     // equal to N", malformed-length.smithy), not a synthesized
     // between-1-and-int64max range.
-    assertTrue(server.contains("smithy::Utf8CodePointCount(value.name)"), server);
+    assertTrue(server.contains("opal::Utf8CodePointCount(value.name)"), server);
     assertTrue(server.contains("(*value.tags).size()"), server);
     assertTrue(server.contains("Member must have length greater than or equal to 1"), server);
   }

@@ -37,24 +37,24 @@ class ChatBeastEndToEndTest : public testing::Test {
   // the transport in two lines, unary dispatch untouched beside it.
   void Start(bool tls) {
     server_ = std::make_unique<ChatServer>(std::make_shared<RoomHandler>());
-    smithy::http::BeastServerTransport::Options options;
+    opal::http::BeastServerTransport::Options options;
     options.websocket_gate = server_->StreamRouter()->Gate();
     options.on_websocket = server_->StreamRouter()->Serve();
     if (tls) {
-      options.tls_certificate_chain_pem = smithy::testing::kTestCertificatePem;
-      options.tls_private_key_pem = smithy::testing::kTestPrivateKeyPem;
+      options.tls_certificate_chain_pem = opal::testing::kTestCertificatePem;
+      options.tls_private_key_pem = opal::testing::kTestPrivateKeyPem;
     }
-    transport_ = std::make_unique<smithy::http::BeastServerTransport>(options);
+    transport_ = std::make_unique<opal::http::BeastServerTransport>(options);
     ASSERT_TRUE(transport_->Start(server_->Handler()).ok());
 
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     if (tls) {
       // One endpoint configures both directions: the unary transport and the
       // streaming dial derive wss/TLS from it (nothing configured twice).
       config.endpoint = "https://127.0.0.1:" + std::to_string(transport_->port());
-      config.tls.ca_pem = smithy::testing::kTestCertificatePem;
-      auto http_client = smithy::http::BeastHttpClient::FromConfig(config);
+      config.tls.ca_pem = opal::testing::kTestCertificatePem;
+      auto http_client = opal::http::BeastHttpClient::FromConfig(config);
       ASSERT_TRUE(http_client.ok()) << http_client.error().message();
       config.http_client = *http_client;
     } else {
@@ -70,7 +70,7 @@ class ChatBeastEndToEndTest : public testing::Test {
   }
 
   std::unique_ptr<ChatServer> server_;
-  std::unique_ptr<smithy::http::BeastServerTransport> transport_;
+  std::unique_ptr<opal::http::BeastServerTransport> transport_;
   std::unique_ptr<ChatClient> client_;
 };
 
@@ -215,7 +215,7 @@ TEST_F(ChatBeastEndToEndTest, ModeledMidStreamErrorSurfacesTypedOnTheClient) {
 
   auto outcome = stream->Receive();
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "Kicked");
   EXPECT_EQ(outcome.error().message(), "kicked from lobby");
   const Kicked* detail = outcome.error().detail<Kicked>();
@@ -229,7 +229,7 @@ TEST_F(ChatBeastEndToEndTest, GateRefusesAnUnknownStreamPathOnTheWire) {
   // No route matches /nope, so the gate answers 404 before any upgrade
   // exists, the dial fails, and the refusal error names the status the
   // router actually sent.
-  auto refused = smithy::http::BeastWebSocketClient::Dial(
+  auto refused = opal::http::BeastWebSocketClient::Dial(
       {.host = "127.0.0.1", .port = transport_->port(), .target = "/nope"});
   ASSERT_FALSE(refused.ok());
   EXPECT_NE(refused.error().message().find("refused: HTTP 404"), std::string::npos)

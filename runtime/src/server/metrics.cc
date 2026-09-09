@@ -11,7 +11,7 @@
 
 #include "smithy/core/fatal.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 // The exposition format's own escaping for label values: backslash, double
@@ -154,7 +154,7 @@ std::string RenderLabels(const MetricLabels& labels, bool histogram) {
   for (std::size_t i = 0; i < sorted.size(); ++i) {
     const auto& [name, value] = sorted[i];
     if (!ValidName(name, /*allow_colon=*/false)) {
-      smithy::internal::Fatal("smithy::server::MetricsRegistry: invalid label name '" + name + "'");
+      opal::internal::Fatal("opal::server::MetricsRegistry: invalid label name '" + name + "'");
     }
     // Both of these render a scrape Prometheus rejects whole, with no
     // in-process consumer to notice — the same class the invalid-name abort
@@ -162,12 +162,11 @@ std::string RenderLabels(const MetricLabels& labels, bool histogram) {
     // `le` is the label the histogram exposition appends itself, so a user
     // copy would put it on every bucket line twice.
     if (i > 0 && name == sorted[i - 1].first) {
-      smithy::internal::Fatal("smithy::server::MetricsRegistry: duplicate label name '" + name +
-                              "'");
+      opal::internal::Fatal("opal::server::MetricsRegistry: duplicate label name '" + name + "'");
     }
     if (histogram && name == "le") {
-      smithy::internal::Fatal(
-          "smithy::server::MetricsRegistry: 'le' is reserved on a histogram's series");
+      opal::internal::Fatal(
+          "opal::server::MetricsRegistry: 'le' is reserved on a histogram's series");
     }
     if (!out.empty()) out += ',';
     out += name;
@@ -299,8 +298,8 @@ MetricsRegistry::MetricsRegistry(MetricsOptions options) : options_(std::move(op
   // failure mode worth aborting for: it looks like success everywhere except
   // the panel nobody is watching yet.
   if (options_.enabled && options_.service_name.empty()) {
-    smithy::internal::Fatal(
-        "smithy::server::MetricsRegistry: service_name is required when metrics are enabled");
+    opal::internal::Fatal(
+        "opal::server::MetricsRegistry: service_name is required when metrics are enabled");
   }
 }
 
@@ -433,7 +432,7 @@ std::shared_ptr<internal::MetricFamily> MetricsRegistry::Register(std::string na
                                                                   internal::MetricFamily::Kind kind,
                                                                   std::vector<double> buckets) {
   if (!ValidName(name, /*allow_colon=*/true)) {
-    smithy::internal::Fatal("smithy::server::MetricsRegistry: invalid metric name '" + name + "'");
+    opal::internal::Fatal("opal::server::MetricsRegistry: invalid metric name '" + name + "'");
   }
   // The built-ins are emitted unconditionally, so a family under one of their
   // names would appear twice with two TYPE lines — a scrape Prometheus
@@ -443,8 +442,8 @@ std::shared_ptr<internal::MetricFamily> MetricsRegistry::Register(std::string na
        {kRequestsTotal, kRequestsSuccess, kRequestsFailure, kRequestsActive, kRequestDuration,
         kObservationsDropped}) {
     if (name == reserved) {
-      smithy::internal::Fatal("smithy::server::MetricsRegistry: '" + name +
-                              "' is one of the built-in families");
+      opal::internal::Fatal("opal::server::MetricsRegistry: '" + name +
+                            "' is one of the built-in families");
     }
   }
   const std::lock_guard<std::mutex> lock(mutex_);
@@ -453,9 +452,9 @@ std::shared_ptr<internal::MetricFamily> MetricsRegistry::Register(std::string na
     // that would corrupt the scrape, so it aborts rather than picking one.
     const internal::MetricFamily& existing = *found->second;
     if (existing.kind != kind || existing.help != help || existing.buckets != buckets) {
-      smithy::internal::Fatal("smithy::server::MetricsRegistry: '" + name +
-                              "' is already registered with a different type, help text, or "
-                              "bucket ladder");
+      opal::internal::Fatal("opal::server::MetricsRegistry: '" + name +
+                            "' is already registered with a different type, help text, or "
+                            "bucket ladder");
     }
     return found->second;
   }
@@ -492,17 +491,17 @@ Histogram MetricsRegistry::NewHistogram(std::string name, std::string help,
   // silently produces cumulative buckets that disagree with themselves,
   // which a dashboard renders as plausible nonsense (ADR-0009).
   if (buckets.empty()) {
-    smithy::internal::Fatal("smithy::server::MetricsRegistry: histogram '" + name +
-                            "' needs at least one bucket (the +Inf bucket is implicit)");
+    opal::internal::Fatal("opal::server::MetricsRegistry: histogram '" + name +
+                          "' needs at least one bucket (the +Inf bucket is implicit)");
   }
   for (std::size_t i = 0; i < buckets.size(); ++i) {
     if (!std::isfinite(buckets[i])) {
-      smithy::internal::Fatal("smithy::server::MetricsRegistry: histogram '" + name +
-                              "' buckets must all be finite (the +Inf bucket is implicit)");
+      opal::internal::Fatal("opal::server::MetricsRegistry: histogram '" + name +
+                            "' buckets must all be finite (the +Inf bucket is implicit)");
     }
     if (i > 0 && buckets[i] <= buckets[i - 1]) {
-      smithy::internal::Fatal("smithy::server::MetricsRegistry: histogram '" + name +
-                              "' buckets must be strictly ascending");
+      opal::internal::Fatal("opal::server::MetricsRegistry: histogram '" + name +
+                            "' buckets must be strictly ascending");
     }
   }
   auto family = Register(std::move(name), std::move(help), internal::MetricFamily::Kind::kHistogram,
@@ -625,7 +624,7 @@ std::string MetricsRegistry::Expose() const {
 
 Middleware RecordMetrics(std::shared_ptr<MetricsRegistry> registry) {
   if (registry == nullptr) {
-    smithy::internal::Fatal("smithy::server::RecordMetrics: registry may not be null");
+    opal::internal::Fatal("opal::server::RecordMetrics: registry may not be null");
   }
   // Disabled: compose to the identity. Not a wrapper that checks a flag per
   // request — no wrapper at all, so the composed chain is byte-for-byte the
@@ -652,7 +651,7 @@ Middleware RecordMetrics(std::shared_ptr<MetricsRegistry> registry) {
 
 Middleware MetricsEndpoint(std::shared_ptr<MetricsRegistry> registry, std::string path) {
   if (registry == nullptr) {
-    smithy::internal::Fatal("smithy::server::MetricsEndpoint: registry may not be null");
+    opal::internal::Fatal("opal::server::MetricsEndpoint: registry may not be null");
   }
   // Disabled: the path is not served at all, so it reaches the router like
   // any other unmodeled path. An empty 200 would read to Prometheus as a
@@ -684,4 +683,4 @@ Middleware MetricsEndpoint(std::shared_ptr<MetricsRegistry> registry, std::strin
   };
 }
 
-}  // namespace smithy::server
+}  // namespace opal::server

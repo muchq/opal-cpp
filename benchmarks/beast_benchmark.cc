@@ -24,8 +24,8 @@
 
 namespace {
 
-using smithy::testing::kTestCertificatePem;
-using smithy::testing::kTestPrivateKeyPem;
+using opal::testing::kTestCertificatePem;
+using opal::testing::kTestPrivateKeyPem;
 
 // The same input request_benchmark sends, so the numbers are comparable.
 example::roundtrip::rest::PutSinkInput MakeInput() {
@@ -43,26 +43,26 @@ example::roundtrip::rest::PutSinkInput MakeInput() {
 
 class EchoHandler final : public example::roundtrip::rest::RoundTripRestHandler {
  public:
-  smithy::Outcome<example::roundtrip::rest::PutSinkOutput> PutSink(
+  opal::Outcome<example::roundtrip::rest::PutSinkOutput> PutSink(
       const example::roundtrip::rest::PutSinkInput& input,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rest::PutSinkOutput{.sinkId = input.sinkId, .sink = input.sink};
   }
-  smithy::Outcome<example::roundtrip::rest::UploadAttachmentOutput> UploadAttachment(
+  opal::Outcome<example::roundtrip::rest::UploadAttachmentOutput> UploadAttachment(
       const example::roundtrip::rest::UploadAttachmentInput&,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rest::UploadAttachmentOutput{};
   }
-  smithy::Outcome<example::roundtrip::rest::DescribeSinkOutput> DescribeSink(
+  opal::Outcome<example::roundtrip::rest::DescribeSinkOutput> DescribeSink(
       const example::roundtrip::rest::DescribeSinkInput&,
-      const smithy::server::RequestContext&) override {
+      const opal::server::RequestContext&) override {
     return example::roundtrip::rest::DescribeSinkOutput{};
   }
 };
 
 example::roundtrip::rest::RoundTripRestClient MakeClient(
-    std::string endpoint, std::shared_ptr<smithy::http::HttpClient> transport) {
-  smithy::ClientConfig config;
+    std::string endpoint, std::shared_ptr<opal::http::HttpClient> transport) {
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
   config.endpoint = std::move(endpoint);
   config.http_client = std::move(transport);
@@ -84,14 +84,14 @@ void RunLoop(benchmark::State& state, example::roundtrip::rest::RoundTripRestCli
 // Baseline: the dependency-free socket transport, one connection per request.
 void BM_SocketRoundTrip(benchmark::State& state) {
   example::roundtrip::rest::RoundTripRestServer server(std::make_shared<EchoHandler>());
-  smithy::http::SocketHttpServer transport;
+  opal::http::SocketHttpServer transport;
   if (!transport.Start(server.Handler()).ok()) {
     state.SkipWithError("socket server failed to start");
     return;
   }
   const std::string origin = "http://127.0.0.1:" + std::to_string(transport.port());
   auto client = MakeClient(
-      origin, std::make_shared<smithy::http::SocketHttpClient>("127.0.0.1", transport.port()));
+      origin, std::make_shared<opal::http::SocketHttpClient>("127.0.0.1", transport.port()));
   RunLoop(state, client);
   transport.Stop();
 }
@@ -99,14 +99,14 @@ BENCHMARK(BM_SocketRoundTrip);
 
 void BM_BeastRoundTrip(benchmark::State& state) {
   example::roundtrip::rest::RoundTripRestServer server(std::make_shared<EchoHandler>());
-  smithy::http::BeastServerTransport transport({.port = 0, .threads = 2});
+  opal::http::BeastServerTransport transport({.port = 0, .threads = 2});
   if (!transport.Start(server.Handler()).ok()) {
     state.SkipWithError("beast server failed to start");
     return;
   }
   const std::string origin = "http://127.0.0.1:" + std::to_string(transport.port());
-  auto client = MakeClient(origin, std::make_shared<smithy::http::BeastHttpClient>(
-                                       smithy::http::BeastHttpClient::Options{
+  auto client = MakeClient(origin, std::make_shared<opal::http::BeastHttpClient>(
+                                       opal::http::BeastHttpClient::Options{
                                            .host = "127.0.0.1", .port = transport.port()}));
   RunLoop(state, client);
   transport.Stop();
@@ -115,7 +115,7 @@ BENCHMARK(BM_BeastRoundTrip);
 
 void BM_BeastTlsRoundTrip(benchmark::State& state) {
   example::roundtrip::rest::RoundTripRestServer server(std::make_shared<EchoHandler>());
-  smithy::http::BeastServerTransport transport({.port = 0,
+  opal::http::BeastServerTransport transport({.port = 0,
                                                 .threads = 2,
                                                 .tls_certificate_chain_pem = kTestCertificatePem,
                                                 .tls_private_key_pem = kTestPrivateKeyPem});
@@ -124,8 +124,8 @@ void BM_BeastTlsRoundTrip(benchmark::State& state) {
     return;
   }
   const std::string origin = "https://127.0.0.1:" + std::to_string(transport.port());
-  auto client = MakeClient(origin, std::make_shared<smithy::http::BeastHttpClient>(
-                                       smithy::http::BeastHttpClient::Options{
+  auto client = MakeClient(origin, std::make_shared<opal::http::BeastHttpClient>(
+                                       opal::http::BeastHttpClient::Options{
                                            .host = "127.0.0.1",
                                            .port = transport.port(),
                                            .tls = true,

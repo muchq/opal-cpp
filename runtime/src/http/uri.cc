@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 constexpr std::string_view kHex = "0123456789ABCDEF";
@@ -181,4 +181,4 @@ Outcome<Endpoint> ParseEndpoint(std::string_view url) {
   return endpoint;
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

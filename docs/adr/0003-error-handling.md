@@ -9,10 +9,10 @@ exceptions and result types, and many large consumers build with `-fno-exception
 
 ## Decision
 
-- Generated client operations and server handler methods return `smithy::Outcome<T, Error>`, an
+- Generated client operations and server handler methods return `opal::Outcome<T, Error>`, an
   `std::expected`-like result type (polyfilled until C++23 is table stakes; the alias switches to
   `std::expected` when the floor rises).
-- Modeled errors derive from `smithy::ModeledError`; transport and deserialization failures use
+- Modeled errors derive from `opal::ModeledError`; transport and deserialization failures use
   distinct error categories, all carried in `Outcome::error()` with code, message, and
   retryability metadata, plus `ErrorsAs<T>()` accessors for typed access.
 - Exceptions never cross the generated API boundary. The runtime must be buildable with
@@ -20,7 +20,7 @@ exceptions and result types, and many large consumers build with `-fno-exception
 - **Contract violations fail fast; recoverable bad config returns an error; neither throws.** A
   composition-time *programming* error — a null callback, a health-check name that would corrupt
   the failing-list JSON — is not a condition a caller can handle, so it aborts via
-  `smithy::internal::Fatal` (ADR-0009) rather than throwing `std::invalid_argument`. Bad *config*
+  `opal::internal::Fatal` (ADR-0009) rather than throwing `std::invalid_argument`. Bad *config*
   the caller can act on — a malformed proxy-trust CIDR (`TrustedProxies::Parse`), like a bad bind
   address in `Start` — returns an `Error::Validation` through an `Outcome`. Both replace the old
   `throw`, so both compile under `-fno-exceptions`; the split is the ADR-0009 line: fail-fast for
@@ -28,7 +28,7 @@ exceptions and result types, and many large consumers build with `-fno-exception
 - **Exceptions are contained at every boundary that must not unwind.** Nothing in the runtime lets
   an exception cross an `Outcome`-returning entry point or escape a transport io thread. Wire-facing
   callbacks in the `-fno-exceptions`-clean runtime (request handlers, readiness probes, metrics
-  sinks) run inside `smithy::internal::Contain` (`smithy/core/exception_guard.h`), which compiles to
+  sinks) run inside `opal::internal::Contain` (`smithy/core/exception_guard.h`), which compiles to
   a direct call under `-fno-exceptions`. The Beast transport — which cannot build `-fno-exceptions`,
   so it always has exceptions — carries its own containment: each background `io_context::run()` is
   wrapped in a catch-and-re-enter backstop so a stray throw drains remaining work instead of

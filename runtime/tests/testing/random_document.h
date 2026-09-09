@@ -12,7 +12,7 @@
 
 #include "smithy/core/document.h"
 
-namespace smithy::testing {
+namespace opal::testing {
 
 struct DocumentGeneratorOptions {
   // JSON cannot represent blob/timestamp nodes natively; codecs that re-type
@@ -119,6 +119,6 @@ class RandomDocumentGenerator {
   DocumentGeneratorOptions options_;
 };
 
-}  // namespace smithy::testing
+}  // namespace opal::testing
 
 #endif  // SMITHY_TESTS_TESTING_RANDOM_DOCUMENT_H_

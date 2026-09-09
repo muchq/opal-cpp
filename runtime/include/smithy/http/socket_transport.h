@@ -9,7 +9,7 @@
 
 #include "smithy/http/transport.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // Built-in dependency-free HTTP/1.1 client over TCP (ADR-0005; demoted to a
 // test/reference transport by ADR-0006). One connection per request,
@@ -60,6 +60,6 @@ class SocketHttpServer : public HttpServerTransport {
   std::thread accept_thread_;
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_SOCKET_TRANSPORT_H_

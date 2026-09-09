@@ -10,7 +10,7 @@
 #include "smithy/core/error.h"
 #include "smithy/eventstream/jsonrpc_frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 using Role = JsonRpcStreamSocket::Role;
@@ -184,4 +184,4 @@ void JsonRpcStreamSocket::SendAsync(const Message& message, SendCallback callbac
 
 bool JsonRpcStreamSocket::SupportsAsync() const { return inner_->SupportsAsync(); }
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

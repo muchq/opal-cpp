@@ -90,7 +90,7 @@ final class SerdeCodeGen {
     String field = targetPrefix + context.cppSymbols().toMemberName(member);
     String path = structType + "." + member.getMemberName();
     w.openBlock("{");
-    w.write("const smithy::Document* member = $LFind($S);", mapAccess, wireName(member));
+    w.write("const opal::Document* member = $LFind($S);", mapAccess, wireName(member));
     if (MemberDefaults.lenientRequired(context.model(), member)) {
       // @required + @default (the evolution pattern): absence keeps the
       // member's default initializer instead of failing.
@@ -129,7 +129,7 @@ final class SerdeCodeGen {
 
   /** C++ TimestampFormat constant for a member, honoring @timestampFormat. */
   String timestampFormat(MemberShape member) {
-    return timestampFormat(member, "smithy::TimestampFormat::kEpochSeconds");
+    return timestampFormat(member, "opal::TimestampFormat::kEpochSeconds");
   }
 
   String timestampFormat(MemberShape member, String defaultConstant) {
@@ -141,31 +141,31 @@ final class SerdeCodeGen {
       return defaultConstant;
     }
     return switch (trait.get().getValue()) {
-      case "date-time" -> "smithy::TimestampFormat::kDateTime";
-      case "http-date" -> "smithy::TimestampFormat::kHttpDate";
-      default -> "smithy::TimestampFormat::kEpochSeconds";
+      case "date-time" -> "opal::TimestampFormat::kDateTime";
+      case "http-date" -> "opal::TimestampFormat::kHttpDate";
+      default -> "opal::TimestampFormat::kEpochSeconds";
     };
   }
 
-  /** Expression producing a smithy::Document from {@code valueExpr} of the member's type. */
+  /** Expression producing a opal::Document from {@code valueExpr} of the member's type. */
   String serializeExpression(MemberShape member, String valueExpr) {
     Shape shape = target(member);
     if (shape.getId().toString().equals("smithy.api#Unit")) {
-      return "smithy::Document(smithy::DocumentMap{})";
+      return "opal::Document(opal::DocumentMap{})";
     }
     return switch (shape.getType()) {
-      case BOOLEAN -> "smithy::Document(" + valueExpr + ")";
+      case BOOLEAN -> "opal::Document(" + valueExpr + ")";
       case BYTE, SHORT, INTEGER, LONG ->
-          "smithy::Document(static_cast<std::int64_t>(" + valueExpr + "))";
-      case INT_ENUM -> "smithy::Document(static_cast<std::int64_t>(" + valueExpr + "))";
-      case FLOAT, DOUBLE -> "smithy::Document(static_cast<double>(" + valueExpr + "))";
-      case STRING -> "smithy::Document(" + valueExpr + ")";
-      case ENUM -> "smithy::Document(std::string(" + valueExpr + ".ToString()))";
-      case BLOB -> "smithy::Document(" + valueExpr + ")";
+          "opal::Document(static_cast<std::int64_t>(" + valueExpr + "))";
+      case INT_ENUM -> "opal::Document(static_cast<std::int64_t>(" + valueExpr + "))";
+      case FLOAT, DOUBLE -> "opal::Document(static_cast<double>(" + valueExpr + "))";
+      case STRING -> "opal::Document(" + valueExpr + ")";
+      case ENUM -> "opal::Document(std::string(" + valueExpr + ".ToString()))";
+      case BLOB -> "opal::Document(" + valueExpr + ")";
       case TIMESTAMP ->
-          "smithy::Document::FromTimestamp(" + valueExpr + ", " + timestampFormat(member) + ")";
+          "opal::Document::FromTimestamp(" + valueExpr + ", " + timestampFormat(member) + ")";
       case DOCUMENT -> valueExpr;
-      // Boxed (recursive) members dereference through the smithy::Boxed.
+      // Boxed (recursive) members dereference through the opal::Boxed.
       case STRUCTURE, UNION, LIST, MAP ->
           context.cppSymbols().recursion().isBoxed(member)
               ? "Serialize" + serdeFunctionSuffix(context, shape) + "(*(" + valueExpr + "))"
@@ -185,9 +185,9 @@ final class SerdeCodeGen {
       CppWriter w, MemberShape member, String docExpr, String outExpr, String path) {
     Shape shape = target(member);
     String wrong =
-        "return smithy::Error::Serialization(\"" + path + ": unexpected type on the wire\");";
+        "return opal::Error::Serialization(\"" + path + ": unexpected type on the wire\");";
     if (shape.getId().toString().equals("smithy.api#Unit")) {
-      w.write("$L = smithy::Unit{};", outExpr);
+      w.write("$L = opal::Unit{};", outExpr);
       return;
     }
     switch (shape.getType()) {
@@ -209,7 +209,7 @@ final class SerdeCodeGen {
                 default -> "-2147483648LL || " + docExpr + "->as_int() > 2147483647LL";
               };
           w.write(
-              "if ($L->as_int() < $L) return smithy::Error::Serialization(\"$L: value out of "
+              "if ($L->as_int() < $L) return opal::Error::Serialization(\"$L: value out of "
                   + "range\");",
               docExpr,
               bounds,
@@ -221,22 +221,21 @@ final class SerdeCodeGen {
         // The double→float narrowing is checked: a finite wire value beyond
         // float range would be UB to cast (UBSan float-cast-overflow).
         w.openBlock("{");
-        w.write("auto parsed = smithy::DoubleFromDocument(*$L);", docExpr);
+        w.write("auto parsed = opal::DoubleFromDocument(*$L);", docExpr);
         w.write(
-            "if (!parsed) return smithy::Error::Serialization($S);", path + ": expected a number");
-        w.write("auto narrowed = smithy::FloatFromDouble(*parsed);");
+            "if (!parsed) return opal::Error::Serialization($S);", path + ": expected a number");
+        w.write("auto narrowed = opal::FloatFromDouble(*parsed);");
         w.write(
-            "if (!narrowed) return smithy::Error::Serialization($S);",
-            path + ": value out of range");
+            "if (!narrowed) return opal::Error::Serialization($S);", path + ": value out of range");
         w.write("$L = *narrowed;", outExpr);
         w.closeBlock("}");
       }
       case DOUBLE -> {
         String type = context.cppSymbols().typeRef(shape);
         w.openBlock("{");
-        w.write("auto parsed = smithy::DoubleFromDocument(*$L);", docExpr);
+        w.write("auto parsed = opal::DoubleFromDocument(*$L);", docExpr);
         w.write(
-            "if (!parsed) return smithy::Error::Serialization($S);", path + ": expected a number");
+            "if (!parsed) return opal::Error::Serialization($S);", path + ": expected a number");
         w.write("$L = static_cast<$L>(*parsed);", outExpr, type);
         w.closeBlock("}");
       }
@@ -251,7 +250,7 @@ final class SerdeCodeGen {
       }
       case BLOB -> {
         w.openBlock("{");
-        w.write("auto parsed = smithy::BlobFromDocument(*$L);", docExpr);
+        w.write("auto parsed = opal::BlobFromDocument(*$L);", docExpr);
         w.write("if (!parsed) return std::move(parsed).error();");
         w.write("$L = std::move(*parsed);", outExpr);
         w.closeBlock("}");
@@ -259,7 +258,7 @@ final class SerdeCodeGen {
       case TIMESTAMP -> {
         w.openBlock("{");
         w.write(
-            "auto parsed = smithy::TimestampFromDocument(*$L, $L);",
+            "auto parsed = opal::TimestampFromDocument(*$L, $L);",
             docExpr,
             timestampFormat(member));
         w.write("if (!parsed) return std::move(parsed).error();");

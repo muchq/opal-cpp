@@ -4,12 +4,12 @@
 #include <memory>
 #include <utility>
 
+#include "opal/protocoltests/jsonrpc2/client.h"
+#include "opal/protocoltests/jsonrpc2/server.h"
 #include "smithy/client/config.h"
 #include "smithy/http/loopback.h"
-#include "smithy/protocoltests/jsonrpc2/client.h"
-#include "smithy/protocoltests/jsonrpc2/server.h"
 
-namespace smithy::protocoltests::jsonrpc2 {
+namespace opal::protocoltests::jsonrpc2 {
 
 // Smoke tests for the generated JsonRpc2Protocol service: the generated client calls the
 // generated server over the in-memory loopback transport. A passing suite
@@ -41,22 +41,22 @@ PutConstrainedOutput MinimalPutConstrainedOutput() {
 
 class SmokeHandler : public JsonRpc2ProtocolHandler {
   public:
-    smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalEchoPayloadOutput();
     }
     // Streaming operation (ADR-0016): no generated unary-shaped test drives
     // this; the stub closes the stream so the interface stays implemented.
-    smithy::Outcome<smithy::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> EchoStream(const EchoStreamInput& input, EchoStreamServerStream& stream, const opal::server::RequestContext&) override {
       (void)input;
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
-    smithy::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<NoArgsOutput> NoArgs(const NoArgsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalNoArgsOutput();
     }
-    smithy::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutConstrainedOutput> PutConstrained(const PutConstrainedInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalPutConstrainedOutput();
     }
@@ -64,9 +64,9 @@ class SmokeHandler : public JsonRpc2ProtocolHandler {
 
 JsonRpc2ProtocolClient MakeClient(std::shared_ptr<JsonRpc2ProtocolHandler> handler) {
   JsonRpc2ProtocolServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -112,9 +112,9 @@ TEST(JsonRpc2ProtocolSmokeTest, PutConstrainedRoundTrips) {
 TEST(JsonRpc2ProtocolSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<EchoPayloadOutput> EchoPayload(const EchoPayloadInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("NotFoundError", "smoke");
+        opal::Error error = opal::Error::Modeled("NotFoundError", "smoke");
             auto detail = [] {
           NotFoundError v{};
           return v;
@@ -132,10 +132,10 @@ TEST(JsonRpc2ProtocolSmokeTest, ModeledErrorsMapAcrossTheWire) {
   }();
   const auto outcome = client.EchoPayload(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "NotFoundError");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<NotFoundError>(), nullptr);
 }
 
-}  // namespace smithy::protocoltests::jsonrpc2
+}  // namespace opal::protocoltests::jsonrpc2

@@ -38,51 +38,51 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   if (doc.ok()) parsed.doc = *std::move(doc);
   const auto type_header = response.headers.Get("x-error-type");
   if (type_header.has_value()) parsed.code = helpers::SanitizeErrorCode(*type_header);
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type == nullptr) type = parsed.doc.Find("code");
     if (parsed.code == "UnknownError" && type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
-    const smithy::Document* text = parsed.doc.Find("message");
+    const opal::Document* text = parsed.doc.Find("message");
     if (text != nullptr && text->is_string()) parsed.message = text->as_string();
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
 // Strict text parsing for label/query/header bindings ([[maybe_unused]]:
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -90,21 +90,21 @@ smithy::Error GenericError(ParsedError parsed) {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
 
-smithy::Error MakeBookNotFoundError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeBookNotFoundError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("BookNotFound", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("BookNotFound", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeBookNotFound(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -112,7 +112,7 @@ smithy::Error MakeBookNotFoundError(const smithy::http::HttpResponse& response, 
   return error;
 }
 
-smithy::Error ParseGetBookError(const smithy::http::HttpResponse& response) {
+opal::Error ParseGetBookError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "BookNotFound") return helpers::MakeBookNotFoundError(response, std::move(parsed));
   if (parsed.code == "UnknownError" && parsed.status == 404) return helpers::MakeBookNotFoundError(response, std::move(parsed));
@@ -122,88 +122,88 @@ smithy::Error ParseGetBookError(const smithy::http::HttpResponse& response) {
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<BookstoreClient> BookstoreClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<BookstoreClient> BookstoreClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("BookstoreClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("BookstoreClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("BookstoreClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("BookstoreClient: config needs an endpoint or an http_client");
   }
   return BookstoreClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-BookstoreClient::BookstoreClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+BookstoreClient::BookstoreClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> BookstoreClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> BookstoreClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   request.headers.Set("user-agent", config_.user_agent);
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<AddBookOutput> BookstoreClient::AddBook(const AddBookInput& input) const {
+opal::Outcome<AddBookOutput> BookstoreClient::AddBook(const AddBookInput& input) const {
   std::string target = path_prefix_;
   target += "/books";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = std::move(target);
-  smithy::DocumentMap body_map;
-  body_map.emplace("isbn", smithy::Document(input.isbn));
-  body_map.emplace("title", smithy::Document(input.title));
-  request.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  opal::DocumentMap body_map;
+  body_map.emplace("isbn", opal::Document(input.isbn));
+  body_map.emplace("title", opal::Document(input.title));
+  request.body = opal::json::Encode(opal::Document(std::move(body_map)));
   request.headers.Set("content-type", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status < 200 || response->status >= 400) return helpers::GenericError(helpers::ParseError(*response));
   AddBookOutput out{};
-  auto body_doc = smithy::json::Decode(response->body.empty() ? "{}" : response->body);
+  auto body_doc = opal::json::Decode(response->body.empty() ? "{}" : response->body);
   if (!body_doc) return std::move(body_doc).error();
-  if (!body_doc->is_map()) return smithy::Error::Serialization("AddBook: expected a JSON object body");
+  if (!body_doc->is_map()) return opal::Error::Serialization("AddBook: expected a JSON object body");
   {
-    const smithy::Document* member = body_doc->Find("isbn");
-    if (member == nullptr || member->is_null()) return smithy::Error::Serialization("missing required member: isbn");
-    if (!member->is_string()) return smithy::Error::Serialization("AddBookOutput.isbn: unexpected type on the wire");
+    const opal::Document* member = body_doc->Find("isbn");
+    if (member == nullptr || member->is_null()) return opal::Error::Serialization("missing required member: isbn");
+    if (!member->is_string()) return opal::Error::Serialization("AddBookOutput.isbn: unexpected type on the wire");
     out.isbn = member->as_string();
   }
   out.status = static_cast<std::int32_t>(response->status);
   return out;
 }
 
-smithy::Outcome<GetBookOutput> BookstoreClient::GetBook(const GetBookInput& input) const {
+opal::Outcome<GetBookOutput> BookstoreClient::GetBook(const GetBookInput& input) const {
   std::string target = path_prefix_;
   target += "/books";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.isbn);
-  smithy::http::QueryString query;
+  target += opal::http::EncodePathSegment(input.isbn);
+  opal::http::QueryString query;
   if (input.currency.has_value()) {
     query.Add("currency", (*input.currency));
   }
   target += query.ToString();
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseGetBookError(*response);
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeGetBookOutput(*body_doc);
 }

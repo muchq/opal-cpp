@@ -25,7 +25,7 @@
 #include "smithy/http/websocket_pair.h"
 #include "smithy/testing/websocket_contract_test.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 // A headerless raw-text message: what the wire (and the unwrapped pair
@@ -399,11 +399,11 @@ struct JsonRpcContractDriver {
 };
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 // gtest builds the registration symbols from the bare suite name, so the
 // instantiation lives in the namespace the suite was registered in.
-namespace smithy::testing {
+namespace opal::testing {
 INSTANTIATE_TYPED_TEST_SUITE_P(JsonRpcStreamSocket, WebSocketContractTest,
                                eventstream::JsonRpcContractDriver);
-}  // namespace smithy::testing
+}  // namespace opal::testing

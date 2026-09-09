@@ -27,11 +27,11 @@ struct AddBookInput {
     out += sep;
     sep = ", ";
     out += ".isbn = ";
-    smithy::DebugAppend(out, this->isbn);
+    opal::DebugAppend(out, this->isbn);
     out += sep;
     sep = ", ";
     out += ".title = ";
-    smithy::DebugAppend(out, this->title);
+    opal::DebugAppend(out, this->title);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -55,11 +55,11 @@ struct AddBookOutput {
     out += sep;
     sep = ", ";
     out += ".status = ";
-    smithy::DebugAppend(out, this->status);
+    opal::DebugAppend(out, this->status);
     out += sep;
     sep = ", ";
     out += ".isbn = ";
-    smithy::DebugAppend(out, this->isbn);
+    opal::DebugAppend(out, this->isbn);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -83,11 +83,11 @@ struct BookNotFound {
     out += sep;
     sep = ", ";
     out += ".message = ";
-    smithy::DebugAppend(out, this->message);
+    opal::DebugAppend(out, this->message);
     out += sep;
     sep = ", ";
     out += ".isbn = ";
-    smithy::DebugAppend(out, this->isbn);
+    opal::DebugAppend(out, this->isbn);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -111,12 +111,12 @@ struct GetBookInput {
     out += sep;
     sep = ", ";
     out += ".isbn = ";
-    smithy::DebugAppend(out, this->isbn);
+    opal::DebugAppend(out, this->isbn);
     if (this->currency.has_value()) {
       out += sep;
       sep = ", ";
       out += ".currency = ";
-      smithy::DebugAppend(out, *this->currency);
+      opal::DebugAppend(out, *this->currency);
     }
     out += '}';
   }
@@ -142,16 +142,16 @@ struct GetBookOutput {
     out += sep;
     sep = ", ";
     out += ".isbn = ";
-    smithy::DebugAppend(out, this->isbn);
+    opal::DebugAppend(out, this->isbn);
     out += sep;
     sep = ", ";
     out += ".title = ";
-    smithy::DebugAppend(out, this->title);
+    opal::DebugAppend(out, this->title);
     if (this->price.has_value()) {
       out += sep;
       sep = ", ";
       out += ".price = ";
-      smithy::DebugAppend(out, *this->price);
+      opal::DebugAppend(out, *this->price);
     }
     out += '}';
   }
@@ -174,8 +174,8 @@ template <>
 struct std::hash<example::bookstore::AddBookInput> {
   std::size_t operator()(const example::bookstore::AddBookInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.isbn));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.title));
+    seed = opal::HashCombine(seed, opal::HashValue(value.isbn));
+    seed = opal::HashCombine(seed, opal::HashValue(value.title));
     return seed;
   }
 };
@@ -184,8 +184,8 @@ template <>
 struct std::hash<example::bookstore::AddBookOutput> {
   std::size_t operator()(const example::bookstore::AddBookOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.status));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.isbn));
+    seed = opal::HashCombine(seed, opal::HashValue(value.status));
+    seed = opal::HashCombine(seed, opal::HashValue(value.isbn));
     return seed;
   }
 };
@@ -194,8 +194,8 @@ template <>
 struct std::hash<example::bookstore::BookNotFound> {
   std::size_t operator()(const example::bookstore::BookNotFound& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.isbn));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.isbn));
     return seed;
   }
 };
@@ -204,8 +204,8 @@ template <>
 struct std::hash<example::bookstore::GetBookInput> {
   std::size_t operator()(const example::bookstore::GetBookInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.isbn));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.currency));
+    seed = opal::HashCombine(seed, opal::HashValue(value.isbn));
+    seed = opal::HashCombine(seed, opal::HashValue(value.currency));
     return seed;
   }
 };
@@ -214,9 +214,9 @@ template <>
 struct std::hash<example::bookstore::GetBookOutput> {
   std::size_t operator()(const example::bookstore::GetBookOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.isbn));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.title));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.price));
+    seed = opal::HashCombine(seed, opal::HashValue(value.isbn));
+    seed = opal::HashCombine(seed, opal::HashValue(value.title));
+    seed = opal::HashCombine(seed, opal::HashValue(value.price));
     return seed;
   }
 };

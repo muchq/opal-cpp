@@ -21,7 +21,7 @@
 
 #include "smithy/http/websocket_pair.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 http::HttpRequest Request(std::string method, std::string target) {
@@ -348,4 +348,4 @@ TEST(WebSocketRouterTest, AddRejectsBadPatternsAndConflictsLikeRouter) {
 }
 
 }  // namespace
-}  // namespace smithy::server
+}  // namespace opal::server

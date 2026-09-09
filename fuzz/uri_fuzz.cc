@@ -10,13 +10,13 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const std::string_view text(reinterpret_cast<const char*>(data), size);
-  auto decoded = smithy::http::PercentDecode(text);
+  auto decoded = opal::http::PercentDecode(text);
   if (decoded.ok()) {
-    auto reencoded = smithy::http::EncodeQueryComponent(*decoded);
-    auto redecoded = smithy::http::PercentDecode(reencoded);
+    auto reencoded = opal::http::EncodeQueryComponent(*decoded);
+    auto redecoded = opal::http::PercentDecode(reencoded);
     if (!redecoded.ok() || *redecoded != *decoded) std::abort();
   }
-  (void)smithy::http::EncodePathSegment(text);
-  (void)smithy::http::EncodeGreedyPathSegment(text);
+  (void)opal::http::EncodePathSegment(text);
+  (void)opal::http::EncodeGreedyPathSegment(text);
   return 0;
 }

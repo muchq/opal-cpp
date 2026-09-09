@@ -16,7 +16,7 @@
 
 #include "smithy/http/socket_transport.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // Sends raw bytes to 127.0.0.1:port, half-closes so the server sees EOF (no
@@ -176,4 +176,4 @@ TEST(HostileFramingResponseTest, ServerEmitsExactlyOneContentLength) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

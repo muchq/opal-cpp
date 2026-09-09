@@ -9,7 +9,7 @@
 #include "smithy/http/trace_context.h"
 #include "smithy/http/transport.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 HttpRequest SampleRequest() {
@@ -210,4 +210,4 @@ TEST(ServerDispatchTest, EmptyHandlerIsA503NotACrash) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

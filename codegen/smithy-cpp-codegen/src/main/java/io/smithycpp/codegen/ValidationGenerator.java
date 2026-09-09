@@ -92,7 +92,7 @@ final class ValidationGenerator {
     if (!validates(operation)) {
       return;
     }
-    w.write("std::vector<smithy::server::ValidationFailure> validation_failures;");
+    w.write("std::vector<opal::server::ValidationFailure> validation_failures;");
     w.write("helpers::$L(input, \"\", &validation_failures);", validatorNameFor(operation));
     w.write(
         "if (!validation_failures.empty()) "
@@ -198,7 +198,7 @@ final class ValidationGenerator {
     w.write("// Constraint validation (smithy.framework#ValidationException): messages");
     w.write("// and '/member' paths follow the official validation conformance suite.");
     w.openBlock(
-        "void AddValidationFailure(std::vector<smithy::server::ValidationFailure>* failures, "
+        "void AddValidationFailure(std::vector<opal::server::ValidationFailure>* failures, "
             + "std::string path, std::string message) {");
     w.write("failures->push_back({std::move(path), std::move(message)});");
     w.closeBlock("}");
@@ -226,25 +226,25 @@ final class ValidationGenerator {
     w.write("// [[maybe_unused]]: only unary routes reject invalid input over HTTP; a");
     w.write("// service whose operations all stream reports validation on the stream.");
     w.openBlock(
-        "[[maybe_unused]] smithy::http::HttpResponse ValidationErrorResponse("
-            + "const std::vector<smithy::server::ValidationFailure>& failures$L) {",
+        "[[maybe_unused]] opal::http::HttpResponse ValidationErrorResponse("
+            + "const std::vector<opal::server::ValidationFailure>& failures$L) {",
         extraParams);
     w.write(
         "std::string summary = std::to_string(failures.size()) + \" validation error\" + "
             + "(failures.size() == 1 ? \"\" : \"s\") + \" detected. \";");
-    w.write("smithy::DocumentList field_list;");
+    w.write("opal::DocumentList field_list;");
     w.openBlock("for (std::size_t i = 0; i < failures.size(); ++i) {");
     w.write("if (i > 0) summary += \"; \";");
     w.write("summary += failures[i].message;");
-    w.write("smithy::DocumentMap field;");
-    w.write("field.emplace(\"message\", smithy::Document(failures[i].message));");
-    w.write("field.emplace(\"path\", smithy::Document(failures[i].path));");
-    w.write("field_list.push_back(smithy::Document(std::move(field)));");
+    w.write("opal::DocumentMap field;");
+    w.write("field.emplace(\"message\", opal::Document(failures[i].message));");
+    w.write("field.emplace(\"path\", opal::Document(failures[i].path));");
+    w.write("field_list.push_back(opal::Document(std::move(field)));");
     w.closeBlock("}");
-    w.write("smithy::DocumentMap body;");
-    w.write("body.emplace(\"fieldList\", smithy::Document(std::move(field_list)));");
+    w.write("opal::DocumentMap body;");
+    w.write("body.emplace(\"fieldList\", opal::Document(std::move(field_list)));");
     w.write(
-        "smithy::http::HttpResponse response = helpers::$L(400, $S, summary, std::move(body)$L);",
+        "opal::http::HttpResponse response = helpers::$L(400, $S, summary, std::move(body)$L);",
         errorFn,
         errorCode,
         extraArgs);
@@ -274,7 +274,7 @@ final class ValidationGenerator {
       }
       w.write(
           "void $L(const $L& value, const std::string& path, "
-              + "std::vector<smithy::server::ValidationFailure>* failures);",
+              + "std::vector<opal::server::ValidationFailure>* failures);",
           validatorName(shape),
           context.cppSymbols().typeRef(shape));
       declared = true;
@@ -298,7 +298,7 @@ final class ValidationGenerator {
     String type = context.cppSymbols().typeRef(shape);
     w.openBlock(
         "void $L(const $L& value, const std::string& path, "
-            + "std::vector<smithy::server::ValidationFailure>* failures) {",
+            + "std::vector<opal::server::ValidationFailure>* failures) {",
         validatorName(shape),
         type);
     if (shape.isStructureShape() || shape.isUnionShape()) {
@@ -451,11 +451,11 @@ final class ValidationGenerator {
       boolean enumAsRawString) {
     String lengthExpr =
         switch (target.getType()) {
-          case STRING -> "smithy::Utf8CodePointCount(" + valueExpr + ")";
+          case STRING -> "opal::Utf8CodePointCount(" + valueExpr + ")";
           case ENUM ->
               enumAsRawString
-                  ? "smithy::Utf8CodePointCount(" + valueExpr + ")"
-                  : "smithy::Utf8CodePointCount(" + valueExpr + ".ToString())";
+                  ? "opal::Utf8CodePointCount(" + valueExpr + ")"
+                  : "opal::Utf8CodePointCount(" + valueExpr + ".ToString())";
           default -> valueExpr + ".size()";
         };
     if (target.getType() == software.amazon.smithy.model.shapes.ShapeType.STRING
@@ -547,14 +547,14 @@ final class ValidationGenerator {
     rejectUnsupportedPattern(pattern);
     String variable = "kPattern" + patternCounter++;
     w.addInclude("\"smithy/core/regex.h\"");
-    // smithy::Regex is a linear-time engine, so no pattern/input combination
+    // opal::Regex is a linear-time engine, so no pattern/input combination
     // can backtrack catastrophically (ReDoS). The raw string literal keeps
     // the regex byte-exact; the failure message needs C++ escaping instead.
     // Compile failure (impossible for generator-accepted patterns) fails
     // closed: every value is rejected rather than skipping the check.
     w.write(
-        "static const smithy::Outcome<smithy::Regex> $L ="
-            + " smithy::Regex::Compile(R\"__smithy($L)__smithy\");",
+        "static const opal::Outcome<opal::Regex> $L ="
+            + " opal::Regex::Compile(R\"__smithy($L)__smithy\");",
         variable,
         pattern.getValue());
     w.openBlock("if (!$L.ok() || !$L->Search($L)) {", variable, variable, valueExpr);

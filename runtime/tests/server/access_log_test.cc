@@ -22,7 +22,7 @@
 #include "smithy/server/metrics.h"
 #include "smithy/server/middleware.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 using nlohmann::json;
@@ -280,4 +280,4 @@ TEST(AccessLogTest, FormatsWhatObserveReports) {
 }
 
 }  // namespace
-}  // namespace smithy::server
+}  // namespace opal::server

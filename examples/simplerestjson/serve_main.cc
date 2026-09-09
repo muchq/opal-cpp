@@ -34,20 +34,20 @@ using example::bookstore::GetBookOutput;
 // on a thread pool.
 class InMemoryBookstore final : public BookstoreHandler {
  public:
-  smithy::Outcome<AddBookOutput> AddBook(
-      const AddBookInput& input, const smithy::server::RequestContext& /*context*/) override {
+  opal::Outcome<AddBookOutput> AddBook(const AddBookInput& input,
+                                       const opal::server::RequestContext& /*context*/) override {
     const std::lock_guard<std::mutex> lock(mu_);
     titles_[input.isbn] = input.title;
     return AddBookOutput{.status = 201, .isbn = input.isbn};
   }
 
-  smithy::Outcome<GetBookOutput> GetBook(
-      const GetBookInput& input, const smithy::server::RequestContext& /*context*/) override {
+  opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input,
+                                       const opal::server::RequestContext& /*context*/) override {
     const std::lock_guard<std::mutex> lock(mu_);
     const auto it = titles_.find(input.isbn);
     if (it == titles_.end()) {
       const std::string message = "no book: " + input.isbn;
-      smithy::Error error = smithy::Error::Modeled("BookNotFound", message);
+      opal::Error error = opal::Error::Modeled("BookNotFound", message);
       error.set_detail(BookNotFound{.message = message, .isbn = input.isbn});
       return error;  // the server turns this into the modeled 404
     }
@@ -72,12 +72,12 @@ int main(int argc, char** argv) {
   pthread_sigmask(SIG_BLOCK, &shutdown_signals, nullptr);
 
   BookstoreServer server(std::make_shared<InMemoryBookstore>());
-  smithy::http::BeastServerTransport transport({
+  opal::http::BeastServerTransport transport({
       .address = "0.0.0.0",
       .port = argc > 1 ? std::atoi(argv[1]) : 8080,  // 0 binds an ephemeral port
       .drain_timeout_seconds = 10,
   });
-  smithy::Outcome<smithy::Unit> started = transport.Start(server.Handler());
+  opal::Outcome<opal::Unit> started = transport.Start(server.Handler());
   if (!started.ok()) {
     std::fprintf(stderr, "bookstore: start failed: %s\n", started.error().message().c_str());
     return 1;

@@ -23,28 +23,28 @@
 namespace example::cafe {
 
 /// rpcv2Cbor client for example.cafe#Cafe.
-/// Modeled service errors surface as smithy::Error with kind kModeled,
+/// Modeled service errors surface as opal::Error with kind kModeled,
 /// code() set to the error shape name, and the deserialized error
 /// structure attached. Dispatch on them through the per-operation
 /// <Operation>Errors listings below rather than comparing code() text.
 class CafeClient {
   public:
     /// Fails when the endpoint cannot be parsed and no transport is injected.
-    static smithy::Outcome<CafeClient> Create(smithy::ClientConfig config);
+    static opal::Outcome<CafeClient> Create(opal::ClientConfig config);
 
-    smithy::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input) const;
-    smithy::Outcome<OrderCoffeeOutput> OrderCoffee(const OrderCoffeeInput& input) const;
+    opal::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input) const;
+    opal::Outcome<OrderCoffeeOutput> OrderCoffee(const OrderCoffeeInput& input) const;
 
   private:
-    CafeClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix);
-    smithy::Outcome<smithy::http::HttpResponse> Send(smithy::http::HttpRequest request) const;
+    CafeClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix);
+    opal::Outcome<opal::http::HttpResponse> Send(opal::http::HttpRequest request) const;
 
-    smithy::ClientConfig config_;
-    std::shared_ptr<smithy::http::HttpClient> transport_;
+    opal::ClientConfig config_;
+    std::shared_ptr<opal::http::HttpClient> transport_;
     std::string path_prefix_;
 };
 
-/// The modeled errors of GetOrder, matched from a smithy::Error so dispatch is
+/// The modeled errors of GetOrder, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -55,9 +55,9 @@ class GetOrderErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static GetOrderErrors FromError(const smithy::Error& error) {
+    static GetOrderErrors FromError(const opal::Error& error) {
       GetOrderErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "OrderNotFound") {
         const auto* detail = error.detail<OrderNotFound>();
         result.value_.emplace<1>(detail != nullptr ? *detail : OrderNotFound{});
@@ -96,7 +96,7 @@ class GetOrderErrors {
       switch (value_.index()) {
         case 1:
           out += "order_not_found = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -115,14 +115,14 @@ class GetOrderErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("GetOrderErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("GetOrderErrors", requested, case_name());
       }
     }
 
     std::variant<std::monostate, OrderNotFound> value_;
 };
 
-/// The modeled errors of OrderCoffee, matched from a smithy::Error so dispatch is
+/// The modeled errors of OrderCoffee, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -133,9 +133,9 @@ class OrderCoffeeErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static OrderCoffeeErrors FromError(const smithy::Error& error) {
+    static OrderCoffeeErrors FromError(const opal::Error& error) {
       OrderCoffeeErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "OutOfBeans") {
         const auto* detail = error.detail<OutOfBeans>();
         result.value_.emplace<1>(detail != nullptr ? *detail : OutOfBeans{});
@@ -174,7 +174,7 @@ class OrderCoffeeErrors {
       switch (value_.index()) {
         case 1:
           out += "out_of_beans = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -193,7 +193,7 @@ class OrderCoffeeErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("OrderCoffeeErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("OrderCoffeeErrors", requested, case_name());
       }
     }
 
@@ -210,8 +210,8 @@ template <>
 struct std::hash<example::cafe::GetOrderErrors> {
   std::size_t operator()(const example::cafe::GetOrderErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -219,8 +219,8 @@ template <>
 struct std::hash<example::cafe::OrderCoffeeErrors> {
   std::size_t operator()(const example::cafe::OrderCoffeeErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 

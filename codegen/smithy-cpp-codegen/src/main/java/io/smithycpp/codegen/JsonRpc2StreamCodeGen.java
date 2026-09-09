@@ -33,25 +33,25 @@ final class JsonRpc2StreamCodeGen {
     w.write("// (ADR-0023): the unary emitters build the envelope, streams reuse their");
     w.write("// bodies verbatim — one error identity, one spelling.");
     w.openBlock(
-        "smithy::eventstream::Message JsonRpcStreamText(const smithy::http::HttpResponse&"
+        "opal::eventstream::Message JsonRpcStreamText(const opal::http::HttpResponse&"
             + " response) {");
-    w.write("smithy::eventstream::Message message;");
-    w.write("message.payload = smithy::Blob::FromString(response.body);");
+    w.write("opal::eventstream::Message message;");
+    w.write("message.payload = opal::Blob::FromString(response.body);");
     w.write("return message;");
     w.closeBlock("}");
     w.write("");
     w.write("// The terminal result envelope that ends a clean stream: result stays {}");
     w.write("// while initial-response members remain deferred (ADR-0016/0023).");
     w.openBlock(
-        "smithy::eventstream::Message BuildJsonRpcTerminalResult(const smithy::Document& id) {");
-    w.write("smithy::DocumentMap envelope;");
-    w.write("envelope.emplace(\"jsonrpc\", smithy::Document(\"2.0\"));");
-    w.write("envelope.emplace(\"result\", smithy::Document(smithy::DocumentMap{}));");
+        "opal::eventstream::Message BuildJsonRpcTerminalResult(const opal::Document& id) {");
+    w.write("opal::DocumentMap envelope;");
+    w.write("envelope.emplace(\"jsonrpc\", opal::Document(\"2.0\"));");
+    w.write("envelope.emplace(\"result\", opal::Document(opal::DocumentMap{}));");
     w.write("envelope.emplace(\"id\", id);");
-    w.write("smithy::eventstream::Message message;");
+    w.write("opal::eventstream::Message message;");
     w.write(
         "message.payload ="
-            + " smithy::Blob::FromString(smithy::json::Encode(smithy::Document(std::move(envelope))));");
+            + " opal::Blob::FromString(opal::json::Encode(opal::Document(std::move(envelope))));");
     w.write("return message;");
     w.closeBlock("}");
     w.write("");
@@ -60,21 +60,20 @@ final class JsonRpc2StreamCodeGen {
     w.write("// compares bodies, so no decoder detail leaks into the wire.");
     w.openBlock("struct JsonRpcOpening {");
     w.write("bool ok = false;");
-    w.write("smithy::Document id;  // null until the envelope yields one (JSON-RPC 2.0 §5)");
+    w.write("opal::Document id;  // null until the envelope yields one (JSON-RPC 2.0 §5)");
     w.write("std::string method;");
-    w.write("smithy::Document params{smithy::DocumentMap{}};");
-    w.write("smithy::eventstream::Message refusal;  // when !ok: send, then close");
+    w.write("opal::Document params{opal::DocumentMap{}};");
+    w.write("opal::eventstream::Message refusal;  // when !ok: send, then close");
     w.closeBlock("};");
     w.write("");
-    w.openBlock(
-        "JsonRpcOpening ParseJsonRpcOpening(const smithy::eventstream::Message& message) {");
+    w.openBlock("JsonRpcOpening ParseJsonRpcOpening(const opal::eventstream::Message& message) {");
     w.write("JsonRpcOpening opening;");
     w.openBlock("if (!message.headers.empty()) {");
     w.write("// Only the raw-text wire reaches this route; a framed message means a");
     w.write("// peer speaking the wrong wire entirely.");
     writeOpeningRefusal(w, "-32600", "the opening message must be one JSON-RPC request envelope");
     w.closeBlock("}");
-    w.write("auto decoded = smithy::json::Decode(message.payload.ToString());");
+    w.write("auto decoded = opal::json::Decode(message.payload.ToString());");
     w.openBlock("if (!decoded) {");
     writeOpeningRefusal(w, "-32700", "request body is not valid JSON");
     w.closeBlock("}");
@@ -82,14 +81,14 @@ final class JsonRpc2StreamCodeGen {
     writeOpeningRefusal(w, "-32600", "request is not a JSON-RPC 2.0 call");
     w.closeBlock("}");
     w.write(
-        "if (const smithy::Document* id_doc = decoded->Find(\"id\"); id_doc != nullptr)"
+        "if (const opal::Document* id_doc = decoded->Find(\"id\"); id_doc != nullptr)"
             + " opening.id = *id_doc;");
-    w.write("const smithy::Document* version = decoded->Find(\"jsonrpc\");");
+    w.write("const opal::Document* version = decoded->Find(\"jsonrpc\");");
     w.openBlock(
         "if (version == nullptr || !version->is_string() || version->as_string() != \"2.0\") {");
     writeOpeningRefusal(w, "-32600", "expected jsonrpc: \\\"2.0\\\"");
     w.closeBlock("}");
-    w.write("const smithy::Document* method = decoded->Find(\"method\");");
+    w.write("const opal::Document* method = decoded->Find(\"method\");");
     w.openBlock("if (method == nullptr || !method->is_string()) {");
     writeOpeningRefusal(w, "-32600", "expected a string method member");
     w.closeBlock("}");
@@ -99,7 +98,7 @@ final class JsonRpc2StreamCodeGen {
     writeOpeningRefusal(w, "-32600", "the opening call must carry an id");
     w.closeBlock("}");
     w.write("// Absent/null params deserialize like an empty object.");
-    w.write("const smithy::Document* params = decoded->Find(\"params\");");
+    w.write("const opal::Document* params = decoded->Find(\"params\");");
     w.write("if (params != nullptr && !params->is_null()) opening.params = *params;");
     w.write("opening.method = method->as_string();");
     w.write("opening.ok = true;");
@@ -140,14 +139,14 @@ final class JsonRpc2StreamCodeGen {
     w.write("// frame (and the stream it owns) outlives the write. Best-effort, like");
     w.write("// every terminal send: a send the dead session refuses is discarded.");
     w.openBlock(
-        "smithy::eventstream::Detached Serve$LAsync(std::shared_ptr<types::$LAsyncHandler> handler,"
-            + " $L input, std::shared_ptr<smithy::http::WebSocket> socket, smithy::Document id) {",
+        "opal::eventstream::Detached Serve$LAsync(std::shared_ptr<types::$LAsyncHandler> handler,"
+            + " $L input, std::shared_ptr<opal::http::WebSocket> socket, opal::Document id) {",
         op,
         serviceName,
         inputType);
     w.write(
-        "auto wrapped = std::make_shared<smithy::eventstream::JsonRpcStreamSocket>(socket, id,"
-            + " smithy::eventstream::JsonRpcStreamSocket::Role::kServer);");
+        "auto wrapped = std::make_shared<opal::eventstream::JsonRpcStreamSocket>(socket, id,"
+            + " opal::eventstream::JsonRpcStreamSocket::Role::kServer);");
     w.write(
         "types::$L stream(wrapped, $L, helpers::Decode$LEvent);",
         EventStreamCodeGen.asyncServerStreamAlias(operation),
@@ -158,11 +157,11 @@ final class JsonRpc2StreamCodeGen {
     w.write("// Built OUTSIDE the co_await expression on purpose: a conditional");
     w.write("// operator inside a co_await full expression miscompiles on GCC (the");
     w.write("// branch temporaries become frame slots and the wrong branch runs).");
-    w.write("smithy::eventstream::Message terminal =");
+    w.write("opal::eventstream::Message terminal =");
     w.write("    outcome.ok() ? BuildJsonRpcTerminalResult(id)");
     w.write(
         "                 : helpers::JsonRpcStreamText(helpers::ErrorToResponse(outcome.error(), id));");
-    w.write("(void)co_await smithy::eventstream::SendMessage(socket, std::move(terminal));");
+    w.write("(void)co_await opal::eventstream::SendMessage(socket, std::move(terminal));");
     w.write("stream.Close();");
     w.closeBlock("}");
     w.write("");
@@ -188,7 +187,7 @@ final class JsonRpc2StreamCodeGen {
     w.openBlock(
         "void ServeJsonRpcStream(types::$LHandler& handler, "
             + ProtocolSupport.REQUEST_CONTEXT_PARAM
-            + " context, smithy::http::WebSocket& socket) {",
+            + " context, opal::http::WebSocket& socket) {",
         serviceName);
     w.write("auto first = socket.Receive();");
     w.write("// A wire that failed or closed before the opening call is a non-event.");
@@ -208,14 +207,14 @@ final class JsonRpc2StreamCodeGen {
     w.write("// envelope is read inside this Detached frame — a client that upgrades");
     w.write("// and never calls costs no parked thread.");
     w.openBlock(
-        "smithy::eventstream::Detached ServeJsonRpcSession(std::shared_ptr<types::$LAsyncHandler>"
-            + " handler, std::shared_ptr<smithy::http::WebSocket> socket) {",
+        "opal::eventstream::Detached ServeJsonRpcSession(std::shared_ptr<types::$LAsyncHandler>"
+            + " handler, std::shared_ptr<opal::http::WebSocket> socket) {",
         serviceName);
-    w.write("auto first = co_await smithy::eventstream::ReceiveMessage(socket);");
+    w.write("auto first = co_await opal::eventstream::ReceiveMessage(socket);");
     w.write("if (!first.ok() || !first->has_value()) co_return;");
     w.write("const JsonRpcOpening opening = helpers::ParseJsonRpcOpening(**first);");
     w.openBlock("if (!opening.ok) {");
-    w.write("(void)co_await smithy::eventstream::SendMessage(socket, opening.refusal);");
+    w.write("(void)co_await opal::eventstream::SendMessage(socket, opening.refusal);");
     w.write("socket->Close();");
     w.write("co_return;");
     w.closeBlock("}");
@@ -254,7 +253,7 @@ final class JsonRpc2StreamCodeGen {
         w.write("input = *std::move(parsed);");
       }
       if (validation.validates(operation)) {
-        w.write("std::vector<smithy::server::ValidationFailure> validation_failures;");
+        w.write("std::vector<opal::server::ValidationFailure> validation_failures;");
         w.write(
             "helpers::$L(input, \"\", &validation_failures);",
             validation.validatorNameFor(operation));
@@ -276,8 +275,8 @@ final class JsonRpc2StreamCodeGen {
         w.write("co_return;");
       } else {
         w.write(
-            "smithy::eventstream::JsonRpcStreamSocket wrapped(socket, opening.id,"
-                + " smithy::eventstream::JsonRpcStreamSocket::Role::kServer);");
+            "opal::eventstream::JsonRpcStreamSocket wrapped(socket, opening.id,"
+                + " opal::eventstream::JsonRpcStreamSocket::Role::kServer);");
         w.write(
             "types::$L stream(wrapped, $L, helpers::Decode$LEvent);",
             EventStreamCodeGen.serverStreamAlias(operation),
@@ -306,7 +305,7 @@ final class JsonRpc2StreamCodeGen {
   /** Send one terminal refusal, close, and leave the driver — seam-appropriate forms. */
   private static void writeRefusalTail(CppWriter w, boolean session, String messageExpr) {
     if (session) {
-      w.write("(void)co_await smithy::eventstream::SendMessage(socket, $L);", messageExpr);
+      w.write("(void)co_await opal::eventstream::SendMessage(socket, $L);", messageExpr);
       w.write("socket->Close();");
       w.write("co_return;");
     } else {
@@ -331,7 +330,7 @@ final class JsonRpc2StreamCodeGen {
     w.addInclude("\"smithy/eventstream/jsonrpc_stream_socket.h\"");
     StructureShape input = ProtocolSupport.inputShape(context, operation);
     String op = EventStreamCodeGen.opName(operation);
-    w.write("smithy::http::WebSocketDialRequest request;");
+    w.write("opal::http::WebSocketDialRequest request;");
     w.write("// The shared endpoint (ADR-0023): the same target the unary POST uses —");
     w.write("// the operation rides the opening envelope, and every frame is text.");
     w.write("request.target = path_prefix_ + \"/\";");
@@ -343,10 +342,10 @@ final class JsonRpc2StreamCodeGen {
     w.write("// The opening request envelope: selects the operation and carries the");
     w.write("// initial-request members (the :initial-request seam, realized).");
     if (ProtocolSupport.noModeledInput(input)) {
-      w.write("smithy::DocumentMap params;");
+      w.write("opal::DocumentMap params;");
     } else {
       w.write(
-          "smithy::DocumentMap params = Serialize$L(input).as_map();",
+          "opal::DocumentMap params = Serialize$L(input).as_map();",
           SerdeCodeGen.serdeFunctionSuffix(context, input));
       MemberShape streamMember = EventStreamCodeGen.inputStreamMember(context.model(), operation);
       if (streamMember != null) {
@@ -356,21 +355,21 @@ final class JsonRpc2StreamCodeGen {
             HttpBindingCodeGen.wireName(streamMember, protocol.usesJsonName()));
       }
     }
-    w.write("smithy::DocumentMap envelope;");
-    w.write("envelope.emplace(\"jsonrpc\", smithy::Document(\"2.0\"));");
-    w.write("envelope.emplace(\"method\", smithy::Document($S));", operation.getId().getName());
-    w.write("envelope.emplace(\"id\", smithy::Document(1));");
-    w.write("envelope.emplace(\"params\", smithy::Document(std::move(params)));");
-    w.write("smithy::eventstream::Message opening;");
+    w.write("opal::DocumentMap envelope;");
+    w.write("envelope.emplace(\"jsonrpc\", opal::Document(\"2.0\"));");
+    w.write("envelope.emplace(\"method\", opal::Document($S));", operation.getId().getName());
+    w.write("envelope.emplace(\"id\", opal::Document(1));");
+    w.write("envelope.emplace(\"params\", opal::Document(std::move(params)));");
+    w.write("opal::eventstream::Message opening;");
     w.write(
         "opening.payload ="
-            + " smithy::Blob::FromString(smithy::json::Encode(smithy::Document(std::move(envelope))));");
+            + " opal::Blob::FromString(opal::json::Encode(opal::Document(std::move(envelope))));");
     w.write("auto sent = (*socket)->Send(opening);");
     w.write("if (!sent) return std::move(sent).error();");
     w.write("return $L(", EventStreamCodeGen.clientStreamAlias(operation));
     w.write(
-        "    std::make_shared<smithy::eventstream::JsonRpcStreamSocket>(*std::move(socket),"
-            + " smithy::Document(1), smithy::eventstream::JsonRpcStreamSocket::Role::kClient),");
+        "    std::make_shared<opal::eventstream::JsonRpcStreamSocket>(*std::move(socket),"
+            + " opal::Document(1), opal::eventstream::JsonRpcStreamSocket::Role::kClient),");
     w.write(
         "    $L, helpers::Decode$LEvent);",
         EventStreamCodeGen.encoderArgument(

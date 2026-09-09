@@ -46,15 +46,15 @@ class StreamTestFixture : public testing::Test {
   void Start(std::unique_ptr<CalculatorServer> server, bool session_seam) {
     server_ = std::move(server);
     session_seam_ = session_seam;
-    auto loopback = std::make_shared<smithy::http::Loopback>();
+    auto loopback = std::make_shared<opal::http::Loopback>();
     ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     config.http_client = loopback;  // the unary neighbors' transport
-    config.websocket_dialer = [this](const smithy::http::WebSocketDialRequest& request)
-        -> smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> {
+    config.websocket_dialer = [this](const opal::http::WebSocketDialRequest& request)
+        -> opal::Outcome<std::shared_ptr<opal::http::WebSocket>> {
       last_dialed_target_ = request.target;
-      auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
+      auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
       sessions_.push_back(far);
       Serve(request.target, far);
       return near;
@@ -67,8 +67,8 @@ class StreamTestFixture : public testing::Test {
   // Routes one server end through the generated StreamRouter, the way the
   // transport would after the upgrade. Also used directly by wire-level
   // tests that speak raw envelopes on the near end instead of dialing.
-  void Serve(const std::string& target, std::shared_ptr<smithy::http::WebSocket> session) {
-    smithy::http::HttpRequest upgrade;
+  void Serve(const std::string& target, std::shared_ptr<opal::http::WebSocket> session) {
+    opal::http::HttpRequest upgrade;
     upgrade.method = "GET";
     upgrade.target = target;
     if (session_seam_) {
@@ -89,7 +89,7 @@ class StreamTestFixture : public testing::Test {
   std::unique_ptr<CalculatorServer> server_;
   std::unique_ptr<CalculatorClient> client_;
   // Every dialed or hand-made far end — closed in TearDown regardless.
-  std::vector<std::shared_ptr<smithy::http::WebSocket>> sessions_;
+  std::vector<std::shared_ptr<opal::http::WebSocket>> sessions_;
   std::vector<std::thread> threads_;
   std::string last_dialed_target_;
   bool session_seam_ = false;

@@ -8,7 +8,7 @@
 
 #include "smithy/http/message.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // An Origin allowlist as a websocket_gate (ADR-0018, issue #113): the
 // dozen lines every browser-facing WebSocket endpoint rebuilds, built
@@ -34,10 +34,10 @@ namespace smithy::server {
 // Composes by chaining, like every gate — run it first, then defer:
 //
 //   options.websocket_gate =
-//       [origin = smithy::server::RequireOrigin({"https://muchq.com"}),
+//       [origin = opal::server::RequireOrigin({"https://muchq.com"}),
 //        auth = MyAuthGate(), router = server.StreamRouter()->Gate()](
-//           const smithy::http::HttpRequest& request)
-//           -> std::optional<smithy::http::HttpResponse> {
+//           const opal::http::HttpRequest& request)
+//           -> std::optional<opal::http::HttpResponse> {
 //         if (auto refusal = origin(request)) return refusal;
 //         if (auto refusal = auth(request)) return refusal;
 //         return router(request);
@@ -45,6 +45,6 @@ namespace smithy::server {
 std::function<std::optional<http::HttpResponse>(const http::HttpRequest&)> RequireOrigin(
     const std::vector<std::string>& allowed_origins);
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_ORIGIN_GATE_H_

@@ -11,7 +11,7 @@
 #include "smithy/http/message.h"
 #include "smithy/http/uri.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // Values captured from URI labels during route matching, keyed by label name.
 // Greedy label values keep their embedded slashes (decoded).
@@ -122,6 +122,6 @@ struct ValidationFailure {
   std::string message;
 };
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_ROUTER_H_

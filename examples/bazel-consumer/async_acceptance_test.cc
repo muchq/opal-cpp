@@ -24,19 +24,19 @@
 
 namespace {
 
-using smithy::Outcome;
-using smithy::Unit;
-using smithy::eventstream::AsyncEventStream;
-using smithy::eventstream::Detached;
-using smithy::eventstream::Message;
-using smithy::http::BeastServerTransport;
-using smithy::http::BeastWebSocketClient;
-using smithy::http::HttpRequest;
-using smithy::http::HttpResponse;
-using smithy::http::WebSocket;
+using opal::Outcome;
+using opal::Unit;
+using opal::eventstream::AsyncEventStream;
+using opal::eventstream::Detached;
+using opal::eventstream::Message;
+using opal::http::BeastServerTransport;
+using opal::http::BeastWebSocketClient;
+using opal::http::HttpRequest;
+using opal::http::HttpResponse;
+using opal::http::WebSocket;
 
 Message Event(const std::string& kind, const std::string& body) {
-  return Message{.headers = {{":event-type", kind}}, .payload = smithy::Blob::FromString(body)};
+  return Message{.headers = {{":event-type", kind}}, .payload = opal::Blob::FromString(body)};
 }
 
 // The identity codec: the adapter's templates instantiate in a consumer
@@ -85,7 +85,7 @@ TEST(AsyncAcceptanceTest, TheAsyncPrimitivesRoundTripThroughTheModuleBoundary) {
 
 // One session's whole life on completion contexts: registered for fan-out,
 // echoing until the client closes, then gone from the registry.
-Detached Serve(smithy::server::SessionRegistry<Message>& registry, std::string id,
+Detached Serve(opal::server::SessionRegistry<Message>& registry, std::string id,
                std::shared_ptr<WebSocket> socket) {
   AsyncEventStream<Message, Message> stream(std::move(socket), Identity, Identity);
   if (!registry.Add(id, stream.Share())) {
@@ -148,9 +148,9 @@ TEST(AsyncAcceptanceTest, AnAwaitedReceiveDeadlineTicksWithoutEndingTheSession) 
 TEST(AsyncAcceptanceTest, ThreeSessionsShareOneHandlerThreadAndAFanOutRegistry) {
   // Declared before the transport on purpose: sessions reference the
   // registry from their coroutines, so it must outlive them.
-  smithy::server::SessionRegistry<Message>::Options fanout;
+  opal::server::SessionRegistry<Message>::Options fanout;
   fanout.async_delivery = true;  // completion chains, no writer threads
-  smithy::server::SessionRegistry<Message> registry(fanout);
+  opal::server::SessionRegistry<Message> registry(fanout);
 
   BeastServerTransport::Options options;
   options.handler_threads = 1;  // launches only — the borrowed seam would wedge here

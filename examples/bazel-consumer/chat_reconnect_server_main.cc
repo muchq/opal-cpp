@@ -26,7 +26,7 @@ using acme::chat::ExchangeInput;
 using acme::chat::Note;
 using acme::chat::Notes;
 
-using Registry = smithy::server::SessionRegistry<Notes>;
+using Registry = opal::server::SessionRegistry<Notes>;
 
 // The generated blocking handler with the reconnect exits split the
 // ADR-0020 way: deliberate leaves Remove, everything else Detaches.
@@ -35,9 +35,9 @@ class ReconnectHubHandler final : public acme::chat::ChatHandler {
   explicit ReconnectHubHandler(std::chrono::seconds grace)
       : registry_(RegistryOptions(this, grace)) {}
 
-  smithy::Outcome<smithy::Unit> Exchange(const ExchangeInput& input,
-                                         smithy::eventstream::EventStream<Notes, Notes>& stream,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> Exchange(const ExchangeInput& input,
+                                     opal::eventstream::EventStream<Notes, Notes>& stream,
+                                     const opal::server::RequestContext&) override {
     const std::string& id = input.name;
     // The blessed admission call (ADR-0022): resume-or-fresh-join with the
     // brief retry the reconnect race needs; blocking a blocking handler is
@@ -45,7 +45,7 @@ class ReconnectHubHandler final : public acme::chat::ChatHandler {
     const auto admission =
         registry_.ResumeOrAdd(id, [&stream] { return stream.Share(); }, std::chrono::seconds(1));
     if (admission == Registry::Admission::kRefused) {
-      return smithy::Error::Validation("name '" + id + "' is already in the session");
+      return opal::Error::Validation("name '" + id + "' is already in the session");
     }
 
     if (admission == Registry::Admission::kResumed) {
@@ -82,7 +82,7 @@ class ReconnectHubHandler final : public acme::chat::ChatHandler {
       registry_.Remove(id);
       BroadcastText("left:" + id);
     }
-    return smithy::Unit{};
+    return opal::Unit{};
   }
 
   bool Drain(std::chrono::milliseconds timeout) { return registry_.Drain(timeout); }
@@ -92,9 +92,9 @@ class ReconnectHubHandler final : public acme::chat::ChatHandler {
     registry_.Broadcast(Notes::FromNote(Note{.text = text}));
   }
 
-  static smithy::server::SessionRegistry<Notes>::Options RegistryOptions(
-      ReconnectHubHandler* handler, std::chrono::seconds grace) {
-    smithy::server::SessionRegistry<Notes>::Options options;
+  static opal::server::SessionRegistry<Notes>::Options RegistryOptions(ReconnectHubHandler* handler,
+                                                                       std::chrono::seconds grace) {
+    opal::server::SessionRegistry<Notes>::Options options;
     options.grace_period = grace;
     options.on_expired = [handler](const std::string& id) {
       // Nobody came back: the departure the disconnect deferred.
@@ -103,7 +103,7 @@ class ReconnectHubHandler final : public acme::chat::ChatHandler {
     return options;
   }
 
-  smithy::server::SessionRegistry<Notes> registry_;
+  opal::server::SessionRegistry<Notes> registry_;
 };
 
 }  // namespace
@@ -119,12 +119,12 @@ int main(int argc, char** argv) {
   auto handler = std::make_shared<ReconnectHubHandler>(grace);
   acme::chat::ChatServer server(handler);
 
-  smithy::http::BeastServerTransport::Options options;
+  opal::http::BeastServerTransport::Options options;
   options.address = "0.0.0.0";
   options.port = argc > 1 ? std::atoi(argv[1]) : 8080;  // 0 binds an ephemeral port
   options.websocket_gate = server.StreamRouter()->Gate();
   options.on_websocket = server.StreamRouter()->Serve();  // blocking generated dispatch
-  smithy::http::BeastServerTransport transport(options);
+  opal::http::BeastServerTransport transport(options);
   auto started = transport.Start(server.Handler());
   if (!started.ok()) {
     std::fprintf(stderr, "chat-hub: start failed: %s\n", started.error().message().c_str());

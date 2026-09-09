@@ -14,7 +14,7 @@
 #include "smithy/eventstream/envelope.h"
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 std::string EncodeOrDie(const Message& message) {
@@ -231,4 +231,4 @@ TEST(JsonFrameTest, AFrameExactlyAtTheCeilingIsLegal) {
 }
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

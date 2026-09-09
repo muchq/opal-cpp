@@ -128,12 +128,12 @@ struct Rng {
   if (rng.Coin()) v.big = static_cast<std::int64_t>(rng.Int(-4611686018427387904LL, 4611686018427387903LL));
   if (rng.Coin()) v.ratio = static_cast<float>(rng.Int(-8000000LL, 8000000LL)) / static_cast<float>(8);
   if (rng.Coin()) v.precise = static_cast<double>(rng.Int(-8000000LL, 8000000LL)) / static_cast<double>(8);
-  if (rng.Coin()) v.blob = smithy::Blob::FromString(rng.Text(1, 9));
+  if (rng.Coin()) v.blob = opal::Blob::FromString(rng.Text(1, 9));
   if (rng.Coin()) v.priority = Priority::FromString(std::array<const char*, 3>{"low", "medium", "high"}[rng.engine() % 3]);
   if (rng.Coin()) v.weight = static_cast<Weight>(std::array<int, 2>{1, 2}[rng.engine() % 2]);
-  if (rng.Coin()) v.dateTime = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
-  if (rng.Coin()) v.httpDate = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
-  if (rng.Coin()) v.epoch = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  if (rng.Coin()) v.dateTime = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  if (rng.Coin()) v.httpDate = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  if (rng.Coin()) v.epoch = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
   if (rng.Coin()) v.names = RandomStringList(rng);
   if (rng.Coin()) v.uniqueNames = RandomUniqueStringList(rng);
   if (rng.Coin()) v.sparseNumbers = RandomSparseIntegerList(rng);
@@ -173,14 +173,14 @@ struct Rng {
 
 class ScriptedHandler final : public RoundTripJsonRpcHandler {
   public:
-    smithy::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const opal::server::RequestContext&) override {
       lastPutSinkRpc = input;
       if (nextPutSinkRpcError.has_value()) return *nextPutSinkRpcError;
       return nextPutSinkRpcOutput;
     }
     std::optional<PutSinkRpcInput> lastPutSinkRpc;
     PutSinkRpcOutput nextPutSinkRpcOutput{};
-    std::optional<smithy::Error> nextPutSinkRpcError;
+    std::optional<opal::Error> nextPutSinkRpcError;
 };
 
 enum class TransportKind { kLoopback, kSocket };
@@ -190,14 +190,14 @@ class RoundTripJsonRpcIntegrationTest : public ::testing::TestWithParam<Transpor
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<RoundTripJsonRpcServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -210,7 +210,7 @@ class RoundTripJsonRpcIntegrationTest : public ::testing::TestWithParam<Transpor
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<RoundTripJsonRpcServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<RoundTripJsonRpcClient> client_;
 };
 
@@ -243,13 +243,13 @@ TEST_P(RoundTripJsonRpcIntegrationTest, PutSinkRpcMaximalRoundTrips) {
 TEST_P(RoundTripJsonRpcIntegrationTest, PutSinkRpcSinkNotFoundMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const SinkNotFound detail = RandomSinkNotFound(rng);
-  smithy::Error error = smithy::Error::Modeled("SinkNotFound", "integration");
+  opal::Error error = opal::Error::Modeled("SinkNotFound", "integration");
   error.set_detail(detail);
   handler_->nextPutSinkRpcError = error;
   const PutSinkRpcInput input = RandomPutSinkRpcInput(rng);
   const auto outcome = client_->PutSinkRpc(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkNotFound");
   ASSERT_NE(outcome.error().detail<SinkNotFound>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<SinkNotFound>(), detail);
@@ -258,13 +258,13 @@ TEST_P(RoundTripJsonRpcIntegrationTest, PutSinkRpcSinkNotFoundMapsAcrossTheWire)
 TEST_P(RoundTripJsonRpcIntegrationTest, PutSinkRpcSinkQuotaExceededMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const SinkQuotaExceeded detail = RandomSinkQuotaExceeded(rng);
-  smithy::Error error = smithy::Error::Modeled("SinkQuotaExceeded", "integration");
+  opal::Error error = opal::Error::Modeled("SinkQuotaExceeded", "integration");
   error.set_detail(detail);
   handler_->nextPutSinkRpcError = error;
   const PutSinkRpcInput input = RandomPutSinkRpcInput(rng);
   const auto outcome = client_->PutSinkRpc(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "SinkQuotaExceeded");
   ASSERT_NE(outcome.error().detail<SinkQuotaExceeded>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<SinkQuotaExceeded>(), detail);
@@ -273,17 +273,17 @@ TEST_P(RoundTripJsonRpcIntegrationTest, PutSinkRpcSinkQuotaExceededMapsAcrossThe
 TEST(RoundTripJsonRpcIntegrationUnknownMembers, PutSinkRpcToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   RoundTripJsonRpcServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::json::Decode(response.body);
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::json::Decode(response.body);
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::json::Encode(smithy::Document(std::move(map)));
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::json::Encode(opal::Document(std::move(map)));
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *RoundTripJsonRpcClient::Create(std::move(config));

@@ -25,30 +25,29 @@
 #include "smithy/http/uri.h"
 #include "smithy/json/json.h"
 
-namespace smithy::testing {
+namespace opal::testing {
 
 // Records the request and answers with a canned response, so generated tests
 // can assert the exact wire shape a client produced or feed it a response.
-class CapturingTransport final : public smithy::http::HttpClient {
+class CapturingTransport final : public opal::http::HttpClient {
  public:
-  smithy::Outcome<smithy::http::HttpResponse> Send(
-      const smithy::http::HttpRequest& request) override {
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
     last_request = request;
     return next_response;
   }
 
-  smithy::http::HttpRequest last_request;
-  smithy::http::HttpResponse next_response{200, {}, ""};
+  opal::http::HttpRequest last_request;
+  opal::http::HttpResponse next_response{200, {}, ""};
 };
 
 // The rpcv2Cbor request preamble every hand-written server-side wire test
 // builds: POST /service/<Service>/operation/<Operation> plus the protocol
 // and content-type headers. One home instead of a copy per test file — the
 // generated conformance tests regenerate their own copies, these don't.
-inline smithy::http::HttpRequest Rpcv2CborRequest(const std::string& service,
-                                                  const std::string& operation,
-                                                  std::string body = "") {
-  smithy::http::HttpRequest request;
+inline opal::http::HttpRequest Rpcv2CborRequest(const std::string& service,
+                                                const std::string& operation,
+                                                std::string body = "") {
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/service/" + service + "/operation/" + operation;
   request.headers.Set("smithy-protocol", "rpc-v2-cbor");
@@ -59,22 +58,21 @@ inline smithy::http::HttpRequest Rpcv2CborRequest(const std::string& service,
 
 // Wraps a transport and mutates successful responses in flight — e.g. the
 // integration tests inject unknown body members that clients must ignore.
-class MutatingTransport final : public smithy::http::HttpClient {
+class MutatingTransport final : public opal::http::HttpClient {
  public:
-  using Mutator = std::function<void(smithy::http::HttpResponse&)>;
+  using Mutator = std::function<void(opal::http::HttpResponse&)>;
 
-  MutatingTransport(std::shared_ptr<smithy::http::HttpClient> inner, Mutator mutate)
+  MutatingTransport(std::shared_ptr<opal::http::HttpClient> inner, Mutator mutate)
       : inner_(std::move(inner)), mutate_(std::move(mutate)) {}
 
-  smithy::Outcome<smithy::http::HttpResponse> Send(
-      const smithy::http::HttpRequest& request) override {
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
     auto response = inner_->Send(request);
     if (response.ok()) mutate_(*response);
     return response;
   }
 
  private:
-  std::shared_ptr<smithy::http::HttpClient> inner_;
+  std::shared_ptr<opal::http::HttpClient> inner_;
   Mutator mutate_;
 };
 
@@ -104,7 +102,7 @@ inline std::string QueryKey(std::string_view entry) {
 // definition may write "query=the query" while the wire (correctly) carries
 // "query=the%20query". Falls back to the raw text if the escapes are malformed.
 inline std::string DecodeQueryEntry(const std::string& entry) {
-  auto decoded = smithy::http::PercentDecode(entry);
+  auto decoded = opal::http::PercentDecode(entry);
   return decoded.ok() ? *decoded : entry;
 }
 
@@ -193,12 +191,12 @@ inline bool ProtocolDocumentEquals(const Document& a, const Document& b) {
 
 inline ::testing::AssertionResult JsonBodyEquals(const std::string& expected,
                                                  const std::string& actual) {
-  auto expected_doc = smithy::json::Decode(expected);
+  auto expected_doc = opal::json::Decode(expected);
   if (!expected_doc.ok()) {
     return ::testing::AssertionFailure()
            << "expected body is not valid JSON: " << expected_doc.error().message();
   }
-  auto actual_doc = smithy::json::Decode(actual);
+  auto actual_doc = opal::json::Decode(actual);
   if (!actual_doc.ok()) {
     return ::testing::AssertionFailure()
            << "actual body is not valid JSON: " << actual_doc.error().message() << "\nbody: <<"
@@ -215,7 +213,7 @@ inline ::testing::AssertionResult JsonBodyEquals(const std::string& expected,
 // "message" member of the (JSON) error body.
 inline ::testing::AssertionResult BodyMessageMatches(const std::string& pattern,
                                                      const std::string& body) {
-  auto doc = smithy::json::Decode(body);
+  auto doc = opal::json::Decode(body);
   if (!doc.ok() || !doc->is_map()) {
     return ::testing::AssertionFailure() << "body is not a JSON object: <<" << body << ">>";
   }
@@ -232,22 +230,22 @@ inline ::testing::AssertionResult BodyMessageMatches(const std::string& pattern,
 
 // Decodes a base64 body (how binary bodies appear in test definitions).
 inline std::string FromBase64(const std::string& text) {
-  auto blob = smithy::Base64Decode(text);
+  auto blob = opal::Base64Decode(text);
   return blob.ok() ? blob->ToString() : std::string();
 }
 
 inline ::testing::AssertionResult CborBodyEqualsBase64(const std::string& expected_base64,
                                                        const std::string& actual) {
-  auto expected_bytes = smithy::Base64Decode(expected_base64);
+  auto expected_bytes = opal::Base64Decode(expected_base64);
   if (!expected_bytes.ok()) {
     return ::testing::AssertionFailure() << "expected body is not valid base64";
   }
-  auto expected_doc = smithy::cbor::Decode(*expected_bytes);
+  auto expected_doc = opal::cbor::Decode(*expected_bytes);
   if (!expected_doc.ok()) {
     return ::testing::AssertionFailure()
            << "expected body is not valid CBOR: " << expected_doc.error().message();
   }
-  auto actual_doc = smithy::cbor::Decode(smithy::Blob::FromString(actual));
+  auto actual_doc = opal::cbor::Decode(opal::Blob::FromString(actual));
   if (!actual_doc.ok()) {
     return ::testing::AssertionFailure()
            << "actual body is not valid CBOR: " << actual_doc.error().message();
@@ -255,11 +253,11 @@ inline ::testing::AssertionResult CborBodyEqualsBase64(const std::string& expect
   if (!ProtocolDocumentEquals(*expected_doc, *actual_doc)) {
     return ::testing::AssertionFailure()
            << "CBOR bodies differ.\nexpected (b64): " << expected_base64
-           << "\nactual (b64):   " << smithy::Base64Encode(smithy::Blob::FromString(actual));
+           << "\nactual (b64):   " << opal::Base64Encode(opal::Blob::FromString(actual));
   }
   return ::testing::AssertionSuccess();
 }
 
-}  // namespace smithy::testing
+}  // namespace opal::testing
 
 #endif  // SMITHY_TESTING_PROTOCOL_TEST_H_

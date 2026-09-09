@@ -17,22 +17,22 @@ namespace example::chat {
 
 /// The typed session a Converse handler borrows (ADR-0016): Tx = what this
 /// server sends, Rx = what the client sends.
-using ConverseServerStream = smithy::eventstream::EventStream<RoomEvents, ChatEvents>;
+using ConverseServerStream = opal::eventstream::EventStream<RoomEvents, ChatEvents>;
 /// The same session for an async handler (ADR-0021): co_await where the
 /// blocking sibling parks a thread; identical directions and Share().
-using ConverseAsyncServerStream = smithy::eventstream::AsyncEventStream<RoomEvents, ChatEvents>;
+using ConverseAsyncServerStream = opal::eventstream::AsyncEventStream<RoomEvents, ChatEvents>;
 /// The typed session a Watch handler borrows (ADR-0016): Tx = what this
 /// server sends, Rx = what the client sends.
-using WatchServerStream = smithy::eventstream::EventStream<RoomEvents, smithy::eventstream::NoEvents>;
+using WatchServerStream = opal::eventstream::EventStream<RoomEvents, opal::eventstream::NoEvents>;
 /// The same session for an async handler (ADR-0021): co_await where the
 /// blocking sibling parks a thread; identical directions and Share().
-using WatchAsyncServerStream = smithy::eventstream::AsyncEventStream<RoomEvents, smithy::eventstream::NoEvents>;
+using WatchAsyncServerStream = opal::eventstream::AsyncEventStream<RoomEvents, opal::eventstream::NoEvents>;
 
 /// Implement one method per operation. Return a modeled error as
-/// smithy::Error::Modeled("<ErrorShapeName>", message), optionally with the
+/// opal::Error::Modeled("<ErrorShapeName>", message), optionally with the
 /// typed error structure attached via set_detail() so it serializes fully.
 /// The context carries the raw request and routing captures — see
-/// smithy::server::RequestContext; leave the parameter unnamed when unused.
+/// opal::server::RequestContext; leave the parameter unnamed when unused.
 /// Implementations must be thread-safe: transports may invoke any mix of
 /// operations concurrently on the one handler instance.
 class ChatHandler {
@@ -54,10 +54,10 @@ class ChatHandler {
     /// `stream` is valid only until this method returns; join any helper
     /// thread still using it. Blocks the transport's handler thread for
     /// the session's lifetime.
-    virtual smithy::Outcome<smithy::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<opal::Unit> Converse(const ConverseInput& input, ConverseServerStream& stream, const opal::server::RequestContext& context) = 0;
     /// Unary neighbor: an ordinary request/response on the same service, served
     /// by the same transport that upgrades the streaming operations.
-    virtual smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const opal::server::RequestContext& context) = 0;
     /// Server-push: no input stream, so the client's transmit direction is the
     /// runtime's NoEvents — the client only listens to the room.
     ///
@@ -69,7 +69,7 @@ class ChatHandler {
     /// `stream` is valid only until this method returns; join any helper
     /// thread still using it. Blocks the transport's handler thread for
     /// the session's lifetime.
-    virtual smithy::Outcome<smithy::Unit> Watch(const WatchInput& input, WatchServerStream& stream, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<opal::Unit> Watch(const WatchInput& input, WatchServerStream& stream, const opal::server::RequestContext& context) = 0;
 };
 
 /// ChatHandler's zero-thread sibling (ADR-0021): implement this and construct
@@ -90,8 +90,8 @@ class ChatAsyncHandler {
     ///
     /// Async streaming operation (ADR-0021): a coroutine serving the whole
     /// session — co_await stream.Receive()/Send() until done.
-    /// co_return smithy::Unit{} for a clean close, or an error — modeled as
-    /// smithy::Error::Modeled("<ErrorShapeName>", message) + set_detail(),
+    /// co_return opal::Unit{} for a clean close, or an error — modeled as
+    /// opal::Error::Modeled("<ErrorShapeName>", message) + set_detail(),
     /// like a blocking handler — which ends the stream with one best-effort
     /// exception message before the close. `input` is the coroutine's own
     /// copy: the upgrade request (and its RequestContext) is gone by the
@@ -100,10 +100,10 @@ class ChatAsyncHandler {
     /// task completes. Code before the first co_await runs on the launching
     /// handler thread (brief blocking is fine there); every later resumption
     /// is a transport completion context — never block those.
-    virtual smithy::eventstream::StreamTask Converse(ConverseInput input, ConverseAsyncServerStream& stream) = 0;
+    virtual opal::eventstream::StreamTask Converse(ConverseInput input, ConverseAsyncServerStream& stream) = 0;
     /// Unary neighbor: an ordinary request/response on the same service, served
     /// by the same transport that upgrades the streaming operations.
-    virtual smithy::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<ListRoomsOutput> ListRooms(const ListRoomsInput& input, const opal::server::RequestContext& context) = 0;
     /// Server-push: no input stream, so the client's transmit direction is the
     /// runtime's NoEvents — the client only listens to the room.
     ///
@@ -112,8 +112,8 @@ class ChatAsyncHandler {
     /// `co_await stream.Receive()` to learn the client closed, and push
     /// through stream.Share() (typically a registry) — a Send-only loop on
     /// a quiet stream never notices the client left.
-    /// co_return smithy::Unit{} for a clean close, or an error — modeled as
-    /// smithy::Error::Modeled("<ErrorShapeName>", message) + set_detail(),
+    /// co_return opal::Unit{} for a clean close, or an error — modeled as
+    /// opal::Error::Modeled("<ErrorShapeName>", message) + set_detail(),
     /// like a blocking handler — which ends the stream with one best-effort
     /// exception message before the close. `input` is the coroutine's own
     /// copy: the upgrade request (and its RequestContext) is gone by the
@@ -122,12 +122,12 @@ class ChatAsyncHandler {
     /// task completes. Code before the first co_await runs on the launching
     /// handler thread (brief blocking is fine there); every later resumption
     /// is a transport completion context — never block those.
-    virtual smithy::eventstream::StreamTask Watch(WatchInput input, WatchAsyncServerStream& stream) = 0;
+    virtual opal::eventstream::StreamTask Watch(WatchInput input, WatchAsyncServerStream& stream) = 0;
 };
 
 /// simpleRestJson server for example.chat#Chat: routing, deserialization, handler dispatch,
 /// response serialization, and modeled-error mapping. Pass Handler() to any
-/// smithy::http::HttpServerTransport.
+/// opal::http::HttpServerTransport.
 class ChatServer {
   public:
     explicit ChatServer(std::shared_ptr<ChatHandler> handler);
@@ -137,7 +137,7 @@ class ChatServer {
     /// constructor chosen decides which two-line mount applies (StreamRouter).
     explicit ChatServer(std::shared_ptr<ChatAsyncHandler> handler);
 
-    smithy::http::RequestHandler Handler() const;
+    opal::http::RequestHandler Handler() const;
 
     /// The WebSocket router carrying every streaming route (ADR-0016), ready
     /// to mount on the transport in two lines — the serve line keyed to the
@@ -146,11 +146,11 @@ class ChatServer {
     ///   options.on_websocket = server.StreamRouter()->Serve();  // blocking handler
     ///   options.on_websocket_session =
     ///       server.StreamRouter()->ServeSession();  // async handler (ADR-0021)
-    std::shared_ptr<smithy::server::WebSocketRouter> StreamRouter() const;
+    std::shared_ptr<opal::server::WebSocketRouter> StreamRouter() const;
 
   private:
-    std::shared_ptr<smithy::server::Router> router_;
-    std::shared_ptr<smithy::server::WebSocketRouter> stream_router_;
+    std::shared_ptr<opal::server::Router> router_;
+    std::shared_ptr<opal::server::WebSocketRouter> stream_router_;
 };
 
 }  // namespace example::chat

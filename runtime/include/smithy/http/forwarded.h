@@ -11,7 +11,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/http/message.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 struct DerivedClient;
 
@@ -102,6 +102,6 @@ DerivedClient DeriveClient(const HttpRequest& request, const TrustedProxies& tru
 // The simple form: DeriveClient's address alone.
 std::string ClientAddress(const HttpRequest& request, const TrustedProxies& trusted);
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_FORWARDED_H_

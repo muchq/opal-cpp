@@ -4,12 +4,12 @@
 #include <memory>
 #include <utility>
 
+#include "opal/protocoltests/simplerestjson/client.h"
+#include "opal/protocoltests/simplerestjson/server.h"
 #include "smithy/client/config.h"
 #include "smithy/http/loopback.h"
-#include "smithy/protocoltests/simplerestjson/client.h"
-#include "smithy/protocoltests/simplerestjson/server.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 
 // Smoke tests for the generated PizzaAdminService service: the generated client calls the
 // generated server over the in-memory loopback transport. A passing suite
@@ -116,55 +116,55 @@ VersionOutput MinimalVersionOutput() {
 
 class SmokeHandler : public PizzaAdminServiceHandler {
   public:
-    smithy::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalAddMenuItemOutput();
     }
-    smithy::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<CustomCodeOutput> CustomCode(const CustomCodeInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalCustomCodeOutput();
     }
-    smithy::Outcome<GetEnumOutput> GetEnum(const GetEnumInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetEnumOutput> GetEnum(const GetEnumInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetEnumOutput();
     }
-    smithy::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetIntEnumOutput> GetIntEnum(const GetIntEnumInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetIntEnumOutput();
     }
-    smithy::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetMenuOutput> GetMenu(const GetMenuInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalGetMenuOutput();
     }
-    smithy::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HeaderEndpointOutput> HeaderEndpoint(const HeaderEndpointInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalHeaderEndpointOutput();
     }
-    smithy::Outcome<HealthOutput> Health(const HealthInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HealthOutput> Health(const HealthInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalHealthOutput();
     }
-    smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadRequiredWithDefaultOutput> HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalHttpPayloadRequiredWithDefaultOutput();
     }
-    smithy::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<HttpPayloadWithDefaultOutput> HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalHttpPayloadWithDefaultOutput();
     }
-    smithy::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<OpenUnionsOutput> OpenUnions(const OpenUnionsInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalOpenUnionsOutput();
     }
-    smithy::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<PreserveOrderOutput> PreserveOrder(const PreserveOrderInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalPreserveOrderOutput();
     }
-    smithy::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<RoundTripOutput> RoundTrip(const RoundTripInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalRoundTripOutput();
     }
-    smithy::Outcome<VersionOutput> Version(const VersionInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<VersionOutput> Version(const VersionInput& input, const opal::server::RequestContext&) override {
       (void)input;
       return MinimalVersionOutput();
     }
@@ -172,9 +172,9 @@ class SmokeHandler : public PizzaAdminServiceHandler {
 
 PizzaAdminServiceClient MakeClient(std::shared_ptr<PizzaAdminServiceHandler> handler) {
   PizzaAdminServiceServer server(std::move(handler));
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   (void)loopback->Start(server.Handler());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = loopback;
   // Create cannot fail when a transport is injected.
@@ -347,9 +347,9 @@ TEST(PizzaAdminServiceSmokeTest, VersionRoundTrips) {
 TEST(PizzaAdminServiceSmokeTest, ModeledErrorsMapAcrossTheWire) {
   class FailingHandler final : public SmokeHandler {
     public:
-      smithy::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const smithy::server::RequestContext&) override {
+      opal::Outcome<AddMenuItemOutput> AddMenuItem(const AddMenuItemInput& input, const opal::server::RequestContext&) override {
         (void)input;
-        smithy::Error error = smithy::Error::Modeled("GenericServerError", "smoke");
+        opal::Error error = opal::Error::Modeled("GenericServerError", "smoke");
             auto detail = [] {
           GenericServerError v{};
           return v;
@@ -378,10 +378,10 @@ TEST(PizzaAdminServiceSmokeTest, ModeledErrorsMapAcrossTheWire) {
   input.restaurant = "smoke";
   const auto outcome = client.AddMenuItem(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "GenericServerError");
   EXPECT_EQ(outcome.error().message(), "smoke");
   EXPECT_NE(outcome.error().detail<GenericServerError>(), nullptr);
 }
 
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

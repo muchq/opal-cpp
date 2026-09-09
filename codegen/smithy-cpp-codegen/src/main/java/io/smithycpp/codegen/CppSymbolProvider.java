@@ -67,8 +67,8 @@ final class CppSymbolProvider implements SymbolProvider {
   /**
    * Whether the shape's C++ type is three-way-comparable, i.e. whether the generators emit a
    * defaulted operator<=> for it (docs/generated-types.md's ordering caveats): nothing in its
-   * member closure is a document (smithy::Document has no ordering) or on a recursion cycle
-   * (smithy::Boxed is deliberately equality-only — an auto-returning deep <=> is a hard error to
+   * member closure is a document (opal::Document has no ordering) or on a recursion cycle
+   * (opal::Boxed is deliberately equality-only — an auto-returning deep <=> is a hard error to
    * deduce around a cycle on clang). Memoized for the run.
    */
   boolean orderable(Shape shape) {
@@ -91,8 +91,8 @@ final class CppSymbolProvider implements SymbolProvider {
   }
 
   /**
-   * Full member type text: the target type, wrapped in smithy::Boxed for recursive structure
-   * members and in std::optional unless @required or populated by @default.
+   * Full member type text: the target type, wrapped in opal::Boxed for recursive structure members
+   * and in std::optional unless @required or populated by @default.
    */
   Symbol toMemberSymbol(MemberShape member) {
     Symbol target = toSymbol(model.expectShape(member.getTarget()));
@@ -100,7 +100,7 @@ final class CppSymbolProvider implements SymbolProvider {
     Set<String> headers = new TreeSet<>(headersOf(target));
     boolean plain = MemberDefaults.plain(model, member);
     if (recursion.isBoxed(member)) {
-      name = "smithy::Boxed<" + name + ">";
+      name = "opal::Boxed<" + name + ">";
       headers.add("\"smithy/core/boxed.h\"");
     } else if (plain) {
       return target;
@@ -154,7 +154,7 @@ final class CppSymbolProvider implements SymbolProvider {
   /**
    * The spelling generated .cc code uses to reference a shape's C++ type where a file-local helper
    * could otherwise shadow it (issue #71): declared model types go through the file-level {@code
-   * types} namespace alias ({@link CppWriter}); builtin mappings (std::string, float, smithy::Blob,
+   * types} namespace alias ({@link CppWriter}); builtin mappings (std::string, float, opal::Blob,
    * ...) have no model-controlled name and stay bare.
    */
   String typeRef(Shape shape) {
@@ -167,7 +167,7 @@ final class CppSymbolProvider implements SymbolProvider {
 
   /**
    * Whether the shape declares a C++ type name in the generated module — the filter behind {@link
-   * #declaredName}. smithy.api#Unit maps to the runtime's smithy::Unit and declares nothing.
+   * #declaredName}. smithy.api#Unit maps to the runtime's opal::Unit and declares nothing.
    */
   static boolean declaresType(Shape shape) {
     return (shape.isStructureShape()
@@ -247,7 +247,7 @@ final class CppSymbolProvider implements SymbolProvider {
 
     @Override
     public Symbol blobShape(BlobShape shape) {
-      return builder("smithy::Blob", Set.of("\"smithy/core/blob.h\"")).build();
+      return builder("opal::Blob", Set.of("\"smithy/core/blob.h\"")).build();
     }
 
     @Override
@@ -312,12 +312,12 @@ final class CppSymbolProvider implements SymbolProvider {
 
     @Override
     public Symbol timestampShape(TimestampShape shape) {
-      return builder("smithy::Timestamp", Set.of("\"smithy/core/timestamp.h\"")).build();
+      return builder("opal::Timestamp", Set.of("\"smithy/core/timestamp.h\"")).build();
     }
 
     @Override
     public Symbol documentShape(DocumentShape shape) {
-      return builder("smithy::Document", Set.of("\"smithy/core/document.h\"")).build();
+      return builder("opal::Document", Set.of("\"smithy/core/document.h\"")).build();
     }
 
     @Override
@@ -340,7 +340,7 @@ final class CppSymbolProvider implements SymbolProvider {
     @Override
     public Symbol structureShape(StructureShape shape) {
       if (shape.getId().toString().equals("smithy.api#Unit")) {
-        return builder("smithy::Unit", Set.of("\"smithy/core/outcome.h\"")).build();
+        return builder("opal::Unit", Set.of("\"smithy/core/outcome.h\"")).build();
       }
       return declared(shape);
     }

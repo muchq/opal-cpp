@@ -33,7 +33,7 @@ int Run(int argc, char** argv) {
     std::fprintf(stderr, "usage: %s <port> <start> <bump>...\n", argv[0]);
     return 2;
   }
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
   config.endpoint = "http://127.0.0.1:" + std::string(argv[1]);
   auto client = acme::tally::TallyClient::Create(std::move(config));

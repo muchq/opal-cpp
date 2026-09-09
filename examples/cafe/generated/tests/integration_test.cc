@@ -87,7 +87,7 @@ struct Rng {
 
 [[maybe_unused]] ReadyStatus RandomReadyStatus([[maybe_unused]] Rng& rng) {
   ReadyStatus v{};
-  v.readyAt = smithy::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
+  v.readyAt = opal::Timestamp::FromEpochMilliseconds(rng.Int(0, 4102444799LL) * 1000);
   return v;
 }
 
@@ -125,7 +125,7 @@ struct Rng {
 [[maybe_unused]] MilkOption RandomMilkOption([[maybe_unused]] Rng& rng) {
   switch (rng.engine() % 3) {
     case 0:
-      return MilkOption::FromNone(smithy::Unit{});
+      return MilkOption::FromNone(opal::Unit{});
     case 1:
       return MilkOption::FromDairy(RandomDairyMilk(rng));
     default:
@@ -156,22 +156,22 @@ struct Rng {
 
 class ScriptedHandler final : public CafeHandler {
   public:
-    smithy::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input, const smithy::server::RequestContext&) override {
+    opal::Outcome<GetOrderOutput> GetOrder(const GetOrderInput& input, const opal::server::RequestContext&) override {
       lastGetOrder = input;
       if (nextGetOrderError.has_value()) return *nextGetOrderError;
       return nextGetOrderOutput;
     }
     std::optional<GetOrderInput> lastGetOrder;
     GetOrderOutput nextGetOrderOutput{};
-    std::optional<smithy::Error> nextGetOrderError;
-    smithy::Outcome<OrderCoffeeOutput> OrderCoffee(const OrderCoffeeInput& input, const smithy::server::RequestContext&) override {
+    std::optional<opal::Error> nextGetOrderError;
+    opal::Outcome<OrderCoffeeOutput> OrderCoffee(const OrderCoffeeInput& input, const opal::server::RequestContext&) override {
       lastOrderCoffee = input;
       if (nextOrderCoffeeError.has_value()) return *nextOrderCoffeeError;
       return nextOrderCoffeeOutput;
     }
     std::optional<OrderCoffeeInput> lastOrderCoffee;
     OrderCoffeeOutput nextOrderCoffeeOutput{};
-    std::optional<smithy::Error> nextOrderCoffeeError;
+    std::optional<opal::Error> nextOrderCoffeeError;
 };
 
 enum class TransportKind { kLoopback, kSocket };
@@ -181,14 +181,14 @@ class CafeIntegrationTest : public ::testing::TestWithParam<TransportKind> {
     void SetUp() override {
       handler_ = std::make_shared<ScriptedHandler>();
       server_ = std::make_unique<CafeServer>(handler_);
-      smithy::ClientConfig config;
+      opal::ClientConfig config;
       config.retry.max_attempts = 1;  // wire-exact tests: no retries
       if (GetParam() == TransportKind::kLoopback) {
-        auto loopback = std::make_shared<smithy::http::Loopback>();
+        auto loopback = std::make_shared<opal::http::Loopback>();
         ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
         config.http_client = loopback;
       } else {
-        socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+        socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
         ASSERT_TRUE(socket_server_->Start(server_->Handler()).ok());
         config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
       }
@@ -201,7 +201,7 @@ class CafeIntegrationTest : public ::testing::TestWithParam<TransportKind> {
 
     std::shared_ptr<ScriptedHandler> handler_;
     std::unique_ptr<CafeServer> server_;
-    std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+    std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
     std::unique_ptr<CafeClient> client_;
 };
 
@@ -260,13 +260,13 @@ TEST_P(CafeIntegrationTest, OrderCoffeeMaximalRoundTrips) {
 TEST_P(CafeIntegrationTest, GetOrderOrderNotFoundMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const OrderNotFound detail = RandomOrderNotFound(rng);
-  smithy::Error error = smithy::Error::Modeled("OrderNotFound", "integration");
+  opal::Error error = opal::Error::Modeled("OrderNotFound", "integration");
   error.set_detail(detail);
   handler_->nextGetOrderError = error;
   const GetOrderInput input = RandomGetOrderInput(rng);
   const auto outcome = client_->GetOrder(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "OrderNotFound");
   ASSERT_NE(outcome.error().detail<OrderNotFound>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<OrderNotFound>(), detail);
@@ -275,13 +275,13 @@ TEST_P(CafeIntegrationTest, GetOrderOrderNotFoundMapsAcrossTheWire) {
 TEST_P(CafeIntegrationTest, OrderCoffeeOutOfBeansMapsAcrossTheWire) {
   Rng rng{std::mt19937{42U}, /*fill_all=*/true};
   const OutOfBeans detail = RandomOutOfBeans(rng);
-  smithy::Error error = smithy::Error::Modeled("OutOfBeans", "integration");
+  opal::Error error = opal::Error::Modeled("OutOfBeans", "integration");
   error.set_detail(detail);
   handler_->nextOrderCoffeeError = error;
   const OrderCoffeeInput input = RandomOrderCoffeeInput(rng);
   const auto outcome = client_->OrderCoffee(input);
   ASSERT_FALSE(outcome.ok());
-  EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(outcome.error().code(), "OutOfBeans");
   ASSERT_NE(outcome.error().detail<OutOfBeans>(), nullptr);
   EXPECT_EQ(*outcome.error().detail<OutOfBeans>(), detail);
@@ -290,17 +290,17 @@ TEST_P(CafeIntegrationTest, OrderCoffeeOutOfBeansMapsAcrossTheWire) {
 TEST(CafeIntegrationUnknownMembers, GetOrderToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   CafeServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::cbor::Decode(smithy::Blob::FromString(response.body));
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::cbor::Decode(opal::Blob::FromString(response.body));
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::cbor::Encode(smithy::Document(std::move(map))).ToString();
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::cbor::Encode(opal::Document(std::move(map))).ToString();
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *CafeClient::Create(std::move(config));
@@ -316,17 +316,17 @@ TEST(CafeIntegrationUnknownMembers, GetOrderToleratesUnknownResponseMembers) {
 TEST(CafeIntegrationUnknownMembers, OrderCoffeeToleratesUnknownResponseMembers) {
   auto handler = std::make_shared<ScriptedHandler>();
   CafeServer server(handler);
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  auto inject = [](smithy::http::HttpResponse& response) {
-    auto doc = smithy::cbor::Decode(smithy::Blob::FromString(response.body));
+  auto inject = [](opal::http::HttpResponse& response) {
+    auto doc = opal::cbor::Decode(opal::Blob::FromString(response.body));
     if (!doc.ok() || !doc->is_map()) return;
     auto map = doc->as_map();
-    map.insert_or_assign("smithy_cpp_unknown_member", smithy::Document(42));
-    response.body = smithy::cbor::Encode(smithy::Document(std::move(map))).ToString();
+    map.insert_or_assign("smithy_cpp_unknown_member", opal::Document(42));
+    response.body = opal::cbor::Encode(opal::Document(std::move(map))).ToString();
   };
-  auto transport = std::make_shared<smithy::testing::MutatingTransport>(loopback, inject);
-  smithy::ClientConfig config;
+  auto transport = std::make_shared<opal::testing::MutatingTransport>(loopback, inject);
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;  // wire-exact tests: no retries
   config.http_client = transport;
   auto client = *CafeClient::Create(std::move(config));

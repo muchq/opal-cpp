@@ -216,7 +216,7 @@ final class HttpBindingCodeGen {
     if (optional && structure) {
       w.openBlock("if ($L.has_value()) {", field);
       w.write(
-          "$L.body = smithy::json::Encode($L);",
+          "$L.body = opal::json::Encode($L);",
           messageVar,
           serde.serializeExpression(member, value));
       w.closeBlock("} else {");
@@ -230,7 +230,7 @@ final class HttpBindingCodeGen {
         case STRING -> {
           if (jsonText) {
             // simpleRestJson: plain string payloads are JSON string values.
-            w.write("$L.body = smithy::json::Encode(smithy::Document($L));", messageVar, value);
+            w.write("$L.body = opal::json::Encode(opal::Document($L));", messageVar, value);
           } else {
             w.write("$L.body = $L;", messageVar, value);
           }
@@ -238,7 +238,7 @@ final class HttpBindingCodeGen {
         case ENUM -> {
           if (jsonText) {
             w.write(
-                "$L.body = smithy::json::Encode(smithy::Document(std::string($L.ToString())));",
+                "$L.body = opal::json::Encode(opal::Document(std::string($L.ToString())));",
                 messageVar,
                 value);
           } else {
@@ -247,7 +247,7 @@ final class HttpBindingCodeGen {
         }
         default ->
             w.write(
-                "$L.body = smithy::json::Encode($L);",
+                "$L.body = opal::json::Encode($L);",
                 messageVar,
                 serde.serializeExpression(member, value));
       }
@@ -287,10 +287,10 @@ final class HttpBindingCodeGen {
       String structType,
       String opName,
       SerdeCodeGen.RequiredAbsentEmitter requiredAbsent) {
-    w.write("auto body_doc = smithy::json::Decode($L.empty() ? \"{}\" : $L);", bodyExpr, bodyExpr);
+    w.write("auto body_doc = opal::json::Decode($L.empty() ? \"{}\" : $L);", bodyExpr, bodyExpr);
     w.write("if (!body_doc) return std::move(body_doc).error();");
     w.write(
-        "if (!body_doc->is_map()) return smithy::Error::Serialization($S);",
+        "if (!body_doc->is_map()) return opal::Error::Serialization($S);",
         opName + ": expected a JSON object body");
     for (HttpBinding binding : body) {
       serde.writeMemberRead(
@@ -323,14 +323,14 @@ final class HttpBindingCodeGen {
     boolean jsonText = jsonTextPayload(context, member);
     w.openBlock("if (!$L.empty()) {", bodyExpr);
     switch (target.getType()) {
-      case BLOB -> w.write("$L = smithy::Blob::FromString($L);", field, bodyExpr);
+      case BLOB -> w.write("$L = opal::Blob::FromString($L);", field, bodyExpr);
       case STRING -> {
         if (jsonText) {
           // simpleRestJson: plain string payloads are JSON string values.
-          w.write("auto payload_doc = smithy::json::Decode($L);", bodyExpr);
+          w.write("auto payload_doc = opal::json::Decode($L);", bodyExpr);
           w.write("if (!payload_doc) return std::move(payload_doc).error();");
           w.write(
-              "if (!payload_doc->is_string()) return smithy::Error::Serialization("
+              "if (!payload_doc->is_string()) return opal::Error::Serialization("
                   + "\"expected a JSON string payload\");");
           w.write("$L = payload_doc->as_string();", field);
         } else {
@@ -340,10 +340,10 @@ final class HttpBindingCodeGen {
       case ENUM -> {
         String enumType = context.cppSymbols().typeRef(target);
         if (jsonText) {
-          w.write("auto payload_doc = smithy::json::Decode($L);", bodyExpr);
+          w.write("auto payload_doc = opal::json::Decode($L);", bodyExpr);
           w.write("if (!payload_doc) return std::move(payload_doc).error();");
           w.write(
-              "if (!payload_doc->is_string()) return smithy::Error::Serialization("
+              "if (!payload_doc->is_string()) return opal::Error::Serialization("
                   + "\"expected a JSON string payload\");");
           w.write("$L = $L::FromString(payload_doc->as_string());", field, enumType);
         } else {
@@ -351,9 +351,9 @@ final class HttpBindingCodeGen {
         }
       }
       default -> {
-        w.write("auto payload_doc = smithy::json::Decode($L);", bodyExpr);
+        w.write("auto payload_doc = opal::json::Decode($L);", bodyExpr);
         w.write("if (!payload_doc) return std::move(payload_doc).error();");
-        w.write("const smithy::Document* payload_ptr = &*payload_doc;");
+        w.write("const opal::Document* payload_ptr = &*payload_doc;");
         boolean structure = target.getType() == ShapeType.STRUCTURE;
         if (member.isRequired()) {
           serde.writeDeserializeInto(w, member, "payload_ptr", field, path);
@@ -410,7 +410,7 @@ final class HttpBindingCodeGen {
     String prefix = binding.getLocationName();
     boolean optional = !MemberDefaults.plain(context.model(), member);
     w.openBlock("for (const auto& [header_name, header_value] : $L.entries()) {", headersExpr);
-    w.write("if (!smithy::http::HeaderNameStartsWith(header_name, $S)) continue;", prefix);
+    w.write("if (!opal::http::HeaderNameStartsWith(header_name, $S)) continue;", prefix);
     String container;
     if (optional) {
       w.write("if (!$L.has_value()) $L.emplace();", field, field);
@@ -426,7 +426,7 @@ final class HttpBindingCodeGen {
   /**
    * Reads one @httpHeader binding from {@code headersExpr} into {@code targetPrefix}<member>
    * (client response headers and server request headers share this shape; failures return
-   * smithy::Error, so it must run inside an Outcome-returning function).
+   * opal::Error, so it must run inside an Outcome-returning function).
    */
   static void writeHeaderReadBinding(
       CppWriter w,
@@ -446,13 +446,13 @@ final class HttpBindingCodeGen {
       var list = target.asListShape().orElseThrow();
       MemberShape element = list.getMember();
       w.write("$L items;", context.cppSymbols().typeRef(list));
-      String tsFormat = serde.timestampFormat(element, "smithy::TimestampFormat::kHttpDate");
+      String tsFormat = serde.timestampFormat(element, "opal::TimestampFormat::kHttpDate");
       String splitter =
           context.model().expectShape(element.getTarget()).isTimestampShape()
-                  && tsFormat.equals("smithy::TimestampFormat::kHttpDate")
+                  && tsFormat.equals("opal::TimestampFormat::kHttpDate")
               ? "SplitHttpDateHeaderValues"
               : "SplitHeaderListValues";
-      w.openBlock("for (const std::string& part : smithy::http::$L(*header_value)) {", splitter);
+      w.openBlock("for (const std::string& part : opal::http::$L(*header_value)) {", splitter);
       writeParsedHeaderValue(
           w, context, element, "part", "items.push_back", /* push= */ true, tsFormat);
       w.closeBlock("}");
@@ -465,7 +465,7 @@ final class HttpBindingCodeGen {
           "(*header_value)",
           field,
           /* push= */ false,
-          serde.timestampFormat(member, "smithy::TimestampFormat::kHttpDate"));
+          serde.timestampFormat(member, "opal::TimestampFormat::kHttpDate"));
     }
     w.closeBlock("}");
   }
@@ -491,14 +491,14 @@ final class HttpBindingCodeGen {
     }
     switch (target.getType()) {
       case TIMESTAMP -> {
-        w.write("auto parsed_ts = smithy::Timestamp::Parse($L, $L);", valueExpr, timestampFormat);
+        w.write("auto parsed_ts = opal::Timestamp::Parse($L, $L);", valueExpr, timestampFormat);
         w.write("if (!parsed_ts) return std::move(parsed_ts).error();");
         w.write("$L*std::move(parsed_ts)$L", open, close);
       }
       case STRING -> {
         if (target.hasTrait(MediaTypeTrait.class)) {
           // restJson1: string headers with @mediaType are base64 encoded.
-          w.write("auto decoded = smithy::Base64Decode($L);", valueExpr);
+          w.write("auto decoded = opal::Base64Decode($L);", valueExpr);
           w.write("if (!decoded) return std::move(decoded).error();");
           w.write("$Ldecoded->ToString()$L", open, close);
         } else {
@@ -536,17 +536,17 @@ final class HttpBindingCodeGen {
     switch (target.getType()) {
       case TIMESTAMP -> {
         String format = serde.timestampFormat(member, timestampDefault);
-        if (format.equals("smithy::TimestampFormat::kDateTime")) {
+        if (format.equals("opal::TimestampFormat::kDateTime")) {
           // Servers reject RFC3339 UTC offsets in text positions (clients must
           // accept them in responses, so Timestamp::Parse itself stays lenient).
           w.write(
               "if ($L.empty() || ($L.back() != 'Z' && $L.back() != 'z')) return "
-                  + "smithy::Error::Serialization(\"expected a Z-terminated date-time\");",
+                  + "opal::Error::Serialization(\"expected a Z-terminated date-time\");",
               valueExpr,
               valueExpr,
               valueExpr);
         }
-        w.write("auto parsed_ts = smithy::Timestamp::Parse($L, $L);", valueExpr, format);
+        w.write("auto parsed_ts = opal::Timestamp::Parse($L, $L);", valueExpr, format);
         w.write("if (!parsed_ts) return std::move(parsed_ts).error();");
         w.write("$L*std::move(parsed_ts)$L", open, close);
       }
@@ -586,7 +586,7 @@ final class HttpBindingCodeGen {
         // UB to cast (UBSan float-cast-overflow), so it fails the parse.
         w.write("auto parsed_num = helpers::ParseDoubleText($L);", valueExpr);
         w.write("if (!parsed_num) return std::move(parsed_num).error();");
-        w.write("auto narrowed_num = smithy::FloatFromDouble(*parsed_num);");
+        w.write("auto narrowed_num = opal::FloatFromDouble(*parsed_num);");
         w.write("if (!narrowed_num) return std::move(narrowed_num).error();");
         w.write("$L*narrowed_num$L", open, close);
       }
@@ -598,7 +598,7 @@ final class HttpBindingCodeGen {
       case BOOLEAN -> {
         w.write(
             "if ($L != \"true\" && $L != \"false\") return "
-                + "smithy::Error::Serialization(\"expected a boolean, got: \" + $L);",
+                + "opal::Error::Serialization(\"expected a boolean, got: \" + $L);",
             valueExpr,
             valueExpr,
             valueExpr);
@@ -640,7 +640,7 @@ final class HttpBindingCodeGen {
               context,
               element,
               "item",
-              serde.timestampFormat(element, "smithy::TimestampFormat::kHttpDate")));
+              serde.timestampFormat(element, "opal::TimestampFormat::kHttpDate")));
       w.closeBlock("}");
       w.write("$L.Set($S, joined);", headersExpr, name);
       w.closeBlock("}");
@@ -650,10 +650,10 @@ final class HttpBindingCodeGen {
               context,
               member,
               access,
-              serde.timestampFormat(member, "smithy::TimestampFormat::kHttpDate"));
+              serde.timestampFormat(member, "opal::TimestampFormat::kHttpDate"));
       if (target.isStringShape() && target.hasTrait(MediaTypeTrait.class)) {
         // restJson1: string headers with @mediaType are base64 encoded.
-        expr = "smithy::Base64Encode(smithy::Blob::FromString(" + expr + "))";
+        expr = "opal::Base64Encode(opal::Blob::FromString(" + expr + "))";
       }
       w.write("$L.Set($S, $L);", headersExpr, name, expr);
     }

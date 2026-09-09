@@ -12,7 +12,7 @@
 #include "smithy/http/forwarded.h"
 #include "smithy/http/transport.h"
 
-namespace smithy::server {
+namespace opal::server {
 
 // User-supplied middleware wraps the transport-facing handler a generated
 // server exposes: inspect or reject requests before dispatch, observe or
@@ -20,7 +20,7 @@ namespace smithy::server {
 // so it works with any HttpServerTransport:
 //
 //   WeatherServer server(handler);
-//   transport.Start(smithy::server::Chain({AuthCheck(), Observe(log)},
+//   transport.Start(opal::server::Chain({AuthCheck(), Observe(log)},
 //                                         server.Handler()));
 using Middleware = std::function<http::RequestHandler(http::RequestHandler)>;
 
@@ -203,6 +203,6 @@ Middleware RequireBearerAuth(std::function<bool(const std::string&)> validator);
 Middleware RequireApiKeyHeader(std::string header_name, std::string scheme,
                                std::function<bool(const std::string&)> validator);
 
-}  // namespace smithy::server
+}  // namespace opal::server
 
 #endif  // SMITHY_SERVER_MIDDLEWARE_H_

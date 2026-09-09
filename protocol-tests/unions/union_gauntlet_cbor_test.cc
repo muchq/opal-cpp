@@ -29,66 +29,66 @@
 namespace compile::unions::cbor {
 namespace {
 
-smithy::Document Doc(smithy::DocumentMap map) { return smithy::Document(std::move(map)); }
+opal::Document Doc(opal::DocumentMap map) { return opal::Document(std::move(map)); }
 
-smithy::Document OneMember(const std::string& name, smithy::Document value) {
-  smithy::DocumentMap map;
+opal::Document OneMember(const std::string& name, opal::Document value) {
+  opal::DocumentMap map;
   map.emplace(name, std::move(value));
   return Doc(std::move(map));
 }
 
-std::string RequestBody(const smithy::Document& choice) {
-  smithy::DocumentMap body;
-  body.emplace("id", smithy::Document("a"));
+std::string RequestBody(const opal::Document& choice) {
+  opal::DocumentMap body;
+  body.emplace("id", opal::Document("a"));
   body.emplace("choice", choice);
-  return smithy::cbor::Encode(Doc(std::move(body))).ToString();
+  return opal::cbor::Encode(Doc(std::move(body))).ToString();
 }
 
 // One row per member kind: the typed value and its wire subdocument.
 struct Cell {
   const char* name;
   BigUnion typed;
-  smithy::Document wire;
+  opal::Document wire;
 };
 
 std::vector<Cell> MemberCells() {
-  const auto timestamp = smithy::Timestamp::FromEpochMilliseconds(1515531081000);
-  smithy::DocumentList names;
+  const auto timestamp = opal::Timestamp::FromEpochMilliseconds(1515531081000);
+  opal::DocumentList names;
   names.emplace_back("x");
   names.emplace_back("y");
-  smithy::DocumentMap attributes;
-  attributes.emplace("k", smithy::Document("v"));
-  smithy::DocumentMap node;
-  node.emplace("label", smithy::Document("outer"));
-  node.emplace("next", OneMember("label", smithy::Document("inner")));
+  opal::DocumentMap attributes;
+  attributes.emplace("k", opal::Document("v"));
+  opal::DocumentMap node;
+  node.emplace("label", opal::Document("outer"));
+  node.emplace("next", OneMember("label", opal::Document("inner")));
 
   Node inner;
   inner.label = "inner";
   Node outer;
   outer.label = "outer";
-  outer.next = smithy::Boxed<Node>(inner);
+  outer.next = opal::Boxed<Node>(inner);
 
   std::vector<Cell> cells;
-  cells.push_back({"text", BigUnion::FromText("t"), OneMember("text", smithy::Document("t"))});
-  cells.push_back({"flag", BigUnion::FromFlag(true), OneMember("flag", smithy::Document(true))});
+  cells.push_back({"text", BigUnion::FromText("t"), OneMember("text", opal::Document("t"))});
+  cells.push_back({"flag", BigUnion::FromFlag(true), OneMember("flag", opal::Document(true))});
   cells.push_back(
-      {"small", BigUnion::FromSmall(-3), OneMember("small", smithy::Document(std::int64_t{-3}))});
+      {"small", BigUnion::FromSmall(-3), OneMember("small", opal::Document(std::int64_t{-3}))});
   cells.push_back({"big", BigUnion::FromBig(std::int64_t{1} << 40),
-                   OneMember("big", smithy::Document(std::int64_t{1} << 40))});
-  cells.push_back({"ratio", BigUnion::FromRatio(1.5), OneMember("ratio", smithy::Document(1.5))});
-  cells.push_back({"data", BigUnion::FromData(smithy::Blob::FromString("\x01\x02")),
-                   OneMember("data", smithy::Document(smithy::Blob::FromString("\x01\x02")))});
+                   OneMember("big", opal::Document(std::int64_t{1} << 40))});
+  cells.push_back({"ratio", BigUnion::FromRatio(1.5), OneMember("ratio", opal::Document(1.5))});
+  cells.push_back({"data", BigUnion::FromData(opal::Blob::FromString("\x01\x02")),
+                   OneMember("data", opal::Document(opal::Blob::FromString("\x01\x02")))});
   cells.push_back({"when", BigUnion::FromWhen(timestamp),
-                   OneMember("when", smithy::Document::FromTimestamp(
-                                         timestamp, smithy::TimestampFormat::kEpochSeconds))});
+                   OneMember("when", opal::Document::FromTimestamp(
+                                         timestamp, opal::TimestampFormat::kEpochSeconds))});
   cells.push_back({"names", BigUnion::FromNames({"x", "y"}),
-                   OneMember("names", smithy::Document(std::move(names)))});
+                   OneMember("names", opal::Document(std::move(names)))});
   cells.push_back({"attributes", BigUnion::FromAttributes({{"k", "v"}}),
                    OneMember("attributes", Doc(std::move(attributes)))});
   cells.push_back({"grade", BigUnion::FromGrade(Grade::Value::kPass),
-                   OneMember("grade", smithy::Document("pass"))});
+                   OneMember("grade", opal::Document("pass"))});
   cells.push_back({"rank", BigUnion::FromRank(Rank::kFirst),
-                   OneMember("rank", smithy::Document(std::int64_t{1}))});
+                   OneMember("rank", opal::Document(std::int64_t{1}))});
   cells.push_back({"node", BigUnion::FromNode(outer), OneMember("node", Doc(std::move(node)))});
   return cells;
 }
@@ -97,11 +97,11 @@ std::vector<Cell> MemberCells() {
 // server encode with the client's two directions anchoring the ends.
 class EchoHandler : public UnionGauntletHandler {
  public:
-  smithy::Outcome<EchoChoiceOutput> EchoChoice(const EchoChoiceInput& input,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<EchoChoiceOutput> EchoChoice(const EchoChoiceInput& input,
+                                             const opal::server::RequestContext&) override {
     last = input;
     if (reject) {
-      smithy::Error error = smithy::Error::Modeled("ChoiceRejected", "no thanks");
+      opal::Error error = opal::Error::Modeled("ChoiceRejected", "no thanks");
       ChoiceRejected detail;
       detail.message = "no thanks";
       detail.offending = input.choice;
@@ -122,14 +122,14 @@ class UnionGauntletCborTest : public testing::Test {
   void SetUp() override {
     handler_ = std::make_shared<EchoHandler>();
     server_ = std::make_unique<UnionGauntletServer>(handler_);
-    transport_ = std::make_shared<smithy::testing::CapturingTransport>();
+    transport_ = std::make_shared<opal::testing::CapturingTransport>();
   }
 
   // A client whose requests go to the real generated server.
   UnionGauntletClient LiveClient() {
-    auto loopback = std::make_shared<smithy::http::Loopback>();
+    auto loopback = std::make_shared<opal::http::Loopback>();
     EXPECT_TRUE(loopback->Start(server_->Handler()).ok());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     config.http_client = loopback;
     auto client = UnionGauntletClient::Create(std::move(config));
@@ -139,7 +139,7 @@ class UnionGauntletCborTest : public testing::Test {
 
   // A client whose requests are captured and answered with a canned body.
   UnionGauntletClient CapturedClient() {
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     config.http_client = transport_;
     auto client = UnionGauntletClient::Create(std::move(config));
@@ -149,21 +149,21 @@ class UnionGauntletCborTest : public testing::Test {
 
   std::shared_ptr<EchoHandler> handler_;
   std::unique_ptr<UnionGauntletServer> server_;
-  std::shared_ptr<smithy::testing::CapturingTransport> transport_;
+  std::shared_ptr<opal::testing::CapturingTransport> transport_;
 };
 
 TEST_F(UnionGauntletCborTest, EveryMemberKindEncodesToItsWireSubdocument) {
   auto client = CapturedClient();
-  transport_->next_response = smithy::http::HttpResponse{
-      200, {}, smithy::cbor::Encode(OneMember("id", smithy::Document("a"))).ToString()};
+  transport_->next_response = opal::http::HttpResponse{
+      200, {}, opal::cbor::Encode(OneMember("id", opal::Document("a"))).ToString()};
   for (const Cell& cell : MemberCells()) {
     EchoChoiceInput input;
     input.id = "a";
     input.choice = cell.typed;
     ASSERT_TRUE(client.EchoChoice(input).ok()) << cell.name;
-    auto body = smithy::cbor::Decode(smithy::Blob::FromString(transport_->last_request.body));
+    auto body = opal::cbor::Decode(opal::Blob::FromString(transport_->last_request.body));
     ASSERT_TRUE(body.ok()) << cell.name;
-    const smithy::Document* choice = body->Find("choice");
+    const opal::Document* choice = body->Find("choice");
     ASSERT_NE(choice, nullptr) << cell.name;
     ASSERT_TRUE(choice->is_map()) << cell.name;
     EXPECT_EQ(choice->as_map().size(), 1u) << cell.name;
@@ -195,8 +195,8 @@ TEST_F(UnionGauntletCborTest, EveryMemberKindSurvivesTheFullClientServerLoop) {
 // level pin that Document-equality checks cannot provide.
 TEST_F(UnionGauntletCborTest, RequestBodyIsByteExact) {
   auto client = CapturedClient();
-  transport_->next_response = smithy::http::HttpResponse{
-      200, {}, smithy::cbor::Encode(OneMember("id", smithy::Document("a"))).ToString()};
+  transport_->next_response = opal::http::HttpResponse{
+      200, {}, opal::cbor::Encode(OneMember("id", opal::Document("a"))).ToString()};
   EchoChoiceInput input;
   input.id = "a";
   input.choice = BigUnion::FromText("hi");
@@ -222,20 +222,20 @@ TEST_F(UnionGauntletCborTest, ModeledErrorCarriesAUnionNextToItsTypeDiscriminato
 
   // Server side: the error body carries __type AND the union member — the
   // wire shape whose deserialization the exactly-one arithmetic tolerates.
-  const auto response = server_->Handler()(smithy::testing::Rpcv2CborRequest(
-      "UnionGauntlet", "EchoChoice", RequestBody(OneMember("grade", smithy::Document("fail")))));
+  const auto response = server_->Handler()(opal::testing::Rpcv2CborRequest(
+      "UnionGauntlet", "EchoChoice", RequestBody(OneMember("grade", opal::Document("fail")))));
   EXPECT_EQ(response.status, 400) << response.body;
-  auto body = smithy::cbor::Decode(smithy::Blob::FromString(response.body));
+  auto body = opal::cbor::Decode(opal::Blob::FromString(response.body));
   ASSERT_TRUE(body.ok());
   ASSERT_NE(body->Find("__type"), nullptr);
-  const smithy::Document* offending = body->Find("offending");
+  const opal::Document* offending = body->Find("offending");
   ASSERT_NE(offending, nullptr) << "error payload lost its union member";
-  EXPECT_EQ(*offending, OneMember("grade", smithy::Document("fail")));
+  EXPECT_EQ(*offending, OneMember("grade", opal::Document("fail")));
 
   // Client side: the same wire shape deserializes into the typed error
   // detail with the union preserved.
   auto client = CapturedClient();
-  transport_->next_response = smithy::http::HttpResponse{400, response.headers, response.body};
+  transport_->next_response = opal::http::HttpResponse{400, response.headers, response.body};
   EchoChoiceInput input;
   input.id = "a";
   input.choice = BigUnion::FromGrade(Grade::Value::kFail);

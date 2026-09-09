@@ -22,13 +22,13 @@
 
 namespace {
 
-using smithy::eventstream::Message;
-using smithy::http::BeastHttpClient;
-using smithy::http::BeastServerTransport;
-using smithy::http::BeastWebSocketClient;
-using smithy::http::HttpRequest;
-using smithy::http::HttpResponse;
-using smithy::http::WebSocket;
+using opal::eventstream::Message;
+using opal::http::BeastHttpClient;
+using opal::http::BeastServerTransport;
+using opal::http::BeastWebSocketClient;
+using opal::http::HttpRequest;
+using opal::http::HttpResponse;
+using opal::http::WebSocket;
 
 HttpRequest Get(const std::string& target) {
   HttpRequest request;
@@ -38,7 +38,7 @@ HttpRequest Get(const std::string& target) {
 }
 
 Message Event(const std::string& kind, const std::string& body) {
-  return Message{.headers = {{":event-type", kind}}, .payload = smithy::Blob::FromString(body)};
+  return Message{.headers = {{":event-type", kind}}, .payload = opal::Blob::FromString(body)};
 }
 
 TEST(ExceptionSafetyAcceptanceTest, AThrowingHandlerBecomesA500AndTheServerKeepsServing) {
@@ -60,7 +60,7 @@ TEST(ExceptionSafetyAcceptanceTest, AThrowingHandlerBecomesA500AndTheServerKeeps
                            .ok();
   ASSERT_TRUE(started);
 
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.endpoint = "http://127.0.0.1:" + std::to_string(server.port());
   auto client = BeastHttpClient::FromConfig(config);
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -108,7 +108,7 @@ TEST(ExceptionSafetyAcceptanceTest, AThrowingAsyncReceiveCallbackSparesTheStream
   const auto& socket = *dialed;
 
   std::promise<void> fired;
-  socket->ReceiveAsync([&fired](smithy::Outcome<std::optional<Message>> message) {
+  socket->ReceiveAsync([&fired](opal::Outcome<std::optional<Message>> message) {
     ASSERT_TRUE(message.ok()) << message.error().message();
     fired.set_value();
     throw std::runtime_error("consumer receive callback blew up");

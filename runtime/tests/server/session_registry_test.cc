@@ -36,7 +36,7 @@
 #include "smithy/http/websocket.h"
 #include "smithy/http/websocket_pair.h"
 
-namespace smithy::server {
+namespace opal::server {
 namespace {
 
 using eventstream::EventStream;
@@ -1434,4 +1434,4 @@ TEST(SessionRegistryGraceTest, RetentionSkipsThePreLossBacklogAndThePolicy) {
 }
 
 }  // namespace
-}  // namespace smithy::server
+}  // namespace opal::server

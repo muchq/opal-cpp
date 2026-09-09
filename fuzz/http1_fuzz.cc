@@ -44,7 +44,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
     return static_cast<long>(take);
   };
 
-  auto message = smithy::http::ReadHttp1Message(read, body_until_eof);
+  auto message = opal::http::ReadHttp1Message(read, body_until_eof);
   if (message.ok()) {
     if (message->body.size() > kMaxBodyBytes) std::abort();
     // Whatever parsed must be internally consistent enough to iterate.
@@ -54,8 +54,8 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
     }
     std::string method;
     std::string target;
-    (void)smithy::http::ParseRequestLine(message->start_line, &method, &target);
-    (void)smithy::http::ParseStatusLine(message->start_line);
+    (void)opal::http::ParseRequestLine(message->start_line, &method, &target);
+    (void)opal::http::ParseStatusLine(message->start_line);
   }
   return 0;
 }

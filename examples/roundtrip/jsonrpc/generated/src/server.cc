@@ -22,70 +22,70 @@ namespace types = ::example::roundtrip::jsonrpc;
 namespace {
 namespace helpers {
 
-smithy::http::HttpResponse JsonRpcError(int code, const std::string& type, const std::string& message, smithy::DocumentMap data, const smithy::Document& id) {
-  if (!type.empty()) data.insert_or_assign("__type", smithy::Document(type));
+opal::http::HttpResponse JsonRpcError(int code, const std::string& type, const std::string& message, opal::DocumentMap data, const opal::Document& id) {
+  if (!type.empty()) data.insert_or_assign("__type", opal::Document(type));
   std::string text = message;
   if (text.empty()) {
     const auto it = data.find("message");
     if (it != data.end() && it->second.is_string()) text = it->second.as_string();
   }
-  smithy::DocumentMap error;
-  error.emplace("code", smithy::Document(code));
-  error.emplace("message", smithy::Document(std::move(text)));
-  if (!data.empty()) error.emplace("data", smithy::Document(std::move(data)));
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
-  envelope.emplace("error", smithy::Document(std::move(error)));
+  opal::DocumentMap error;
+  error.emplace("code", opal::Document(code));
+  error.emplace("message", opal::Document(std::move(text)));
+  if (!data.empty()) error.emplace("data", opal::Document(std::move(data)));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
+  envelope.emplace("error", opal::Document(std::move(error)));
   envelope.emplace("id", id);
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(envelope)));
+  response.body = opal::json::Encode(opal::Document(std::move(envelope)));
   return response;
 }
 
 // [[maybe_unused]]: only unary routes map handler errors here; a service
 // whose operations all stream reports errors on the stream instead.
-[[maybe_unused]] smithy::http::HttpResponse ErrorToResponse(const smithy::Error& error, const smithy::Document& id) {
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+[[maybe_unused]] opal::http::HttpResponse ErrorToResponse(const opal::Error& error, const opal::Document& id) {
+  if (error.kind() == opal::ErrorKind::kModeled) {
     if (error.code() == "SinkNotFound") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::SinkNotFound>()) {
         body = SerializeSinkNotFound(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       return helpers::JsonRpcError(404, "example.roundtrip#SinkNotFound", "", std::move(body), id);
     }
     if (error.code() == "SinkQuotaExceeded") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::SinkQuotaExceeded>()) {
         body = SerializeSinkQuotaExceeded(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       return helpers::JsonRpcError(503, "example.roundtrip#SinkQuotaExceeded", "", std::move(body), id);
     }
     return helpers::JsonRpcError(400, error.code(), error.message(), {}, id);
   }
-  if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) return helpers::JsonRpcError(400, "SerializationException", error.message(), {}, id);
+  if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) return helpers::JsonRpcError(400, "SerializationException", error.message(), {}, id);
   // Never leak internal detail on unexpected failures.
   return helpers::JsonRpcError(500, "InternalFailure", "internal failure", {}, id);
 }
 
 // Constraint validation (smithy.framework#ValidationException): messages
 // and '/member' paths follow the official validation conformance suite.
-void AddValidationFailure(std::vector<smithy::server::ValidationFailure>* failures, std::string path, std::string message) {
+void AddValidationFailure(std::vector<opal::server::ValidationFailure>* failures, std::string path, std::string message) {
   failures->push_back({std::move(path), std::move(message)});
 }
 
-void ValidateKitchenSink(const types::KitchenSink& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidateKitchenSink(const types::KitchenSink& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   if (value.priority.has_value()) {
     const std::string member_path = path + "/priority";
     if ((*value.priority).value() == Priority::Value::kUnknown) {
@@ -114,7 +114,7 @@ void ValidateKitchenSink(const types::KitchenSink& value, const std::string& pat
   }
 }
 
-void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   if (value.sink.has_value()) {
     const std::string member_path = path + "/sink";
     helpers::ValidateKitchenSink((*value.sink), member_path, failures);
@@ -123,43 +123,43 @@ void ValidatePutSinkRpcInput(const types::PutSinkRpcInput& value, const std::str
 
 // [[maybe_unused]]: only unary routes reject invalid input over HTTP; a
 // service whose operations all stream reports validation on the stream.
-[[maybe_unused]] smithy::http::HttpResponse ValidationErrorResponse(const std::vector<smithy::server::ValidationFailure>& failures, const smithy::Document& id) {
+[[maybe_unused]] opal::http::HttpResponse ValidationErrorResponse(const std::vector<opal::server::ValidationFailure>& failures, const opal::Document& id) {
   std::string summary = std::to_string(failures.size()) + " validation error" + (failures.size() == 1 ? "" : "s") + " detected. ";
-  smithy::DocumentList field_list;
+  opal::DocumentList field_list;
   for (std::size_t i = 0; i < failures.size(); ++i) {
     if (i > 0) summary += "; ";
     summary += failures[i].message;
-    smithy::DocumentMap field;
-    field.emplace("message", smithy::Document(failures[i].message));
-    field.emplace("path", smithy::Document(failures[i].path));
-    field_list.push_back(smithy::Document(std::move(field)));
+    opal::DocumentMap field;
+    field.emplace("message", opal::Document(failures[i].message));
+    field.emplace("path", opal::Document(failures[i].path));
+    field_list.push_back(opal::Document(std::move(field)));
   }
-  smithy::DocumentMap body;
-  body.emplace("fieldList", smithy::Document(std::move(field_list)));
-  smithy::http::HttpResponse response = helpers::JsonRpcError(400, "smithy.framework#ValidationException", summary, std::move(body), id);
+  opal::DocumentMap body;
+  body.emplace("fieldList", opal::Document(std::move(field_list)));
+  opal::http::HttpResponse response = helpers::JsonRpcError(400, "smithy.framework#ValidationException", summary, std::move(body), id);
   return response;
 }
 
 template <typename Handler>
-smithy::http::HttpResponse HandlePutSinkRpc(Handler& handler, const smithy::Document& params, const smithy::Document& id, const smithy::server::RequestContext& context) {
+opal::http::HttpResponse HandlePutSinkRpc(Handler& handler, const opal::Document& params, const opal::Document& id, const opal::server::RequestContext& context) {
   types::PutSinkRpcInput input{};
   if (!params.is_map()) return helpers::JsonRpcError(-32602, "SerializationException", "params must be an object", {}, id);
   auto parsed = DeserializePutSinkRpcInput(params);
   if (!parsed) return helpers::JsonRpcError(-32602, "SerializationException", parsed.error().message(), {}, id);
   input = *std::move(parsed);
-  std::vector<smithy::server::ValidationFailure> validation_failures;
+  std::vector<opal::server::ValidationFailure> validation_failures;
   helpers::ValidatePutSinkRpcInput(input, "", &validation_failures);
   if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures, id);
   auto outcome = handler.PutSinkRpc(input, context);
   if (!outcome) return helpers::ErrorToResponse(outcome.error(), id);
-  smithy::DocumentMap envelope;
-  envelope.emplace("jsonrpc", smithy::Document("2.0"));
+  opal::DocumentMap envelope;
+  envelope.emplace("jsonrpc", opal::Document("2.0"));
   envelope.emplace("result", SerializePutSinkRpcOutput(*outcome));
   envelope.emplace("id", id);
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(envelope)));
+  response.body = opal::json::Encode(opal::Document(std::move(envelope)));
   return response;
 }
 
@@ -167,42 +167,42 @@ smithy::http::HttpResponse HandlePutSinkRpc(Handler& handler, const smithy::Docu
 }  // namespace
 
 RoundTripJsonRpcServer::RoundTripJsonRpcServer(std::shared_ptr<RoundTripJsonRpcHandler> handler)
-  : router_(std::make_shared<smithy::server::Router>()) {
+  : router_(std::make_shared<opal::server::Router>()) {
   // The route table is derived from the model's @http traits; conflicts are
   // a modeling error surfaced by Router::Add (checked at generation time in a
   // later phase), so registration results are intentionally discarded.
-  (void)router_->Add("POST", "/", [handler](const smithy::http::HttpRequest& raw_request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
-    smithy::Document id;  // null until the envelope yields one (JSON-RPC 2.0 §5)
-    smithy::http::HttpRequest request = raw_request;
+  (void)router_->Add("POST", "/", [handler](const opal::http::HttpRequest& raw_request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
+    opal::Document id;  // null until the envelope yields one (JSON-RPC 2.0 §5)
+    opal::http::HttpRequest request = raw_request;
     // @requestCompression(gzip): decode before parsing.
     if (const auto request_encoding = request.headers.Get("content-encoding"); request_encoding.has_value() && (*request_encoding == "gzip" || request_encoding->ends_with(", gzip"))) {
-      auto decompressed = smithy::GzipDecompress(request.body);
+      auto decompressed = opal::GzipDecompress(request.body);
       if (!decompressed) {
         return helpers::JsonRpcError(-32700, "SerializationException", "invalid gzip request body", {}, id);
       }
       request.body = *std::move(decompressed);
     }
     // A present Content-Type must carry application/json (parameters ignored).
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/json") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/json") {
       return helpers::JsonRpcError(-32600, "UnsupportedMediaTypeException", "expected content-type: application/json", {}, id);
     }
-    auto decoded = smithy::json::Decode(request.body);
+    auto decoded = opal::json::Decode(request.body);
     // Envelope failure messages are fixed strings: the conformance suite
     // compares bodies exactly, so no decoder detail leaks into the wire.
     if (!decoded) return helpers::JsonRpcError(-32700, "SerializationException", "request body is not valid JSON", {}, id);
     if (!decoded->is_map()) return helpers::JsonRpcError(-32600, "SerializationException", "request is not a JSON-RPC 2.0 call", {}, id);
-    if (const smithy::Document* id_doc = decoded->Find("id"); id_doc != nullptr) id = *id_doc;
-    const smithy::Document* version = decoded->Find("jsonrpc");
+    if (const opal::Document* id_doc = decoded->Find("id"); id_doc != nullptr) id = *id_doc;
+    const opal::Document* version = decoded->Find("jsonrpc");
     if (version == nullptr || !version->is_string() || version->as_string() != "2.0") {
       return helpers::JsonRpcError(-32600, "SerializationException", "expected jsonrpc: \"2.0\"", {}, id);
     }
-    const smithy::Document* method = decoded->Find("method");
+    const opal::Document* method = decoded->Find("method");
     if (method == nullptr || !method->is_string()) {
       return helpers::JsonRpcError(-32600, "SerializationException", "expected a string method member", {}, id);
     }
     // Absent/null params deserialize like an empty object.
-    const smithy::Document empty_params{smithy::DocumentMap{}};
-    const smithy::Document* params = decoded->Find("params");
+    const opal::Document empty_params{opal::DocumentMap{}};
+    const opal::Document* params = decoded->Find("params");
     if (params == nullptr || params->is_null()) params = &empty_params;
     const std::string& method_name = method->as_string();
     if (method_name == "PutSinkRpc") {
@@ -214,9 +214,9 @@ RoundTripJsonRpcServer::RoundTripJsonRpcServer(std::shared_ptr<RoundTripJsonRpcH
   });
 }
 
-smithy::http::RequestHandler RoundTripJsonRpcServer::Handler() const {
+opal::http::RequestHandler RoundTripJsonRpcServer::Handler() const {
   auto router = router_;
-  return [router](const smithy::http::HttpRequest& request) { return router->Route(request); };
+  return [router](const opal::http::HttpRequest& request) { return router->Route(request); };
 }
 
 }  // namespace example::roundtrip::jsonrpc

@@ -9,11 +9,11 @@
 #include "smithy/cbor/cbor.h"
 #include "tests/testing/random_document.h"
 
-namespace smithy::cbor {
+namespace opal::cbor {
 namespace {
 
 TEST(CborPropertyTest, RandomDocumentsRoundTrip) {
-  smithy::testing::RandomDocumentGenerator generator(/*seed=*/20260706);
+  opal::testing::RandomDocumentGenerator generator(/*seed=*/20260706);
   for (int i = 0; i < 500; ++i) {
     const Document original = generator.Next();
     const Blob encoded = Encode(original);
@@ -24,7 +24,7 @@ TEST(CborPropertyTest, RandomDocumentsRoundTrip) {
 }
 
 TEST(CborPropertyTest, EncodingIsDeterministic) {
-  smithy::testing::RandomDocumentGenerator generator(/*seed=*/777);
+  opal::testing::RandomDocumentGenerator generator(/*seed=*/777);
   for (int i = 0; i < 50; ++i) {
     const Document doc = generator.Next();
     ASSERT_TRUE(Encode(doc) == Encode(doc)) << "iteration " << i;
@@ -34,7 +34,7 @@ TEST(CborPropertyTest, EncodingIsDeterministic) {
 // Decoding corrupted bytes must fail cleanly (an Error) or succeed with some
 // value — never crash, hang, or trip a sanitizer.
 TEST(CborPropertyTest, CorruptedInputNeverCrashes) {
-  smithy::testing::RandomDocumentGenerator generator(/*seed=*/424242);
+  opal::testing::RandomDocumentGenerator generator(/*seed=*/424242);
   std::mt19937_64 rng(31337);
   for (int i = 0; i < 300; ++i) {
     Blob encoded = Encode(generator.Next());
@@ -65,4 +65,4 @@ TEST(CborPropertyTest, RandomGarbageNeverCrashes) {
 }
 
 }  // namespace
-}  // namespace smithy::cbor
+}  // namespace opal::cbor

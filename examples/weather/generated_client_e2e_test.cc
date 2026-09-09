@@ -18,17 +18,17 @@ namespace hw = example::weather::handwritten;
 
 class ReferenceHandler final : public hw::WeatherHandler {
  public:
-  smithy::Outcome<hw::GetCityOutput> GetCity(const hw::GetCityInput& input) override {
+  opal::Outcome<hw::GetCityOutput> GetCity(const hw::GetCityInput& input) override {
     if (input.cityId == "seattle") {
       return hw::GetCityOutput{"Seattle", hw::CityCoordinates{47.6062, -122.3321}};
     }
     if (input.cityId == "rain city") {
       return hw::GetCityOutput{"Rain City", hw::CityCoordinates{45.0, -120.0}};
     }
-    return smithy::Error::Modeled(hw::kNoSuchResourceCode, "no city: " + input.cityId);
+    return opal::Error::Modeled(hw::kNoSuchResourceCode, "no city: " + input.cityId);
   }
 
-  smithy::Outcome<hw::ListCitiesOutput> ListCities(const hw::ListCitiesInput& input) override {
+  opal::Outcome<hw::ListCitiesOutput> ListCities(const hw::ListCitiesInput& input) override {
     hw::ListCitiesOutput out;
     if (!input.nextToken.has_value()) {
       out.items.push_back(hw::CitySummary{"seattle", "Seattle"});
@@ -41,15 +41,15 @@ class ReferenceHandler final : public hw::WeatherHandler {
     return out;
   }
 
-  smithy::Outcome<hw::GetForecastOutput> GetForecast(const hw::GetForecastInput& input) override {
+  opal::Outcome<hw::GetForecastOutput> GetForecast(const hw::GetForecastInput& input) override {
     if (input.cityId != "seattle") {
-      return smithy::Error::Modeled(hw::kNoSuchResourceCode, "no city: " + input.cityId);
+      return opal::Error::Modeled(hw::kNoSuchResourceCode, "no city: " + input.cityId);
     }
     return hw::GetForecastOutput{0.75};
   }
 
-  smithy::Outcome<hw::GetCurrentTimeOutput> GetCurrentTime() override {
-    return hw::GetCurrentTimeOutput{smithy::Timestamp::FromEpochMilliseconds(1398796238500)};
+  opal::Outcome<hw::GetCurrentTimeOutput> GetCurrentTime() override {
+    return hw::GetCurrentTimeOutput{opal::Timestamp::FromEpochMilliseconds(1398796238500)};
   }
 };
 
@@ -59,13 +59,13 @@ class GeneratedClientEndToEndTest : public testing::TestWithParam<Transport> {
  protected:
   void SetUp() override {
     service_ = std::make_unique<hw::WeatherService>(std::make_shared<ReferenceHandler>());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     if (GetParam() == Transport::kLoopback) {
-      auto loopback = std::make_shared<smithy::http::Loopback>();
+      auto loopback = std::make_shared<opal::http::Loopback>();
       ASSERT_TRUE(loopback->Start(service_->Handler()).ok());
       config.http_client = loopback;
     } else {
-      socket_server_ = std::make_unique<smithy::http::SocketHttpServer>();
+      socket_server_ = std::make_unique<opal::http::SocketHttpServer>();
       ASSERT_TRUE(socket_server_->Start(service_->Handler()).ok());
       config.endpoint = "http://127.0.0.1:" + std::to_string(socket_server_->port());
     }
@@ -79,7 +79,7 @@ class GeneratedClientEndToEndTest : public testing::TestWithParam<Transport> {
   }
 
   std::unique_ptr<hw::WeatherService> service_;
-  std::unique_ptr<smithy::http::SocketHttpServer> socket_server_;
+  std::unique_ptr<opal::http::SocketHttpServer> socket_server_;
   std::unique_ptr<WeatherClient> client_;
 };
 
@@ -101,7 +101,7 @@ TEST_P(GeneratedClientEndToEndTest, PercentEncodedLabels) {
 TEST_P(GeneratedClientEndToEndTest, ModeledErrorsSurfaceTyped) {
   const auto city = client_->GetCity(GetCityInput{.cityId = "atlantis"});
   ASSERT_FALSE(city.ok());
-  EXPECT_EQ(city.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(city.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(city.error().code(), "NoSuchResource");
   EXPECT_EQ(city.error().message(), "no city: atlantis");
 }

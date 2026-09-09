@@ -16,10 +16,10 @@ class WeatherHandler {
  public:
   virtual ~WeatherHandler() = default;
 
-  virtual smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input) = 0;
-  virtual smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) = 0;
-  virtual smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) = 0;
-  virtual smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime() = 0;
+  virtual opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input) = 0;
+  virtual opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input) = 0;
+  virtual opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input) = 0;
+  virtual opal::Outcome<GetCurrentTimeOutput> GetCurrentTime() = 0;
 };
 
 // Binds a WeatherHandler to the runtime router. Transport-agnostic: pass
@@ -29,10 +29,10 @@ class WeatherService {
   // Route registration cannot fail for this fixed, conflict-free route table.
   explicit WeatherService(const std::shared_ptr<WeatherHandler>& handler);
 
-  smithy::http::RequestHandler Handler() const;
+  opal::http::RequestHandler Handler() const;
 
  private:
-  std::shared_ptr<smithy::server::Router> router_;
+  std::shared_ptr<opal::server::Router> router_;
 };
 
 }  // namespace example::weather::handwritten

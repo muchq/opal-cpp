@@ -8,7 +8,7 @@
 
 #include "smithy/http/headers.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // A parsed numeric address: 4 (AF_INET) or 16 (AF_INET6) significant bytes.
@@ -245,4 +245,4 @@ std::string ClientAddress(const HttpRequest& request, const TrustedProxies& trus
   return DeriveClient(request, trusted).address;
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

@@ -94,13 +94,13 @@ interface ProtocolGenerator {
     return false;
   }
 
-  /** Expression producing an event payload (a smithy::Blob) from a serialized Document. */
+  /** Expression producing an event payload (a opal::Blob) from a serialized Document. */
   default String eventPayloadEncode(String docExpr) {
     throw new software.amazon.smithy.codegen.core.CodegenException(
         "cpp-codegen: " + name() + " does not support event streams");
   }
 
-  /** Expression producing an Outcome&lt;smithy::Document&gt; from an event payload Blob. */
+  /** Expression producing an Outcome&lt;opal::Document&gt; from an event payload Blob. */
   default String eventPayloadDecode(String payloadExpr) {
     throw new software.amazon.smithy.codegen.core.CodegenException(
         "cpp-codegen: " + name() + " does not support event streams");

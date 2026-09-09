@@ -10,6 +10,8 @@
 #include <string_view>
 #include <utility>
 
+#include "opal/protocoltests/simplerestjson/client.h"
+#include "opal/protocoltests/simplerestjson/serde.h"
 #include "smithy/core/base64.h"
 #include "smithy/core/blob.h"
 #include "smithy/core/document_serde.h"
@@ -18,10 +20,8 @@
 #include "smithy/http/socket_transport.h"
 #include "smithy/http/uri.h"
 #include "smithy/json/json.h"
-#include "smithy/protocoltests/simplerestjson/client.h"
-#include "smithy/protocoltests/simplerestjson/serde.h"
 
-namespace smithy::protocoltests::simplerestjson {
+namespace opal::protocoltests::simplerestjson {
 
 namespace {
 namespace helpers {
@@ -38,51 +38,51 @@ struct ParsedError {
   int status = 0;
   std::string code = "UnknownError";
   std::string message;
-  smithy::Document doc;
+  opal::Document doc;
 };
 
 // [[maybe_unused]]: only unary response paths parse wire errors; a
 // service whose operations all stream never calls this.
-[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {
+[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {
   ParsedError parsed;
   parsed.status = response.status;
   parsed.message = "HTTP " + std::to_string(response.status);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   if (doc.ok()) parsed.doc = *std::move(doc);
   const auto type_header = response.headers.Get("x-error-type");
   if (type_header.has_value()) parsed.code = helpers::SanitizeErrorCode(*type_header);
   if (parsed.doc.is_map()) {
-    const smithy::Document* type = parsed.doc.Find("__type");
+    const opal::Document* type = parsed.doc.Find("__type");
     if (type == nullptr) type = parsed.doc.Find("code");
     if (parsed.code == "UnknownError" && type != nullptr && type->is_string()) parsed.code = helpers::SanitizeErrorCode(type->as_string());
-    const smithy::Document* text = parsed.doc.Find("message");
+    const opal::Document* text = parsed.doc.Find("message");
     if (text != nullptr && text->is_string()) parsed.message = text->as_string();
   }
   return parsed;
 }
 
-smithy::Error GenericError(ParsedError parsed) {
+opal::Error GenericError(ParsedError parsed) {
   const bool retryable = parsed.status >= 500;
-  if (parsed.code == "UnknownError") return smithy::Error(smithy::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
-  return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
+  if (parsed.code == "UnknownError") return opal::Error(opal::ErrorKind::kUnknown, std::move(parsed.code), std::move(parsed.message), retryable);
+  return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), retryable);
 }
 
 // Strict text parsing for label/query/header bindings ([[maybe_unused]]:
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -90,21 +90,21 @@ smithy::Error GenericError(ParsedError parsed) {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
 
-smithy::Error MakeFallbackErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeFallbackErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("FallbackError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("FallbackError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeFallbackError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -112,11 +112,11 @@ smithy::Error MakeFallbackErrorError(const smithy::http::HttpResponse& response,
   return error;
 }
 
-smithy::Error MakeGenericClientErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeGenericClientErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("GenericClientError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("GenericClientError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeGenericClientError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -124,11 +124,11 @@ smithy::Error MakeGenericClientErrorError(const smithy::http::HttpResponse& resp
   return error;
 }
 
-smithy::Error MakeGenericServerErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeGenericServerErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("GenericServerError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("GenericServerError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeGenericServerError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -136,11 +136,11 @@ smithy::Error MakeGenericServerErrorError(const smithy::http::HttpResponse& resp
   return error;
 }
 
-smithy::Error MakeNotFoundErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeNotFoundErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("NotFoundError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("NotFoundError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeNotFoundError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -148,13 +148,13 @@ smithy::Error MakeNotFoundErrorError(const smithy::http::HttpResponse& response,
   return error;
 }
 
-smithy::Error MakePriceErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakePriceErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("PriceError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("PriceError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   if (const auto header_value = response.headers.Get("X-CODE"); header_value.has_value()) {
-    if (auto parsed_num = helpers::ParseInt64Text(*header_value, -2147483648LL, 2147483647LL)) parsed.doc.as_map().insert_or_assign("code", smithy::Document(*parsed_num));
+    if (auto parsed_num = helpers::ParseInt64Text(*header_value, -2147483648LL, 2147483647LL)) parsed.doc.as_map().insert_or_assign("code", opal::Document(*parsed_num));
   }
   auto detail = DeserializePriceError(parsed.doc);
   if (detail.ok()) {
@@ -163,11 +163,11 @@ smithy::Error MakePriceErrorError(const smithy::http::HttpResponse& response, Pa
   return error;
 }
 
-smithy::Error MakeUnknownServerErrorError(const smithy::http::HttpResponse& response, ParsedError parsed) {
+opal::Error MakeUnknownServerErrorError(const opal::http::HttpResponse& response, ParsedError parsed) {
   (void)response;
   const bool retryable = parsed.status >= 500;
-  smithy::Error error = smithy::Error::Modeled("UnknownServerError", std::move(parsed.message), retryable);
-  if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});
+  opal::Error error = opal::Error::Modeled("UnknownServerError", std::move(parsed.message), retryable);
+  if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});
   auto detail = DeserializeUnknownServerError(parsed.doc);
   if (detail.ok()) {
     error.set_detail(*std::move(detail));
@@ -175,7 +175,7 @@ smithy::Error MakeUnknownServerErrorError(const smithy::http::HttpResponse& resp
   return error;
 }
 
-smithy::Error ParseAddMenuItemError(const smithy::http::HttpResponse& response) {
+opal::Error ParseAddMenuItemError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -186,7 +186,7 @@ smithy::Error ParseAddMenuItemError(const smithy::http::HttpResponse& response) 
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseCustomCodeError(const smithy::http::HttpResponse& response) {
+opal::Error ParseCustomCodeError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -197,7 +197,7 @@ smithy::Error ParseCustomCodeError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseGetEnumError(const smithy::http::HttpResponse& response) {
+opal::Error ParseGetEnumError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -208,7 +208,7 @@ smithy::Error ParseGetEnumError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseGetIntEnumError(const smithy::http::HttpResponse& response) {
+opal::Error ParseGetIntEnumError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -219,7 +219,7 @@ smithy::Error ParseGetIntEnumError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseGetMenuError(const smithy::http::HttpResponse& response) {
+opal::Error ParseGetMenuError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "FallbackError") return helpers::MakeFallbackErrorError(response, std::move(parsed));
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
@@ -232,7 +232,7 @@ smithy::Error ParseGetMenuError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseHeaderEndpointError(const smithy::http::HttpResponse& response) {
+opal::Error ParseHeaderEndpointError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -241,7 +241,7 @@ smithy::Error ParseHeaderEndpointError(const smithy::http::HttpResponse& respons
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseHealthError(const smithy::http::HttpResponse& response) {
+opal::Error ParseHealthError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -252,7 +252,7 @@ smithy::Error ParseHealthError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseHttpPayloadRequiredWithDefaultError(const smithy::http::HttpResponse& response) {
+opal::Error ParseHttpPayloadRequiredWithDefaultError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -261,7 +261,7 @@ smithy::Error ParseHttpPayloadRequiredWithDefaultError(const smithy::http::HttpR
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseHttpPayloadWithDefaultError(const smithy::http::HttpResponse& response) {
+opal::Error ParseHttpPayloadWithDefaultError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -270,7 +270,7 @@ smithy::Error ParseHttpPayloadWithDefaultError(const smithy::http::HttpResponse&
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseOpenUnionsError(const smithy::http::HttpResponse& response) {
+opal::Error ParseOpenUnionsError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -279,7 +279,7 @@ smithy::Error ParseOpenUnionsError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParsePreserveOrderError(const smithy::http::HttpResponse& response) {
+opal::Error ParsePreserveOrderError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -288,7 +288,7 @@ smithy::Error ParsePreserveOrderError(const smithy::http::HttpResponse& response
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseRoundTripError(const smithy::http::HttpResponse& response) {
+opal::Error ParseRoundTripError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -297,7 +297,7 @@ smithy::Error ParseRoundTripError(const smithy::http::HttpResponse& response) {
   return helpers::GenericError(std::move(parsed));
 }
 
-smithy::Error ParseVersionError(const smithy::http::HttpResponse& response) {
+opal::Error ParseVersionError(const opal::http::HttpResponse& response) {
   ParsedError parsed = helpers::ParseError(response);
   if (parsed.code == "GenericClientError") return helpers::MakeGenericClientErrorError(response, std::move(parsed));
   if (parsed.code == "GenericServerError") return helpers::MakeGenericServerErrorError(response, std::move(parsed));
@@ -309,54 +309,54 @@ smithy::Error ParseVersionError(const smithy::http::HttpResponse& response) {
 }  // namespace helpers
 }  // namespace
 
-smithy::Outcome<PizzaAdminServiceClient> PizzaAdminServiceClient::Create(smithy::ClientConfig config) {
-  std::shared_ptr<smithy::http::HttpClient> transport = config.http_client;
+opal::Outcome<PizzaAdminServiceClient> PizzaAdminServiceClient::Create(opal::ClientConfig config) {
+  std::shared_ptr<opal::http::HttpClient> transport = config.http_client;
   std::string prefix;
   if (!config.endpoint.empty()) {
-    auto endpoint = smithy::http::ParseEndpoint(config.endpoint);
+    auto endpoint = opal::http::ParseEndpoint(config.endpoint);
     if (!endpoint) return std::move(endpoint).error();
     prefix = endpoint->path_prefix;
     if (transport == nullptr) {
       // The built-in socket transport is plaintext-only; https needs a
-      // TLS-capable transport (e.g. smithy::http::BeastHttpClient).
+      // TLS-capable transport (e.g. opal::http::BeastHttpClient).
       if (endpoint->tls()) {
-        return smithy::Error::Validation("PizzaAdminServiceClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. smithy::http::BeastHttpClient::FromConfig)");
+        return opal::Error::Validation("PizzaAdminServiceClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<smithy::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
     }
   }
   if (transport == nullptr) {
-    return smithy::Error::Validation("PizzaAdminServiceClient: config needs an endpoint or an http_client");
+    return opal::Error::Validation("PizzaAdminServiceClient: config needs an endpoint or an http_client");
   }
   return PizzaAdminServiceClient(std::move(config), std::move(transport), std::move(prefix));
 }
 
-PizzaAdminServiceClient::PizzaAdminServiceClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix)
+PizzaAdminServiceClient::PizzaAdminServiceClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix)
   : config_(std::move(config)),
     transport_(std::move(transport)),
     path_prefix_(std::move(path_prefix)) {}
 
-smithy::Outcome<smithy::http::HttpResponse> PizzaAdminServiceClient::Send(smithy::http::HttpRequest request) const {
+opal::Outcome<opal::http::HttpResponse> PizzaAdminServiceClient::Send(opal::http::HttpRequest request) const {
   // Operations with a non-document response payload set their own accept.
   if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   request.headers.Set("user-agent", config_.user_agent);
   if (!request.body.empty()) {
     request.headers.Set("content-length", std::to_string(request.body.size()));
   }
-  return smithy::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
+  return opal::SendWithRetries(*transport_, request, config_.retry, config_.interceptors);
 }
 
-smithy::Outcome<AddMenuItemOutput> PizzaAdminServiceClient::AddMenuItem(const AddMenuItemInput& input) const {
+opal::Outcome<AddMenuItemOutput> PizzaAdminServiceClient::AddMenuItem(const AddMenuItemInput& input) const {
   std::string target = path_prefix_;
   target += "/restaurant";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.restaurant);
+  target += opal::http::EncodePathSegment(input.restaurant);
   target += "/menu";
   target += "/item";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = std::move(target);
-  request.body = smithy::json::Encode(SerializeMenuItem(input.menuItem));
+  request.body = opal::json::Encode(SerializeMenuItem(input.menuItem));
   if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
   request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
@@ -364,26 +364,26 @@ smithy::Outcome<AddMenuItemOutput> PizzaAdminServiceClient::AddMenuItem(const Ad
   if (response->status != 201) return helpers::ParseAddMenuItemError(*response);
   AddMenuItemOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    if (!payload_doc->is_string()) return smithy::Error::Serialization("expected a JSON string payload");
+    if (!payload_doc->is_string()) return opal::Error::Serialization("expected a JSON string payload");
     out.itemId = payload_doc->as_string();
   }
   if (const auto header_value = response->headers.Get("X-ADDED-AT"); header_value.has_value()) {
-    auto parsed_ts = smithy::Timestamp::Parse((*header_value), smithy::TimestampFormat::kEpochSeconds);
+    auto parsed_ts = opal::Timestamp::Parse((*header_value), opal::TimestampFormat::kEpochSeconds);
     if (!parsed_ts) return std::move(parsed_ts).error();
     out.added = *std::move(parsed_ts);
   }
-  if (!response->headers.Get("X-ADDED-AT").has_value()) return smithy::Error::Serialization("missing required header: X-ADDED-AT");
+  if (!response->headers.Get("X-ADDED-AT").has_value()) return opal::Error::Serialization("missing required header: X-ADDED-AT");
   return out;
 }
 
-smithy::Outcome<CustomCodeOutput> PizzaAdminServiceClient::CustomCode(const CustomCodeInput& input) const {
+opal::Outcome<CustomCodeOutput> PizzaAdminServiceClient::CustomCode(const CustomCodeInput& input) const {
   std::string target = path_prefix_;
   target += "/custom-code";
   target += "/";
-  target += smithy::http::EncodePathSegment(std::to_string(static_cast<std::int64_t>(input.code)));
-  smithy::http::HttpRequest request;
+  target += opal::http::EncodePathSegment(std::to_string(static_cast<std::int64_t>(input.code)));
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
@@ -394,46 +394,46 @@ smithy::Outcome<CustomCodeOutput> PizzaAdminServiceClient::CustomCode(const Cust
   return out;
 }
 
-smithy::Outcome<GetEnumOutput> PizzaAdminServiceClient::GetEnum(const GetEnumInput& input) const {
+opal::Outcome<GetEnumOutput> PizzaAdminServiceClient::GetEnum(const GetEnumInput& input) const {
   std::string target = path_prefix_;
   target += "/get-enum";
   target += "/";
-  target += smithy::http::EncodePathSegment(std::string(input.aa.ToString()));
-  smithy::http::HttpRequest request;
+  target += opal::http::EncodePathSegment(std::string(input.aa.ToString()));
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseGetEnumError(*response);
   if (response->body.empty()) return GetEnumOutput{};
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeGetEnumOutput(*body_doc);
 }
 
-smithy::Outcome<GetIntEnumOutput> PizzaAdminServiceClient::GetIntEnum(const GetIntEnumInput& input) const {
+opal::Outcome<GetIntEnumOutput> PizzaAdminServiceClient::GetIntEnum(const GetIntEnumInput& input) const {
   std::string target = path_prefix_;
   target += "/get-int-enum";
   target += "/";
-  target += smithy::http::EncodePathSegment(std::to_string(static_cast<std::int64_t>(input.aa)));
-  smithy::http::HttpRequest request;
+  target += opal::http::EncodePathSegment(std::to_string(static_cast<std::int64_t>(input.aa)));
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseGetIntEnumError(*response);
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeGetIntEnumOutput(*body_doc);
 }
 
-smithy::Outcome<GetMenuOutput> PizzaAdminServiceClient::GetMenu(const GetMenuInput& input) const {
+opal::Outcome<GetMenuOutput> PizzaAdminServiceClient::GetMenu(const GetMenuInput& input) const {
   std::string target = path_prefix_;
   target += "/restaurant";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.restaurant);
+  target += opal::http::EncodePathSegment(input.restaurant);
   target += "/menu";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   request.headers.Set("accept", "application/json");
@@ -442,9 +442,9 @@ smithy::Outcome<GetMenuOutput> PizzaAdminServiceClient::GetMenu(const GetMenuInp
   if (response->status != 200) return helpers::ParseGetMenuError(*response);
   GetMenuOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    const smithy::Document* payload_ptr = &*payload_doc;
+    const opal::Document* payload_ptr = &*payload_doc;
     {
       auto parsed = DeserializeMenu(*payload_ptr);
       if (!parsed) return std::move(parsed).error();
@@ -454,10 +454,10 @@ smithy::Outcome<GetMenuOutput> PizzaAdminServiceClient::GetMenu(const GetMenuInp
   return out;
 }
 
-smithy::Outcome<HeaderEndpointOutput> PizzaAdminServiceClient::HeaderEndpoint(const HeaderEndpointInput& input) const {
+opal::Outcome<HeaderEndpointOutput> PizzaAdminServiceClient::HeaderEndpoint(const HeaderEndpointInput& input) const {
   std::string target = path_prefix_;
   target += "/headers";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = std::move(target);
   if (input.capitalizedHeader.has_value()) {
@@ -491,32 +491,32 @@ smithy::Outcome<HeaderEndpointOutput> PizzaAdminServiceClient::HeaderEndpoint(co
   return out;
 }
 
-smithy::Outcome<HealthOutput> PizzaAdminServiceClient::Health(const HealthInput& input) const {
+opal::Outcome<HealthOutput> PizzaAdminServiceClient::Health(const HealthInput& input) const {
   std::string target = path_prefix_;
   target += "/health";
-  smithy::http::QueryString query;
+  opal::http::QueryString query;
   if (input.query.has_value()) {
     query.Add("query", (*input.query));
   }
   target += query.ToString();
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseHealthError(*response);
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializeHealthOutput(*body_doc);
 }
 
-smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> PizzaAdminServiceClient::HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input) const {
+opal::Outcome<HttpPayloadRequiredWithDefaultOutput> PizzaAdminServiceClient::HttpPayloadRequiredWithDefault(const HttpPayloadRequiredWithDefaultInput& input) const {
   std::string target = path_prefix_;
   target += "/httpPayloadRequiredWithDefault";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "PUT";
   request.target = std::move(target);
-  request.body = smithy::json::Encode(smithy::Document(input.body));
+  request.body = opal::json::Encode(opal::Document(input.body));
   if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
   request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
@@ -524,22 +524,22 @@ smithy::Outcome<HttpPayloadRequiredWithDefaultOutput> PizzaAdminServiceClient::H
   if (response->status != 200) return helpers::ParseHttpPayloadRequiredWithDefaultError(*response);
   HttpPayloadRequiredWithDefaultOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    if (!payload_doc->is_string()) return smithy::Error::Serialization("expected a JSON string payload");
+    if (!payload_doc->is_string()) return opal::Error::Serialization("expected a JSON string payload");
     out.body = payload_doc->as_string();
   }
   return out;
 }
 
-smithy::Outcome<HttpPayloadWithDefaultOutput> PizzaAdminServiceClient::HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input) const {
+opal::Outcome<HttpPayloadWithDefaultOutput> PizzaAdminServiceClient::HttpPayloadWithDefault(const HttpPayloadWithDefaultInput& input) const {
   std::string target = path_prefix_;
   target += "/httpPayloadWithDefault";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "PUT";
   request.target = std::move(target);
   if (input.body.has_value()) {
-    request.body = smithy::json::Encode(smithy::Document((*input.body)));
+    request.body = opal::json::Encode(opal::Document((*input.body)));
     if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
   }
   request.headers.Set("accept", "application/json");
@@ -548,21 +548,21 @@ smithy::Outcome<HttpPayloadWithDefaultOutput> PizzaAdminServiceClient::HttpPaylo
   if (response->status != 200) return helpers::ParseHttpPayloadWithDefaultError(*response);
   HttpPayloadWithDefaultOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    if (!payload_doc->is_string()) return smithy::Error::Serialization("expected a JSON string payload");
+    if (!payload_doc->is_string()) return opal::Error::Serialization("expected a JSON string payload");
     out.body = payload_doc->as_string();
   }
   return out;
 }
 
-smithy::Outcome<OpenUnionsOutput> PizzaAdminServiceClient::OpenUnions(const OpenUnionsInput& input) const {
+opal::Outcome<OpenUnionsOutput> PizzaAdminServiceClient::OpenUnions(const OpenUnionsInput& input) const {
   std::string target = path_prefix_;
   target += "/openUnions";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "PUT";
   request.target = std::move(target);
-  request.body = smithy::json::Encode(SerializeOpenUnionsPayload(input.data));
+  request.body = opal::json::Encode(SerializeOpenUnionsPayload(input.data));
   if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
   request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
@@ -570,9 +570,9 @@ smithy::Outcome<OpenUnionsOutput> PizzaAdminServiceClient::OpenUnions(const Open
   if (response->status != 200) return helpers::ParseOpenUnionsError(*response);
   OpenUnionsOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    const smithy::Document* payload_ptr = &*payload_doc;
+    const opal::Document* payload_ptr = &*payload_doc;
     {
       auto parsed = DeserializeOpenUnionsPayload(*payload_ptr);
       if (!parsed) return std::move(parsed).error();
@@ -582,57 +582,57 @@ smithy::Outcome<OpenUnionsOutput> PizzaAdminServiceClient::OpenUnions(const Open
   return out;
 }
 
-smithy::Outcome<PreserveOrderOutput> PizzaAdminServiceClient::PreserveOrder(const PreserveOrderInput& input) const {
+opal::Outcome<PreserveOrderOutput> PizzaAdminServiceClient::PreserveOrder(const PreserveOrderInput& input) const {
   std::string target = path_prefix_;
   target += "/preserveKeyOrder";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = std::move(target);
-  smithy::DocumentMap body_map;
+  opal::DocumentMap body_map;
   if (input.document.has_value()) {
     body_map.emplace("document", (*input.document));
   }
   if (input.map.has_value()) {
     body_map.emplace("map", SerializeMyMap((*input.map)));
   }
-  request.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  request.body = opal::json::Encode(opal::Document(std::move(body_map)));
   request.headers.Set("content-type", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParsePreserveOrderError(*response);
   if (response->body.empty()) return PreserveOrderOutput{};
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   return DeserializePreserveOrderOutput(*body_doc);
 }
 
-smithy::Outcome<RoundTripOutput> PizzaAdminServiceClient::RoundTrip(const RoundTripInput& input) const {
+opal::Outcome<RoundTripOutput> PizzaAdminServiceClient::RoundTrip(const RoundTripInput& input) const {
   std::string target = path_prefix_;
   target += "/roundTrip";
   target += "/";
-  target += smithy::http::EncodePathSegment(input.label);
-  smithy::http::QueryString query;
+  target += opal::http::EncodePathSegment(input.label);
+  opal::http::QueryString query;
   if (input.query.has_value()) {
     query.Add("query", (*input.query));
   }
   target += query.ToString();
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = std::move(target);
   if (input.header.has_value()) {
     request.headers.Set("HEADER", (*input.header));
   }
-  smithy::DocumentMap body_map;
+  opal::DocumentMap body_map;
   if (input.body.has_value()) {
-    body_map.emplace("body", smithy::Document((*input.body)));
+    body_map.emplace("body", opal::Document((*input.body)));
   }
-  request.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  request.body = opal::json::Encode(opal::Document(std::move(body_map)));
   request.headers.Set("content-type", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseRoundTripError(*response);
   RoundTripOutput out{};
-  auto body_doc = smithy::json::Decode(response->body);
+  auto body_doc = opal::json::Decode(response->body);
   if (!body_doc) return std::move(body_doc).error();
   auto parsed = DeserializeRoundTripOutput(*body_doc);
   if (!parsed) return std::move(parsed).error();
@@ -643,11 +643,11 @@ smithy::Outcome<RoundTripOutput> PizzaAdminServiceClient::RoundTrip(const RoundT
   return out;
 }
 
-smithy::Outcome<VersionOutput> PizzaAdminServiceClient::Version(const VersionInput& input) const {
+opal::Outcome<VersionOutput> PizzaAdminServiceClient::Version(const VersionInput& input) const {
   (void)input;
   std::string target = path_prefix_;
   target += "/version";
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
   request.headers.Set("accept", "application/json");
@@ -656,12 +656,12 @@ smithy::Outcome<VersionOutput> PizzaAdminServiceClient::Version(const VersionInp
   if (response->status != 200) return helpers::ParseVersionError(*response);
   VersionOutput out{};
   if (!response->body.empty()) {
-    auto payload_doc = smithy::json::Decode(response->body);
+    auto payload_doc = opal::json::Decode(response->body);
     if (!payload_doc) return std::move(payload_doc).error();
-    if (!payload_doc->is_string()) return smithy::Error::Serialization("expected a JSON string payload");
+    if (!payload_doc->is_string()) return opal::Error::Serialization("expected a JSON string payload");
     out.version = payload_doc->as_string();
   }
   return out;
 }
 
-}  // namespace smithy::protocoltests::simplerestjson
+}  // namespace opal::protocoltests::simplerestjson

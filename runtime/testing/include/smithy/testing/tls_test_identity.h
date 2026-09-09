@@ -27,7 +27,7 @@
 //     -subj "/CN=other.example.com"
 //     -addext "subjectAltName=DNS:other.example.com"
 
-namespace smithy::testing {
+namespace opal::testing {
 
 inline constexpr char kTestCertificatePem[] = R"pem(-----BEGIN CERTIFICATE-----
 MIIBmTCCAT+gAwIBAgIUV9JEHAQKR6U3ipSZd7B2JYm3AhYwCgYIKoZIzj0EAwIw
@@ -72,6 +72,6 @@ sjQDqORDjHUlEMiiDXgz4ZtY2GKhRANCAATaUMXuCmSupqLVRIfYNg2LwAq9GNyY
 -----END PRIVATE KEY-----
 )pem";
 
-}  // namespace smithy::testing
+}  // namespace opal::testing
 
 #endif  // SMITHY_TESTING_TLS_TEST_IDENTITY_H_

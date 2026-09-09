@@ -50,7 +50,7 @@ final class HttpJsonClientGenerator {
 
   void writeHelpers(CppWriter w) {
     ProtocolSupport.writeErrorSupport(
-        w, "auto doc = smithy::json::Decode(response.body);", errorTypeHeaderName);
+        w, "auto doc = opal::json::Decode(response.body);", errorTypeHeaderName);
     ProtocolSupport.writeNumericParseHelpers(w);
   }
 
@@ -84,25 +84,25 @@ final class HttpJsonClientGenerator {
       switch (target.getType()) {
         case STRING, ENUM ->
             w.write(
-                "parsed.doc.as_map().insert_or_assign($S, smithy::Document(*header_value));",
+                "parsed.doc.as_map().insert_or_assign($S, opal::Document(*header_value));",
                 wireName);
         // Document patching is best effort: malformed header values are
         // skipped, never failures.
         case BYTE, SHORT, INTEGER, LONG, INT_ENUM ->
             w.write(
                 "if (auto parsed_num = helpers::ParseInt64Text(*header_value, $L)) "
-                    + "parsed.doc.as_map().insert_or_assign($S, smithy::Document(*parsed_num));",
+                    + "parsed.doc.as_map().insert_or_assign($S, opal::Document(*parsed_num));",
                 ProtocolSupport.int64Bounds(target.getType()),
                 wireName);
         case FLOAT, DOUBLE ->
             w.write(
                 "if (auto parsed_num = helpers::ParseDoubleText(*header_value)) "
-                    + "parsed.doc.as_map().insert_or_assign($S, smithy::Document(*parsed_num));",
+                    + "parsed.doc.as_map().insert_or_assign($S, opal::Document(*parsed_num));",
                 wireName);
         case BOOLEAN ->
             w.write(
                 "parsed.doc.as_map().insert_or_assign($S, "
-                    + "smithy::Document(*header_value == \"true\"));",
+                    + "opal::Document(*header_value == \"true\"));",
                 wireName);
         default ->
             throw new CodegenException(
@@ -152,7 +152,7 @@ final class HttpJsonClientGenerator {
 
     writeTarget(w, context, serde, operation, http, labels, queries, queryParams, in);
 
-    w.write("smithy::http::HttpRequest request;");
+    w.write("opal::http::HttpRequest request;");
     w.write("request.method = $S;", http.getMethod());
     w.write("request.target = std::move(target);");
     for (HttpBinding binding : headers.values()) {
@@ -166,9 +166,9 @@ final class HttpJsonClientGenerator {
       HttpBindingCodeGen.writePayloadWrite(
           w, context, serde, operation, payload, in, "request", true);
     } else if (!body.isEmpty()) {
-      w.write("smithy::DocumentMap body_map;");
+      w.write("opal::DocumentMap body_map;");
       HttpBindingCodeGen.writeDocumentBodyMap(w, serde, body, in);
-      w.write("request.body = smithy::json::Encode(smithy::Document(std::move(body_map)));");
+      w.write("request.body = opal::json::Encode(opal::Document(std::move(body_map)));");
       w.write("request.headers.Set(\"content-type\", \"application/json\");");
     }
 
@@ -208,7 +208,7 @@ final class HttpJsonClientGenerator {
       if (allOptional) {
         w.write("if (response->body.empty()) return $L{};", outType);
       }
-      w.write("auto body_doc = smithy::json::Decode(response->body);");
+      w.write("auto body_doc = opal::json::Decode(response->body);");
       w.write("if (!body_doc) return std::move(body_doc).error();");
       w.write(
           "return Deserialize$L(*body_doc);", SerdeCodeGen.serdeFunctionSuffix(context, output));
@@ -228,7 +228,7 @@ final class HttpJsonClientGenerator {
       if (allOptional) {
         w.openBlock("if (!response->body.empty()) {");
       }
-      w.write("auto body_doc = smithy::json::Decode(response->body);");
+      w.write("auto body_doc = opal::json::Decode(response->body);");
       w.write("if (!body_doc) return std::move(body_doc).error();");
       w.write(
           "auto parsed = Deserialize$L(*body_doc);",
@@ -250,7 +250,7 @@ final class HttpJsonClientGenerator {
           (w2, member, deserializeMember) -> {
             // Clients are strict: a missing required member fails the exchange.
             w2.write(
-                "if ($L) return smithy::Error::Serialization($S);",
+                "if ($L) return opal::Error::Serialization($S);",
                 SerdeCodeGen.MEMBER_ABSENT,
                 "missing required member: " + member.getMemberName());
             deserializeMember.run();
@@ -267,7 +267,7 @@ final class HttpJsonClientGenerator {
         // Clients are strict about required headers, like required body members.
         w.write(
             "if (!response->headers.Get($S).has_value()) return "
-                + "smithy::Error::Serialization($S);",
+                + "opal::Error::Serialization($S);",
             binding.getLocationName(),
             "missing required header: " + binding.getLocationName());
       }
@@ -325,15 +325,15 @@ final class HttpJsonClientGenerator {
               context,
               binding.getMember(),
               in + "." + context.cppSymbols().toMemberName(binding.getMember()),
-              serde.timestampFormat(binding.getMember(), "smithy::TimestampFormat::kDateTime"));
+              serde.timestampFormat(binding.getMember(), "opal::TimestampFormat::kDateTime"));
       String encoder = segment.isGreedyLabel() ? "EncodeGreedyPathSegment" : "EncodePathSegment";
       w.write("target += \"/\";");
-      w.write("target += smithy::http::$L($L);", encoder, value);
+      w.write("target += opal::http::$L($L);", encoder, value);
     }
     boolean hasQuery =
         !queries.isEmpty() || queryParams != null || !http.getUri().getQueryLiterals().isEmpty();
     if (hasQuery) {
-      w.write("smithy::http::QueryString query;");
+      w.write("opal::http::QueryString query;");
       for (Map.Entry<String, String> literal :
           new TreeMap<>(http.getUri().getQueryLiterals()).entrySet()) {
         if (literal.getValue().isEmpty()) {
@@ -386,7 +386,7 @@ final class HttpJsonClientGenerator {
             w, context, input, context.cppSymbols().toSymbol(input).getName());
     writeTarget(
         w, context, serde, operation, http, req.labels(), req.queries(), req.queryParams(), in);
-    w.write("smithy::http::WebSocketDialRequest request;");
+    w.write("opal::http::WebSocketDialRequest request;");
     w.write("request.target = std::move(target);");
     for (HttpBinding binding : req.headers().values()) {
       HttpBindingCodeGen.writeHeaderWriteBinding(w, context, serde, binding, in, "request.headers");
@@ -423,7 +423,7 @@ final class HttpJsonClientGenerator {
               context,
               element,
               "item",
-              serde.timestampFormat(element, "smithy::TimestampFormat::kDateTime")));
+              serde.timestampFormat(element, "opal::TimestampFormat::kDateTime")));
       w.closeBlock("}");
     } else {
       w.write(
@@ -433,7 +433,7 @@ final class HttpJsonClientGenerator {
               context,
               member,
               access,
-              serde.timestampFormat(member, "smithy::TimestampFormat::kDateTime")));
+              serde.timestampFormat(member, "opal::TimestampFormat::kDateTime")));
     }
     if (!plain) {
       w.closeBlock("}");

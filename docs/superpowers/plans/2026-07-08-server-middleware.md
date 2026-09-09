@@ -535,20 +535,20 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
   int started = 0;
   int completed = 0;
   bool admit = true;
-  auto handler = smithy::server::Chain(
-      {smithy::server::Guard([&admit](const smithy::http::HttpRequest&) { return admit; },
-                             smithy::server::TooManyRequests(std::chrono::seconds(1))),
-       smithy::server::Observe(
-           [&completed](const smithy::server::RequestObservation&) { ++completed; },
-           [&started](const smithy::server::RequestStart&) { ++started; }),
-       smithy::server::HealthEndpoint()},
+  auto handler = opal::server::Chain(
+      {opal::server::Guard([&admit](const opal::http::HttpRequest&) { return admit; },
+                             opal::server::TooManyRequests(std::chrono::seconds(1))),
+       opal::server::Observe(
+           [&completed](const opal::server::RequestObservation&) { ++completed; },
+           [&started](const opal::server::RequestStart&) { ++started; }),
+       opal::server::HealthEndpoint()},
       server.Handler());
 
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(handler).ok());
 
   // Liveness answers without reaching the router, and is observed.
-  smithy::http::HttpRequest health;
+  opal::http::HttpRequest health;
   health.method = "GET";
   health.target = "/health";
   const auto health_response = loopback->Send(health);
@@ -557,7 +557,7 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
   EXPECT_EQ(health_response->body, R"({"status":"healthy"})");
 
   // The generated client works through the chain.
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto created = TodoClient::Create(std::move(config));
   ASSERT_TRUE(created.ok()) << created.error().message();
@@ -567,7 +567,7 @@ TEST(TodoMiddlewareTest, GuardObserveAndHealthComposeAroundTheServer) {
 
   // Once admit flips, Guard sheds load with the shaped 429 before Observe.
   admit = false;
-  smithy::http::HttpRequest denied;
+  opal::http::HttpRequest denied;
   denied.method = "POST";
   denied.target = "/tasks";
   const auto denied_response = loopback->Send(denied);
@@ -633,28 +633,28 @@ WeatherServer server(handler);
 // backend); the middleware owns only the composition point.
 auto limiter = std::make_shared<MyRateLimiter>(/* window, budget */);
 
-transport.Start(smithy::server::Chain(
+transport.Start(opal::server::Chain(
     {// Outermost: shed abusive traffic before it costs anything.
-     smithy::server::Guard(
-         [limiter](const smithy::http::HttpRequest& request) {
+     opal::server::Guard(
+         [limiter](const opal::http::HttpRequest& request) {
            return limiter->Allow(
                request.headers.Get("x-forwarded-for").value_or(""));
          },
-         smithy::server::TooManyRequests(std::chrono::seconds(30))),
+         opal::server::TooManyRequests(std::chrono::seconds(30))),
      // Observe everything admitted — health probes included. on_start
      // (optional) enables an in-flight gauge; on_complete carries
      // method/target/operation/status/duration/trace_parent.
-     smithy::server::Observe(
-         [](const smithy::server::RequestObservation& o) {
+     opal::server::Observe(
+         [](const opal::server::RequestObservation& o) {
            // gauge -1; count 1; latency o.duration — feed any backend.
          },
-         [](const smithy::server::RequestStart& s) {
+         [](const opal::server::RequestStart& s) {
            // gauge +1 (labeled by s.method/s.target; the operation is not
            // known until the router runs).
          }),
      // Liveness: GET /health -> 200 {"status":"healthy"}; everything else
      // passes through to the router.
-     smithy::server::HealthEndpoint()},
+     opal::server::HealthEndpoint()},
     server.Handler()));
 ```
 

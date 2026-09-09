@@ -26,22 +26,22 @@ using acme::tally::Totals;
 
 class TallyHandler final : public acme::tally::TallyAsyncHandler {
  public:
-  smithy::eventstream::StreamTask Count(CountInput input, CountAsyncServerStream& stream) override {
+  opal::eventstream::StreamTask Count(CountInput input, CountAsyncServerStream& stream) override {
     int total = input.start.value_or(0);
     while (true) {
       auto bump = co_await stream.Receive();
-      if (!bump.ok() || !bump->has_value()) co_return smithy::Unit{};
+      if (!bump.ok() || !bump->has_value()) co_return opal::Unit{};
       const int by = (**bump).as_bump().by;
-      if (by == 0) co_return smithy::Unit{};  // the terminal result, then the close
+      if (by == 0) co_return opal::Unit{};  // the terminal result, then the close
       total += by;
       if (total < 0) {
         // The terminal error envelope, typed all the way to the client.
-        smithy::Error busted = smithy::Error::Modeled("Busted", "the tally went negative");
+        opal::Error busted = opal::Error::Modeled("Busted", "the tally went negative");
         busted.set_detail(Busted{.message = "the tally went negative"});
         co_return busted;
       }
       auto sent = co_await stream.Send(Totals::FromTotal(Total{.value = total}));
-      if (!sent.ok()) co_return smithy::Unit{};
+      if (!sent.ok()) co_return opal::Unit{};
     }
   }
 };
@@ -59,14 +59,14 @@ int main(int argc, char** argv) {
   // registers on the shared-session seam; sessions park no handler thread.
   acme::tally::TallyServer server(std::make_shared<TallyHandler>());
 
-  smithy::http::BeastServerTransport::Options options;
+  opal::http::BeastServerTransport::Options options;
   options.address = "0.0.0.0";
   options.port = argc > 1 ? std::atoi(argv[1]) : 8080;  // 0 binds an ephemeral port
   options.handler_threads = 2;                          // launches only
   options.websocket_gate = server.StreamRouter()->Gate();
   options.on_websocket_session = server.StreamRouter()->ServeSession();
   options.websocket_raw_text_frames = true;  // the JSON-RPC text wire (ADR-0023)
-  smithy::http::BeastServerTransport transport(options);
+  opal::http::BeastServerTransport transport(options);
   auto started = transport.Start(server.Handler());
   if (!started.ok()) {
     std::fprintf(stderr, "tally: start failed: %s\n", started.error().message().c_str());

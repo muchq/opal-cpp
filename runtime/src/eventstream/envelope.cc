@@ -5,7 +5,7 @@
 
 #include "smithy/core/error.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 constexpr std::string_view kMessageTypeHeader = ":message-type";
@@ -91,4 +91,4 @@ Outcome<EventEnvelope> ParseEnvelope(const Message& message) {
   return envelope;
 }
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

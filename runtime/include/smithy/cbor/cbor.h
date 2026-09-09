@@ -5,7 +5,7 @@
 #include "smithy/core/document.h"
 #include "smithy/core/outcome.h"
 
-namespace smithy::cbor {
+namespace opal::cbor {
 
 // Encodes a Document as deterministic CBOR (RFC 8949): smallest-width
 // integers, definite lengths only, sorted map keys (inherent to DocumentMap),
@@ -19,6 +19,6 @@ Blob Encode(const Document& doc);
 // integers outside int64 range, truncated or trailing input.
 Outcome<Document> Decode(const Blob& bytes);
 
-}  // namespace smithy::cbor
+}  // namespace opal::cbor
 
 #endif  // SMITHY_CBOR_CBOR_H_

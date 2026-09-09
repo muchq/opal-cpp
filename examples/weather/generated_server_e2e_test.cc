@@ -31,10 +31,10 @@ namespace hw = example::weather::handwritten;
 // Reference implementation of the GENERATED handler interface.
 class ReferenceHandler : public WeatherHandler {
  public:
-  smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input,
+                                       const opal::server::RequestContext&) override {
     if (input.cityId != "seattle") {
-      smithy::Error error = smithy::Error::Modeled("NoSuchResource", "no city: " + input.cityId);
+      opal::Error error = opal::Error::Modeled("NoSuchResource", "no city: " + input.cityId);
       error.set_detail(NoSuchResource{.resourceType = "City"});
       return error;
     }
@@ -43,18 +43,18 @@ class ReferenceHandler : public WeatherHandler {
         .coordinates = CityCoordinates{.latitude = 47.6062F, .longitude = -122.3321F}};
   }
 
-  smithy::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<DeleteCityOutput> DeleteCity(const DeleteCityInput& input,
+                                             const opal::server::RequestContext&) override {
     if (input.cityId != "seattle") {
-      smithy::Error error = smithy::Error::Modeled("NoSuchResource", "no city: " + input.cityId);
+      opal::Error error = opal::Error::Modeled("NoSuchResource", "no city: " + input.cityId);
       error.set_detail(NoSuchResource{.resourceType = "City"});
       return error;
     }
     return DeleteCityOutput{};
   }
 
-  smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input,
-                                               const smithy::server::RequestContext&) override {
+  opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input,
+                                             const opal::server::RequestContext&) override {
     ListCitiesOutput out;
     if (!input.nextToken.has_value()) {
       out.items.push_back(CitySummary{.cityId = "seattle", .name = "Seattle"});
@@ -67,20 +67,20 @@ class ReferenceHandler : public WeatherHandler {
     return out;
   }
 
-  smithy::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input,
-                                                 const smithy::server::RequestContext&) override {
+  opal::Outcome<GetForecastOutput> GetForecast(const GetForecastInput& input,
+                                               const opal::server::RequestContext&) override {
     (void)input;
     return GetForecastOutput{.chanceOfRain = 0.75F};
   }
 
-  smithy::Outcome<GetCurrentTimeOutput> GetCurrentTime(
-      const GetCurrentTimeInput& input, const smithy::server::RequestContext&) override {
+  opal::Outcome<GetCurrentTimeOutput> GetCurrentTime(const GetCurrentTimeInput& input,
+                                                     const opal::server::RequestContext&) override {
     (void)input;
-    return GetCurrentTimeOutput{.time = smithy::Timestamp::FromEpochMilliseconds(1398796238500)};
+    return GetCurrentTimeOutput{.time = opal::Timestamp::FromEpochMilliseconds(1398796238500)};
   }
 
-  smithy::Outcome<GetReportOutput> GetReport(const GetReportInput& input,
-                                             const smithy::server::RequestContext&) override {
+  opal::Outcome<GetReportOutput> GetReport(const GetReportInput& input,
+                                           const opal::server::RequestContext&) override {
     // Echo the decoded path so tests can assert label-decoding fidelity.
     return GetReportOutput{.path = input.reportPath,
                            .sizeBytes = static_cast<std::int64_t>(input.reportPath.size())};
@@ -91,9 +91,9 @@ class GeneratedServerEndToEndTest : public testing::Test {
  protected:
   void SetUp() override {
     server_ = std::make_unique<WeatherServer>(std::make_shared<ReferenceHandler>());
-    auto loopback = std::make_shared<smithy::http::Loopback>();
+    auto loopback = std::make_shared<opal::http::Loopback>();
     ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.http_client = loopback;
     auto client = hw::WeatherClient::Create(std::move(config));
     ASSERT_TRUE(client.ok()) << client.error().message();
@@ -119,8 +119,8 @@ TEST_F(GeneratedServerEndToEndTest, GetCityRoundTrips) {
 // assert the status and correlation-id header the client abstraction hides.
 class ThrowingHandler : public ReferenceHandler {
  public:
-  smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input,
+                                       const opal::server::RequestContext&) override {
     (void)input;
     throw std::runtime_error("handler blew up mid-request");
   }
@@ -128,10 +128,10 @@ class ThrowingHandler : public ReferenceHandler {
 
 TEST(GeneratedServerFaultTest, ThrowingHandlerBecomesA500ThroughGeneratedDispatch) {
   WeatherServer server(std::make_shared<ThrowingHandler>());
-  smithy::http::Loopback loopback;
+  opal::http::Loopback loopback;
   ASSERT_TRUE(loopback.Start(server.Handler()).ok());
 
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "GET";
   request.target = "/cities/seattle";  // valid route → reaches GetCity
   const auto response = loopback.Send(request);
@@ -142,7 +142,7 @@ TEST(GeneratedServerFaultTest, ThrowingHandlerBecomesA500ThroughGeneratedDispatc
 
   // The server instance is still usable afterward: a well-behaved route works.
   WeatherServer healthy(std::make_shared<ReferenceHandler>());
-  smithy::http::Loopback ok_loopback;
+  opal::http::Loopback ok_loopback;
   ASSERT_TRUE(ok_loopback.Start(healthy.Handler()).ok());
   const auto ok = ok_loopback.Send(request);
   ASSERT_TRUE(ok.ok()) << ok.error().message();
@@ -151,26 +151,25 @@ TEST(GeneratedServerFaultTest, ThrowingHandlerBecomesA500ThroughGeneratedDispatc
 
 // A transport that fails transiently proves the generated client's retry
 // path end to end (Phase 7): the third attempt reaches the server.
-class FlakyTransport final : public smithy::http::HttpClient {
+class FlakyTransport final : public opal::http::HttpClient {
  public:
-  explicit FlakyTransport(std::shared_ptr<smithy::http::HttpClient> inner)
+  explicit FlakyTransport(std::shared_ptr<opal::http::HttpClient> inner)
       : inner_(std::move(inner)) {}
 
-  smithy::Outcome<smithy::http::HttpResponse> Send(
-      const smithy::http::HttpRequest& request) override {
-    if (++calls_ <= 2) return smithy::Error::Transport("transient outage");
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
+    if (++calls_ <= 2) return opal::Error::Transport("transient outage");
     return inner_->Send(request);
   }
 
  private:
-  std::shared_ptr<smithy::http::HttpClient> inner_;
+  std::shared_ptr<opal::http::HttpClient> inner_;
   int calls_ = 0;
 };
 
 TEST_F(GeneratedServerEndToEndTest, GeneratedClientRetriesTransientFailures) {
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = std::make_shared<FlakyTransport>(loopback);
   config.retry.sleep = [](std::chrono::milliseconds) {};  // instant for tests
   auto client = example::weather::WeatherClient::Create(std::move(config));
@@ -185,36 +184,36 @@ TEST_F(GeneratedServerEndToEndTest, GeneratedClientRetriesTransientFailures) {
 // rejects requests without it before the router runs, and Observe reports the
 // served request.
 TEST_F(GeneratedServerEndToEndTest, InterceptorAndMiddlewareCarryAuthAcrossTheWire) {
-  class BearerAuth final : public smithy::Interceptor {
+  class BearerAuth final : public opal::Interceptor {
    public:
-    void ModifyBeforeTransmit(smithy::http::HttpRequest& request, int) override {
+    void ModifyBeforeTransmit(opal::http::HttpRequest& request, int) override {
       request.headers.Set("authorization", "Bearer smoke-token");
     }
   };
 
-  std::vector<smithy::server::RequestObservation> observations;
-  auto require_auth = [](smithy::http::RequestHandler next) {
-    return [next = std::move(next)](const smithy::http::HttpRequest& request) {
+  std::vector<opal::server::RequestObservation> observations;
+  auto require_auth = [](opal::http::RequestHandler next) {
+    return [next = std::move(next)](const opal::http::HttpRequest& request) {
       if (request.headers.Get("authorization") != "Bearer smoke-token") {
-        smithy::http::HttpResponse response;
+        opal::http::HttpResponse response;
         response.status = 401;
         return response;
       }
       return next(request);
     };
   };
-  auto handler = smithy::server::Chain(
-      {require_auth, smithy::server::Observe([&](const smithy::server::RequestObservation& o) {
+  auto handler = opal::server::Chain(
+      {require_auth, opal::server::Observe([&](const opal::server::RequestObservation& o) {
          observations.push_back(o);
        })},
       server_->Handler());
 
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(handler).ok());
 
   // Without the interceptor the middleware rejects the call outright.
   {
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.http_client = loopback;
     config.retry.max_attempts = 1;
     auto client = example::weather::WeatherClient::Create(std::move(config));
@@ -223,7 +222,7 @@ TEST_F(GeneratedServerEndToEndTest, InterceptorAndMiddlewareCarryAuthAcrossTheWi
     ASSERT_FALSE(city.ok());
   }
 
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   config.interceptors.push_back(std::make_shared<BearerAuth>());
   auto client = example::weather::WeatherClient::Create(std::move(config));
@@ -242,15 +241,15 @@ TEST_F(GeneratedServerEndToEndTest, InterceptorAndMiddlewareCarryAuthAcrossTheWi
 // @httpBearerAuth end to end (Phase 7c): config.bearer_token feeds the
 // generated client; RequireBearerAuth guards the generated server.
 TEST_F(GeneratedServerEndToEndTest, BearerTokenFlowsFromConfigThroughAuthMiddleware) {
-  auto handler =
-      smithy::server::Chain({smithy::server::RequireBearerAuth(
-                                [](const std::string& token) { return token == "weather-token"; })},
-                            server_->Handler());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto handler = opal::server::Chain({opal::server::RequireBearerAuth([](const std::string& token) {
+                                       return token == "weather-token";
+                                     })},
+                                     server_->Handler());
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(handler).ok());
 
   {
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.http_client = loopback;
     config.retry.max_attempts = 1;
     auto anonymous = example::weather::WeatherClient::Create(std::move(config));
@@ -258,7 +257,7 @@ TEST_F(GeneratedServerEndToEndTest, BearerTokenFlowsFromConfigThroughAuthMiddlew
     EXPECT_FALSE(anonymous->GetCity(example::weather::GetCityInput{.cityId = "seattle"}).ok());
   }
 
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   config.bearer_token = [] { return std::string("weather-token"); };
   auto client = example::weather::WeatherClient::Create(std::move(config));
@@ -271,9 +270,9 @@ TEST_F(GeneratedServerEndToEndTest, BearerTokenFlowsFromConfigThroughAuthMiddlew
 // The generated @paginated paginator walks pages until the server stops
 // returning a next token (ReferenceHandler pages when pageSize < 2).
 TEST_F(GeneratedServerEndToEndTest, PaginatorWalksAllPages) {
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = example::weather::WeatherClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());
@@ -303,10 +302,10 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorWalksAllPages) {
 
 // Loopback-backed generated client over `handler`; the client's config keeps
 // the loopback transport alive.
-example::weather::WeatherClient MakeGeneratedClient(const smithy::http::RequestHandler& handler) {
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+example::weather::WeatherClient MakeGeneratedClient(const opal::http::RequestHandler& handler) {
+  auto loopback = std::make_shared<opal::http::Loopback>();
   loopback->Start(handler).value_or_die("starting loopback");
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = std::move(loopback);
   return example::weather::WeatherClient::Create(std::move(config))
       .value_or_die("creating generated weather client");
@@ -327,10 +326,10 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRangeForWalksAllPages) {
 TEST_F(GeneratedServerEndToEndTest, PaginatorRangeForYieldsTheErrorOnceThenEnds) {
   class FailsOnSecondPage final : public ReferenceHandler {
    public:
-    smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input,
-                                                 const smithy::server::RequestContext&) override {
+    opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input,
+                                               const opal::server::RequestContext&) override {
       if (input.nextToken.has_value()) {
-        return smithy::Error::Modeled("NoSuchResource", "page evaporated");
+        return opal::Error::Modeled("NoSuchResource", "page evaporated");
       }
       ListCitiesOutput out;
       out.items.push_back(CitySummary{.cityId = "page1", .name = "Page One"});
@@ -342,7 +341,7 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRangeForYieldsTheErrorOnceThenEnds)
   auto client = MakeGeneratedClient(server.Handler());
 
   std::vector<std::string> pages_seen;
-  std::optional<smithy::Error> failure;
+  std::optional<opal::Error> failure;
   for (auto& page : client.PaginateListCities(ListCitiesInput{})) {
     if (!page.ok()) {
       failure = page.error();
@@ -359,20 +358,21 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRangeForYieldsTheErrorOnceThenEnds)
 // context and observes its attempts; the server's Observe middleware reports
 // the matched operation and the incoming traceparent for correlation.
 TEST_F(GeneratedServerEndToEndTest, TraceContextAndOperationFlowThroughObservability) {
-  std::vector<smithy::server::RequestObservation> served;
-  auto handler = smithy::server::Chain(
-      {smithy::server::Observe(
-          [&](const smithy::server::RequestObservation& o) { served.push_back(o); })},
-      server_->Handler());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  std::vector<opal::server::RequestObservation> served;
+  auto handler =
+      opal::server::Chain({opal::server::Observe([&](const opal::server::RequestObservation& o) {
+                            served.push_back(o);
+                          })},
+                          server_->Handler());
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(handler).ok());
 
-  std::vector<smithy::AttemptObservation> attempts;
-  smithy::ClientConfig config;
+  std::vector<opal::AttemptObservation> attempts;
+  opal::ClientConfig config;
   config.http_client = loopback;
-  config.interceptors.push_back(smithy::PropagateTraceContext());
+  config.interceptors.push_back(opal::PropagateTraceContext());
   config.interceptors.push_back(
-      smithy::ObserveAttempts([&](const smithy::AttemptObservation& a) { attempts.push_back(a); }));
+      opal::ObserveAttempts([&](const opal::AttemptObservation& a) { attempts.push_back(a); }));
   auto client = example::weather::WeatherClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());
 
@@ -381,7 +381,7 @@ TEST_F(GeneratedServerEndToEndTest, TraceContextAndOperationFlowThroughObservabi
 
   ASSERT_EQ(served.size(), 1u);
   EXPECT_EQ(served[0].operation, "GetCity");
-  const auto trace = smithy::http::ParseTraceparent(served[0].trace_parent);
+  const auto trace = opal::http::ParseTraceparent(served[0].trace_parent);
   ASSERT_TRUE(trace.has_value()) << served[0].trace_parent;
   EXPECT_TRUE(trace->sampled);
 
@@ -391,7 +391,7 @@ TEST_F(GeneratedServerEndToEndTest, TraceContextAndOperationFlowThroughObservabi
   EXPECT_EQ(attempts[0].method, "GET");
 
   // Dispatch failures report an empty operation.
-  smithy::http::HttpRequest unrouted;
+  opal::http::HttpRequest unrouted;
   unrouted.method = "GET";
   unrouted.target = "/no/such/route";
   (void)handler(unrouted);
@@ -403,9 +403,9 @@ TEST_F(GeneratedServerEndToEndTest, TraceContextAndOperationFlowThroughObservabi
 // Greedy labels ({reportPath+}) keep their embedded slashes and decode
 // percent-encoded characters segment by segment.
 TEST_F(GeneratedServerEndToEndTest, GreedyLabelKeepsSlashesAndDecodes) {
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = example::weather::WeatherClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());
@@ -430,9 +430,9 @@ TEST_F(GeneratedServerEndToEndTest, GreedyLabelKeepsSlashesAndDecodes) {
 // URI-hostile values outside it are rejected by generated validation with a
 // clean 400 ValidationException, never a crash, mis-route, or mangled echo.
 TEST_F(GeneratedServerEndToEndTest, HostileLabelValuesSurviveTheRoundTrip) {
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = example::weather::WeatherClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());
@@ -470,8 +470,8 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRoundTripsHostileTokens) {
   static const std::string kNastyToken = "a b&c=d?e+f/g%h#i";
   class PagingHandler final : public ReferenceHandler {
    public:
-    smithy::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input,
-                                                 const smithy::server::RequestContext&) override {
+    opal::Outcome<ListCitiesOutput> ListCities(const ListCitiesInput& input,
+                                               const opal::server::RequestContext&) override {
       ListCitiesOutput out;
       if (!input.nextToken.has_value()) {
         out.items.push_back(CitySummary{.cityId = "page1", .name = "Page One"});
@@ -480,7 +480,7 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRoundTripsHostileTokens) {
       }
       // The token must arrive exactly as issued, through the query string.
       if (*input.nextToken != kNastyToken) {
-        return smithy::Error::Modeled("NoSuchResource", "token corrupted: " + *input.nextToken);
+        return opal::Error::Modeled("NoSuchResource", "token corrupted: " + *input.nextToken);
       }
       out.items.push_back(CitySummary{.cityId = "page2", .name = "Page Two"});
       return out;
@@ -488,9 +488,9 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRoundTripsHostileTokens) {
   };
 
   WeatherServer server(std::make_shared<PagingHandler>());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(server.Handler()).ok());
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = loopback;
   auto client = example::weather::WeatherClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());
@@ -516,24 +516,25 @@ TEST_F(GeneratedServerEndToEndTest, PaginatorRoundTripsHostileTokens) {
 // auth + observation middleware on the server. Client-side hooks see every
 // attempt; the server sees exactly one authorized request.
 TEST_F(GeneratedServerEndToEndTest, FullStackLayeringSurvivesRetries) {
-  std::vector<smithy::server::RequestObservation> served;
-  auto handler = smithy::server::Chain(
-      {smithy::server::RequireBearerAuth(
-           [](const std::string& token) { return token == "stack-token"; }),
-       smithy::server::Observe(
-           [&](const smithy::server::RequestObservation& o) { served.push_back(o); })},
-      server_->Handler());
-  auto loopback = std::make_shared<smithy::http::Loopback>();
+  std::vector<opal::server::RequestObservation> served;
+  auto handler =
+      opal::server::Chain({opal::server::RequireBearerAuth(
+                               [](const std::string& token) { return token == "stack-token"; }),
+                           opal::server::Observe([&](const opal::server::RequestObservation& o) {
+                             served.push_back(o);
+                           })},
+                          server_->Handler());
+  auto loopback = std::make_shared<opal::http::Loopback>();
   ASSERT_TRUE(loopback->Start(handler).ok());
 
-  std::vector<smithy::AttemptObservation> attempts;
-  smithy::ClientConfig config;
+  std::vector<opal::AttemptObservation> attempts;
+  opal::ClientConfig config;
   config.http_client = std::make_shared<FlakyTransport>(loopback);  // 2 failures first
   config.retry.sleep = [](std::chrono::milliseconds) {};
   config.bearer_token = [] { return std::string("stack-token"); };
-  config.interceptors.push_back(smithy::PropagateTraceContext());
+  config.interceptors.push_back(opal::PropagateTraceContext());
   config.interceptors.push_back(
-      smithy::ObserveAttempts([&](const smithy::AttemptObservation& a) { attempts.push_back(a); }));
+      opal::ObserveAttempts([&](const opal::AttemptObservation& a) { attempts.push_back(a); }));
   auto client = example::weather::WeatherClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());
 
@@ -549,14 +550,14 @@ TEST_F(GeneratedServerEndToEndTest, FullStackLayeringSurvivesRetries) {
   // Only the successful attempt reached the server, authorized and traced.
   ASSERT_EQ(served.size(), 1u);
   EXPECT_EQ(served[0].operation, "GetCity");
-  EXPECT_TRUE(smithy::http::ParseTraceparent(served[0].trace_parent).has_value());
+  EXPECT_TRUE(opal::http::ParseTraceparent(served[0].trace_parent).has_value());
 }
 
 TEST_F(GeneratedServerEndToEndTest, DeleteCityIs204WithNoBody) {
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "DELETE";
   request.target = "/cities/seattle";
-  const smithy::http::HttpResponse response = server_->Handler()(request);
+  const opal::http::HttpResponse response = server_->Handler()(request);
   EXPECT_EQ(response.status, 204);
   EXPECT_TRUE(response.body.empty()) << response.body;
   EXPECT_FALSE(response.headers.Get("content-type").has_value());
@@ -565,7 +566,7 @@ TEST_F(GeneratedServerEndToEndTest, DeleteCityIs204WithNoBody) {
 TEST_F(GeneratedServerEndToEndTest, ModeledErrorsGetTheirHttpStatusAndCode) {
   const auto city = client_->GetCity(hw::GetCityInput{.cityId = "atlantis"});
   ASSERT_FALSE(city.ok());
-  EXPECT_EQ(city.error().kind(), smithy::ErrorKind::kModeled);
+  EXPECT_EQ(city.error().kind(), opal::ErrorKind::kModeled);
   EXPECT_EQ(city.error().code(), "NoSuchResource");  // @httpError(404) on the wire
   EXPECT_EQ(city.error().message(), "no city: atlantis");
 }

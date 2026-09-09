@@ -14,7 +14,7 @@
 
 #include "smithy/http/http1.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 // Reads from an in-memory wire capture, `chunk` bytes per call, EOF after.
@@ -176,4 +176,4 @@ TEST(Http1HostileTest, StartLineHelpersMatchTheTransports) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

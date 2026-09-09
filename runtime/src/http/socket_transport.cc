@@ -16,7 +16,7 @@
 #include "smithy/http/http1.h"
 #include "smithy/http/server_dispatch.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 using SocketFd = int;
@@ -268,7 +268,7 @@ void SocketHttpServer::Shutdown() noexcept {
   stopping_ = true;
   // Teardown must not propagate out of a destructor; Contain swallows any
   // throw (and is a no-op wrapper under -fno-exceptions).
-  smithy::internal::Contain(
+  opal::internal::Contain(
       [&] {
         // Nudge the accept loop awake with a throwaway connection, then close.
         {
@@ -286,4 +286,4 @@ void SocketHttpServer::Shutdown() noexcept {
   handler_ = nullptr;
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

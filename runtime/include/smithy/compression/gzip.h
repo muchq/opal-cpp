@@ -7,7 +7,7 @@
 
 #include "smithy/core/outcome.h"
 
-namespace smithy {
+namespace opal {
 
 // Gzip-compresses data (@requestCompression request bodies). Inputs of any
 // size: bytes reach zlib's 32-bit counters in bounded slices, never through
@@ -20,6 +20,6 @@ Outcome<std::string> GzipCompress(std::string_view data);
 Outcome<std::string> GzipDecompress(std::string_view data,
                                     std::size_t max_output = std::size_t{64} * 1024 * 1024);
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_COMPRESSION_GZIP_H_

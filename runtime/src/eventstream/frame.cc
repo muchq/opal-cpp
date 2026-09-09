@@ -5,7 +5,7 @@
 #include "smithy/core/error.h"
 #include "smithy/core/overloaded.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 // The format's header wire-type tags. The two boolean tags map onto the
@@ -292,4 +292,4 @@ Outcome<std::optional<DecodedFrame>> DecodeMessage(std::string_view buffer) {
   return std::optional<DecodedFrame>(DecodedFrame{std::move(message), total});
 }
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

@@ -50,17 +50,16 @@ class StreamTestFixture : public testing::Test {
 
   void Start(std::unique_ptr<ChatServer> server, bool session_seam) {
     server_ = std::move(server);
-    auto loopback = std::make_shared<smithy::http::Loopback>();
+    auto loopback = std::make_shared<opal::http::Loopback>();
     ASSERT_TRUE(loopback->Start(server_->Handler()).ok());
-    smithy::ClientConfig config;
+    opal::ClientConfig config;
     config.retry.max_attempts = 1;
     config.http_client = loopback;  // the unary neighbor's transport
-    config.websocket_dialer = [this,
-                               session_seam](const smithy::http::WebSocketDialRequest& request)
-        -> smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> {
+    config.websocket_dialer = [this, session_seam](const opal::http::WebSocketDialRequest& request)
+        -> opal::Outcome<std::shared_ptr<opal::http::WebSocket>> {
       last_dialed_target_ = request.target;
-      auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
-      smithy::http::HttpRequest upgrade;
+      auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
+      opal::http::HttpRequest upgrade;
       upgrade.method = "GET";
       upgrade.target = request.target;
       upgrade.headers = request.headers;
@@ -91,7 +90,7 @@ class StreamTestFixture : public testing::Test {
   std::unique_ptr<ChatServer> server_;
   std::unique_ptr<ChatClient> client_;
   // Every dialed far end — closed in TearDown even when left unserved.
-  std::vector<std::shared_ptr<smithy::http::WebSocket>> sessions_;
+  std::vector<std::shared_ptr<opal::http::WebSocket>> sessions_;
   std::vector<std::thread> threads_;
   std::string last_dialed_target_;
   // Cleared by a test that wants the dialed pair's far end raw — held in

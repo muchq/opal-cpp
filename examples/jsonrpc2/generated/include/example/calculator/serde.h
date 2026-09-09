@@ -10,44 +10,44 @@
 namespace example::calculator {
 
 // Document-pivot serde for every aggregate shape in the model closure.
-// Serializers never fail; deserializers return smithy::Error on wire
+// Serializers never fail; deserializers return opal::Error on wire
 // mismatches and enforce @required members.
 
-smithy::Document SerializeTerm(const Term& value);
-smithy::Outcome<Term> DeserializeTerm(const smithy::Document& doc);
+opal::Document SerializeTerm(const Term& value);
+opal::Outcome<Term> DeserializeTerm(const opal::Document& doc);
 
-smithy::Document SerializeTerms(const Terms& value);
-smithy::Outcome<Terms> DeserializeTerms(const smithy::Document& doc);
+opal::Document SerializeTerms(const Terms& value);
+opal::Outcome<Terms> DeserializeTerms(const opal::Document& doc);
 
-smithy::Document SerializeAccumulateInput(const AccumulateInput& value);
-smithy::Outcome<AccumulateInput> DeserializeAccumulateInput(const smithy::Document& doc);
+opal::Document SerializeAccumulateInput(const AccumulateInput& value);
+opal::Outcome<AccumulateInput> DeserializeAccumulateInput(const opal::Document& doc);
 
-smithy::Document SerializeRunningTotal(const RunningTotal& value);
-smithy::Outcome<RunningTotal> DeserializeRunningTotal(const smithy::Document& doc);
+opal::Document SerializeRunningTotal(const RunningTotal& value);
+opal::Outcome<RunningTotal> DeserializeRunningTotal(const opal::Document& doc);
 
-smithy::Document SerializeTotals(const Totals& value);
-smithy::Outcome<Totals> DeserializeTotals(const smithy::Document& doc);
+opal::Document SerializeTotals(const Totals& value);
+opal::Outcome<Totals> DeserializeTotals(const opal::Document& doc);
 
-smithy::Document SerializeAccumulateOutput(const AccumulateOutput& value);
-smithy::Outcome<AccumulateOutput> DeserializeAccumulateOutput(const smithy::Document& doc);
+opal::Document SerializeAccumulateOutput(const AccumulateOutput& value);
+opal::Outcome<AccumulateOutput> DeserializeAccumulateOutput(const opal::Document& doc);
 
-smithy::Document SerializeOverflow(const Overflow& value);
-smithy::Outcome<Overflow> DeserializeOverflow(const smithy::Document& doc);
+opal::Document SerializeOverflow(const Overflow& value);
+opal::Outcome<Overflow> DeserializeOverflow(const opal::Document& doc);
 
-smithy::Document SerializeAddInput(const AddInput& value);
-smithy::Outcome<AddInput> DeserializeAddInput(const smithy::Document& doc);
+opal::Document SerializeAddInput(const AddInput& value);
+opal::Outcome<AddInput> DeserializeAddInput(const opal::Document& doc);
 
-smithy::Document SerializeAddOutput(const AddOutput& value);
-smithy::Outcome<AddOutput> DeserializeAddOutput(const smithy::Document& doc);
+opal::Document SerializeAddOutput(const AddOutput& value);
+opal::Outcome<AddOutput> DeserializeAddOutput(const opal::Document& doc);
 
-smithy::Document SerializeDivideInput(const DivideInput& value);
-smithy::Outcome<DivideInput> DeserializeDivideInput(const smithy::Document& doc);
+opal::Document SerializeDivideInput(const DivideInput& value);
+opal::Outcome<DivideInput> DeserializeDivideInput(const opal::Document& doc);
 
-smithy::Document SerializeDivideOutput(const DivideOutput& value);
-smithy::Outcome<DivideOutput> DeserializeDivideOutput(const smithy::Document& doc);
+opal::Document SerializeDivideOutput(const DivideOutput& value);
+opal::Outcome<DivideOutput> DeserializeDivideOutput(const opal::Document& doc);
 
-smithy::Document SerializeDivisionByZero(const DivisionByZero& value);
-smithy::Outcome<DivisionByZero> DeserializeDivisionByZero(const smithy::Document& doc);
+opal::Document SerializeDivisionByZero(const DivisionByZero& value);
+opal::Outcome<DivisionByZero> DeserializeDivisionByZero(const opal::Document& doc);
 
 }  // namespace example::calculator
 

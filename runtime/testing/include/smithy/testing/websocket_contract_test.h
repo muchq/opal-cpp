@@ -24,11 +24,11 @@
 //   struct Driver {
 //     // The implementation under test. Called once, may block until the
 //     // session exists.
-//     std::shared_ptr<smithy::http::WebSocket> Socket();
+//     std::shared_ptr<opal::http::WebSocket> Socket();
 //
 //     // Payload for wedge attempt `n` — sized so at most kWedgeAttempts of
 //     // them back the wire up.
-//     smithy::eventstream::Message BulkMessage(int n);
+//     opal::eventstream::Message BulkMessage(int n);
 //     static constexpr int kWedgeAttempts = ...;
 //
 //     // Drives a terminal transition from the far side (a peer close, a
@@ -56,7 +56,7 @@
 #include "smithy/eventstream/frame.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy::testing {
+namespace opal::testing {
 
 // A one-shot deadlined handoff. Deadlined rather than infinite because the
 // regressions these tests catch are deadlocks: a plain wait would hang out
@@ -466,6 +466,6 @@ REGISTER_TYPED_TEST_SUITE_P(WebSocketContractTest,
                             ASecondReceiveRefusesWhileATimedOneIsParked,
                             ASecondReceiveClassOperationRefusesWhileOneIsParked);
 
-}  // namespace smithy::testing
+}  // namespace opal::testing
 
 #endif  // SMITHY_TESTING_WEBSOCKET_CONTRACT_TEST_H_

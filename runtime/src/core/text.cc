@@ -1,6 +1,6 @@
 #include "smithy/core/text.h"
 
-namespace smithy {
+namespace opal {
 
 std::size_t Utf8CodePointCount(std::string_view text) {
   std::size_t count = 0;
@@ -11,4 +11,4 @@ std::size_t Utf8CodePointCount(std::string_view text) {
   return count;
 }
 
-}  // namespace smithy
+}  // namespace opal

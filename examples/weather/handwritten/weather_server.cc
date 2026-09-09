@@ -9,23 +9,23 @@
 namespace example::weather::handwritten {
 namespace {
 
-using smithy::Document;
-using smithy::Error;
-using smithy::ErrorKind;
-using smithy::http::HttpRequest;
-using smithy::http::HttpResponse;
-using smithy::server::MakeErrorResponse;
-using smithy::server::RequestContext;
+using opal::Document;
+using opal::Error;
+using opal::ErrorKind;
+using opal::http::HttpRequest;
+using opal::http::HttpResponse;
+using opal::server::MakeErrorResponse;
+using opal::server::RequestContext;
 
 HttpResponse ErrorToResponse(const Error& error) {
   if (error.kind() == ErrorKind::kModeled && error.code() == kNoSuchResourceCode) {
     HttpResponse response;
     response.status = 404;  // @httpError(404) on NoSuchResource
     response.headers.Set("content-type", "application/json");
-    smithy::DocumentMap body;
+    opal::DocumentMap body;
     body.emplace("__type", Document(error.code()));
     body.emplace("message", Document(error.message()));
-    response.body = smithy::json::Encode(Document(std::move(body)));
+    response.body = opal::json::Encode(Document(std::move(body)));
     return response;
   }
   if (error.kind() == ErrorKind::kValidation || error.kind() == ErrorKind::kSerialization) {
@@ -38,14 +38,14 @@ HttpResponse ErrorToResponse(const Error& error) {
 HttpResponse JsonResponse(const Document& doc) {
   HttpResponse response;
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(doc);
+  response.body = opal::json::Encode(doc);
   return response;
 }
 
 }  // namespace
 
 WeatherService::WeatherService(const std::shared_ptr<WeatherHandler>& handler)
-    : router_(std::make_shared<smithy::server::Router>()) {
+    : router_(std::make_shared<opal::server::Router>()) {
   // The route table below is conflict-free by construction, so Add cannot
   // fail; the generator emits the same table from the @http traits.
   (void)router_->Add("GET", "/cities/{cityId}",
@@ -82,7 +82,7 @@ WeatherService::WeatherService(const std::shared_ptr<WeatherHandler>& handler)
   });
 }
 
-smithy::http::RequestHandler WeatherService::Handler() const {
+opal::http::RequestHandler WeatherService::Handler() const {
   auto router = router_;
   return [router](const HttpRequest& request) { return router->Route(request); };
 }

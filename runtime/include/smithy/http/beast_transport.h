@@ -13,15 +13,15 @@
 #include "smithy/http/transport.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy {
+namespace opal {
 // smithy/client/config.h — forward-declared so this header stays includable
 // without the client headers. The library dependency is deliberate:
 // FromConfig is the ClientConfig→transport bridge, and it lives here because
 // only this side can construct a Beast client while :client stays Boost-free.
 struct ClientConfig;
-}  // namespace smithy
+}  // namespace opal
 
-namespace smithy::http {
+namespace opal::http {
 
 // Production HTTP/1.1 server transport on Boost.Beast/asio (ADR-0006):
 // concurrent connections on an asio thread pool (bounded by
@@ -32,7 +32,7 @@ namespace smithy::http {
 // This is what generated services should run on; WebSocket upgrades
 // (Phase 8) extend this transport.
 //
-//   smithy::http::BeastServerTransport server({.port = 8080});
+//   opal::http::BeastServerTransport server({.port = 8080});
 //   server.Start(service.Handler());
 //   ...
 //   server.Stop();
@@ -133,7 +133,7 @@ class BeastServerTransport : public HttpServerTransport {
     // RejectedRequest, before the rejection response is written). Runs on an
     // io thread, concurrently across connections — keep it cheap and
     // thread-safe; a throwing callback is contained and logged. Wire it to
-    // the same sink as smithy::server::Observe so over-limit abuse is
+    // the same sink as opal::server::Observe so over-limit abuse is
     // visible in the same metrics.
     std::function<void(const RejectedRequest&)> on_rejected{};
     // Observation hook for connections the transport terminated without a
@@ -236,10 +236,10 @@ class BeastServerTransport : public HttpServerTransport {
 // verification on by default. Thread-safe: concurrent Send() calls use
 // distinct connections.
 //
-//   smithy::ClientConfig config;
+//   opal::ClientConfig config;
 //   config.endpoint = "https://api.example.com";
 //   config.tls.ca_pem = corp_ca_pem;               // when not publicly trusted
-//   auto transport = smithy::http::BeastHttpClient::FromConfig(config);
+//   auto transport = opal::http::BeastHttpClient::FromConfig(config);
 //   if (!transport) { /* bad endpoint */ }
 //   config.http_client = *transport;               // the wire
 //   auto client = MyServiceClient::Create(std::move(config));
@@ -282,6 +282,6 @@ class BeastHttpClient : public HttpClient {
   std::shared_ptr<State> state_;
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_BEAST_TRANSPORT_H_

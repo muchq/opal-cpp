@@ -24,10 +24,10 @@
 #include "smithy/server/middleware.h"
 #include "smithy/testing/connection_event_recorder.h"
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
-using smithy::testing::ConnectionEventRecorder;
+using opal::testing::ConnectionEventRecorder;
 
 // Opens a loopback connection to `port` with a bounded receive timeout (and
 // SIGPIPE disarmed where SO_NOSIGPIPE exists); returns the fd, or -1.
@@ -1272,19 +1272,19 @@ TEST(BeastTransportTest, TheMetricsEndpointScrapesOverTheRealTransport) {
   // proves is that a scrape survives the transport — the exposition's own
   // content type reaches the client, and the traffic counted is the traffic
   // the transport actually served.
-  auto metrics = std::make_shared<smithy::server::MetricsRegistry>(
-      smithy::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
+  auto metrics = std::make_shared<opal::server::MetricsRegistry>(
+      opal::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
   BeastServerTransport server;
   ASSERT_TRUE(server
-                  .Start(smithy::server::Chain({smithy::server::MetricsEndpoint(metrics),
-                                                smithy::server::RecordMetrics(metrics)},
-                                               [](const HttpRequest&) {
-                                                 HttpResponse response;
-                                                 response.status = 200;
-                                                 response.operation = "GetThing";
-                                                 response.body = "ok";
-                                                 return response;
-                                               }))
+                  .Start(opal::server::Chain({opal::server::MetricsEndpoint(metrics),
+                                              opal::server::RecordMetrics(metrics)},
+                                             [](const HttpRequest&) {
+                                               HttpResponse response;
+                                               response.status = 200;
+                                               response.operation = "GetThing";
+                                               response.body = "ok";
+                                               return response;
+                                             }))
                   .ok());
 
   ASSERT_FALSE(
@@ -1321,19 +1321,19 @@ TEST(BeastTransportTest, AnOverLimitRejectionReachesTheMetricsScrape) {
   // over-limit flood would be invisible in the request counters. Wiring
   // on_rejected is what makes it visible, and only a real transport proves
   // the wiring — the rejection has no in-process caller to fake.
-  auto metrics = std::make_shared<smithy::server::MetricsRegistry>(
-      smithy::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
+  auto metrics = std::make_shared<opal::server::MetricsRegistry>(
+      opal::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
   BeastServerTransport server(BeastServerTransport::Options{
-      .max_body_bytes = 1024, .on_rejected = smithy::server::RecordRejections(metrics)});
+      .max_body_bytes = 1024, .on_rejected = opal::server::RecordRejections(metrics)});
   ASSERT_TRUE(server
-                  .Start(smithy::server::Chain({smithy::server::MetricsEndpoint(metrics),
-                                                smithy::server::RecordMetrics(metrics)},
-                                               [](const HttpRequest&) {
-                                                 HttpResponse response;
-                                                 response.status = 200;
-                                                 response.operation = "GetThing";
-                                                 return response;
-                                               }))
+                  .Start(opal::server::Chain({opal::server::MetricsEndpoint(metrics),
+                                              opal::server::RecordMetrics(metrics)},
+                                             [](const HttpRequest&) {
+                                               HttpResponse response;
+                                               response.status = 200;
+                                               response.operation = "GetThing";
+                                               return response;
+                                             }))
                   .ok());
 
   SocketHttpClient client("127.0.0.1", server.port());
@@ -1371,17 +1371,17 @@ TEST(BeastTransportTest, TheMetricsEndpointsHeadReportsTheGetsLength) {
   // Same framing hazard as the health endpoint below: MetricsEndpoint answers
   // HEAD itself, so it is on the handler to hand the transport a full body
   // and let the transport withhold the octets while keeping the length.
-  auto metrics = std::make_shared<smithy::server::MetricsRegistry>(
-      smithy::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
+  auto metrics = std::make_shared<opal::server::MetricsRegistry>(
+      opal::server::MetricsOptions{.enabled = true, .service_name = "todo-service"});
   BeastServerTransport server;
   ASSERT_TRUE(server
-                  .Start(smithy::server::Chain({smithy::server::MetricsEndpoint(metrics)},
-                                               [](const HttpRequest&) {
-                                                 HttpResponse response;
-                                                 response.status = 404;
-                                                 response.body = "no route";
-                                                 return response;
-                                               }))
+                  .Start(opal::server::Chain({opal::server::MetricsEndpoint(metrics)},
+                                             [](const HttpRequest&) {
+                                               HttpResponse response;
+                                               response.status = 404;
+                                               response.body = "no route";
+                                               return response;
+                                             }))
                   .ok());
 
   const std::string head =
@@ -1409,13 +1409,13 @@ TEST(BeastTransportTest, TheHealthEndpointsHeadReportsTheGetsLength) {
   // to the only question a HEAD asks.
   BeastServerTransport server;
   ASSERT_TRUE(server
-                  .Start(smithy::server::Chain({smithy::server::HealthEndpoint("/livez")},
-                                               [](const HttpRequest&) {
-                                                 HttpResponse response;
-                                                 response.status = 404;
-                                                 response.body = "no route";
-                                                 return response;
-                                               }))
+                  .Start(opal::server::Chain({opal::server::HealthEndpoint("/livez")},
+                                             [](const HttpRequest&) {
+                                               HttpResponse response;
+                                               response.status = 404;
+                                               response.body = "no route";
+                                               return response;
+                                             }))
                   .ok());
 
   const std::string head =
@@ -1521,4 +1521,4 @@ TEST(BeastTransportTest, OptionalFieldsCanBeOmittedFromDesignatedInitializers) {
 }
 
 }  // namespace
-}  // namespace smithy::http
+}  // namespace opal::http

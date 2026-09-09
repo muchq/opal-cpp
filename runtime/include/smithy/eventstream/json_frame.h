@@ -7,7 +7,7 @@
 #include "smithy/core/outcome.h"
 #include "smithy/eventstream/frame.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The negotiated JSON-text wire encoding (ADR-0018): the frame a browser
 // can speak with JSON.parse alone. A client offering this subprotocol on
@@ -48,6 +48,6 @@ Outcome<std::string> EncodeJsonFrame(const Message& message);
 // binary mode.
 Outcome<Message> DecodeJsonFrame(std::string_view text);
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_JSON_FRAME_H_

@@ -10,23 +10,23 @@
 namespace example::bookstore {
 
 // Document-pivot serde for every aggregate shape in the model closure.
-// Serializers never fail; deserializers return smithy::Error on wire
+// Serializers never fail; deserializers return opal::Error on wire
 // mismatches and enforce @required members.
 
-smithy::Document SerializeAddBookInput(const AddBookInput& value);
-smithy::Outcome<AddBookInput> DeserializeAddBookInput(const smithy::Document& doc);
+opal::Document SerializeAddBookInput(const AddBookInput& value);
+opal::Outcome<AddBookInput> DeserializeAddBookInput(const opal::Document& doc);
 
-smithy::Document SerializeAddBookOutput(const AddBookOutput& value);
-smithy::Outcome<AddBookOutput> DeserializeAddBookOutput(const smithy::Document& doc);
+opal::Document SerializeAddBookOutput(const AddBookOutput& value);
+opal::Outcome<AddBookOutput> DeserializeAddBookOutput(const opal::Document& doc);
 
-smithy::Document SerializeBookNotFound(const BookNotFound& value);
-smithy::Outcome<BookNotFound> DeserializeBookNotFound(const smithy::Document& doc);
+opal::Document SerializeBookNotFound(const BookNotFound& value);
+opal::Outcome<BookNotFound> DeserializeBookNotFound(const opal::Document& doc);
 
-smithy::Document SerializeGetBookInput(const GetBookInput& value);
-smithy::Outcome<GetBookInput> DeserializeGetBookInput(const smithy::Document& doc);
+opal::Document SerializeGetBookInput(const GetBookInput& value);
+opal::Outcome<GetBookInput> DeserializeGetBookInput(const opal::Document& doc);
 
-smithy::Document SerializeGetBookOutput(const GetBookOutput& value);
-smithy::Outcome<GetBookOutput> DeserializeGetBookOutput(const smithy::Document& doc);
+opal::Document SerializeGetBookOutput(const GetBookOutput& value);
+opal::Outcome<GetBookOutput> DeserializeGetBookOutput(const opal::Document& doc);
 
 }  // namespace example::bookstore
 

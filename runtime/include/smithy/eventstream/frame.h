@@ -15,7 +15,7 @@
 #include "smithy/core/print.h"
 #include "smithy/core/timestamp.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The event-stream message framing the protocol specs define event streams
 // against (ADR-0014): a CRC-guarded prelude, a typed header block, and an
@@ -28,7 +28,7 @@ namespace smithy::eventstream {
 // Timestamps and UUIDs are distinct value types rather than aliases of
 // long/byte-array, so a decoded header can never be confused across wire
 // types that share a C++ representation. The timestamp is the runtime's
-// one `smithy::Timestamp`, so headers and generated code trade timestamps
+// one `opal::Timestamp`, so headers and generated code trade timestamps
 // without a conversion; core has no UUID value type, so Uuid lives here.
 struct Uuid {
   std::array<std::uint8_t, 16> bytes{};
@@ -141,6 +141,6 @@ struct DecodedFrame {
 // unchecked optional dereference.
 Outcome<std::optional<DecodedFrame>> DecodeMessage(std::string_view buffer);
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_FRAME_H_

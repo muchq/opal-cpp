@@ -22,15 +22,15 @@ namespace {
 
 class Handler final : public CalculatorHandler {
  public:
-  smithy::Outcome<AddOutput> Add(const AddInput& input,
-                                 const smithy::server::RequestContext&) override {
+  opal::Outcome<AddOutput> Add(const AddInput& input,
+                               const opal::server::RequestContext&) override {
     return AddOutput{.sum = input.a + input.b};
   }
 
-  smithy::Outcome<DivideOutput> Divide(const DivideInput& input,
-                                       const smithy::server::RequestContext&) override {
+  opal::Outcome<DivideOutput> Divide(const DivideInput& input,
+                                     const opal::server::RequestContext&) override {
     if (input.divisor == 0) {
-      smithy::Error error = smithy::Error::Modeled("DivisionByZero", "division by zero");
+      opal::Error error = opal::Error::Modeled("DivisionByZero", "division by zero");
       error.set_detail(DivisionByZero{.message = "division by zero"});
       return error;
     }
@@ -40,16 +40,16 @@ class Handler final : public CalculatorHandler {
   // Streaming rides the WebSocket endpoint, not the POST wire this suite
   // drives; the stub keeps the interface implemented (stream_e2e_test.cc
   // owns the real flows).
-  smithy::Outcome<smithy::Unit> Accumulate(const AccumulateInput&, AccumulateServerStream& stream,
-                                           const smithy::server::RequestContext&) override {
+  opal::Outcome<opal::Unit> Accumulate(const AccumulateInput&, AccumulateServerStream& stream,
+                                       const opal::server::RequestContext&) override {
     stream.Close();
-    return smithy::Unit{};
+    return opal::Unit{};
   }
 };
 
-smithy::http::HttpResponse Call(const std::string& body) {
+opal::http::HttpResponse Call(const std::string& body) {
   CalculatorServer server(std::make_shared<Handler>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");
@@ -64,12 +64,12 @@ TEST(JsonRpc2InteropTest, HandRolledCallWithStringIdRoundTrips) {
   const auto response =
       Call(R"({"jsonrpc":"2.0","method":"Add","params":{"a":2,"b":3},"id":"abc-123"})");
   EXPECT_EQ(response.status, 200);
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   ASSERT_TRUE(doc.ok()) << response.body;
   ASSERT_TRUE(doc->is_map());
   EXPECT_EQ(doc->Find("jsonrpc")->as_string(), "2.0");
   EXPECT_EQ(doc->Find("id")->as_string(), "abc-123");
-  const smithy::Document* result = doc->Find("result");
+  const opal::Document* result = doc->Find("result");
   ASSERT_NE(result, nullptr) << response.body;
   EXPECT_EQ(result->Find("sum")->AsNumber(), 5.0);
 }
@@ -78,13 +78,13 @@ TEST(JsonRpc2InteropTest, ModeledErrorsArriveAsJsonRpcErrorObjects) {
   const auto response =
       Call(R"({"jsonrpc":"2.0","method":"Divide","params":{"dividend":1,"divisor":0},"id":7})");
   EXPECT_EQ(response.status, 200);  // JSON-RPC errors are HTTP 200 envelopes.
-  auto doc = smithy::json::Decode(response.body);
+  auto doc = opal::json::Decode(response.body);
   ASSERT_TRUE(doc.ok()) << response.body;
-  const smithy::Document* error = doc->Find("error");
+  const opal::Document* error = doc->Find("error");
   ASSERT_NE(error, nullptr) << response.body;
   EXPECT_EQ(error->Find("code")->as_int(), 422);  // @httpError(422)
   EXPECT_EQ(error->Find("message")->as_string(), "division by zero");
-  const smithy::Document* data = error->Find("data");
+  const opal::Document* data = error->Find("data");
   ASSERT_NE(data, nullptr);
   EXPECT_EQ(data->Find("__type")->as_string(), "example.calculator#DivisionByZero");
   EXPECT_EQ(doc->Find("id")->as_int(), 7);
@@ -92,34 +92,33 @@ TEST(JsonRpc2InteropTest, ModeledErrorsArriveAsJsonRpcErrorObjects) {
 
 // A JSON-RPC responder that was never generated from the model: it dispatches
 // on the envelope itself, the way any off-the-shelf JSON-RPC library would.
-class HandRolledPeer final : public smithy::http::HttpClient {
+class HandRolledPeer final : public opal::http::HttpClient {
  public:
-  smithy::Outcome<smithy::http::HttpResponse> Send(
-      const smithy::http::HttpRequest& request) override {
-    auto doc = smithy::json::Decode(request.body);
-    if (!doc.ok() || !doc->is_map()) return smithy::http::HttpResponse{400, {}, ""};
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
+    auto doc = opal::json::Decode(request.body);
+    if (!doc.ok() || !doc->is_map()) return opal::http::HttpResponse{400, {}, ""};
     last_envelope = *std::move(doc);
     const std::string& method = last_envelope.Find("method")->as_string();
     std::string result;
     if (method == "Add") {
-      const smithy::Document* params = last_envelope.Find("params");
+      const opal::Document* params = last_envelope.Find("params");
       const double sum = params->Find("a")->AsNumber() + params->Find("b")->AsNumber();
       result = R"({"jsonrpc":"2.0","result":{"sum":)" + std::to_string(sum) + R"(},"id":1})";
     } else {
       result = R"({"jsonrpc":"2.0","error":{"code":422,"message":"nope","data":)"
                R"({"__type":"example.calculator#DivisionByZero","message":"nope"}},"id":1})";
     }
-    smithy::http::HttpResponse response{200, {}, std::move(result)};
+    opal::http::HttpResponse response{200, {}, std::move(result)};
     response.headers.Set("content-type", "application/json");
     return response;
   }
 
-  smithy::Document last_envelope;
+  opal::Document last_envelope;
 };
 
 TEST(JsonRpc2InteropTest, GeneratedClientTalksToAHandRolledPeer) {
   auto peer = std::make_shared<HandRolledPeer>();
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = peer;
   auto client = CalculatorClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -146,10 +145,10 @@ TEST(JsonRpc2InteropTest, GeneratedClientTalksToAHandRolledPeer) {
 // 400 class. The constant is chosen so the pre-fix code lands *inside* the
 // 100-599 window (as a retryable 503): a value that truncates outside it
 // would classify as 400 under old and new code alike and pin nothing.
-class HugeErrorCodePeer final : public smithy::http::HttpClient {
+class HugeErrorCodePeer final : public opal::http::HttpClient {
  public:
-  smithy::Outcome<smithy::http::HttpResponse> Send(const smithy::http::HttpRequest&) override {
-    smithy::http::HttpResponse response{
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest&) override {
+    opal::http::HttpResponse response{
         200, {}, R"({"jsonrpc":"2.0","error":{"code":21474836983,"message":"kaboom"},"id":1})"};
     response.headers.Set("content-type", "application/json");
     return response;
@@ -157,7 +156,7 @@ class HugeErrorCodePeer final : public smithy::http::HttpClient {
 };
 
 TEST(JsonRpc2InteropTest, ErrorCodesBeyondInt32AreNotTruncatedIntoTheHttpRange) {
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = std::make_shared<HugeErrorCodePeer>();
   auto client = CalculatorClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -175,15 +174,15 @@ TEST(JsonRpc2InteropTest, ErrorCodesBeyondInt32AreNotTruncatedIntoTheHttpRange) 
 // one passes through untouched.
 TEST(JsonRpc2InteropTest, IdempotencyTokenAutoFills) {
   auto peer = std::make_shared<HandRolledPeer>();
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = peer;
   auto client = CalculatorClient::Create(std::move(config));
   ASSERT_TRUE(client.ok()) << client.error().message();
 
   (void)client->Divide(DivideInput{.dividend = 4, .divisor = 2});
-  const smithy::Document* params = peer->last_envelope.Find("params");
+  const opal::Document* params = peer->last_envelope.Find("params");
   ASSERT_NE(params, nullptr);
-  const smithy::Document* token = params->Find("requestToken");
+  const opal::Document* token = params->Find("requestToken");
   ASSERT_NE(token, nullptr) << "unset @idempotencyToken must be auto-filled";
   EXPECT_EQ(token->as_string().size(), 36u);  // UUIDv4 text form
 
@@ -200,25 +199,25 @@ TEST(JsonRpc2InteropTest, IdempotencyTokenAutoFills) {
 TEST(JsonRpc2InteropTest, EnvelopeDispatchThreadsTheRequestContext) {
   class ContextProbe final : public CalculatorHandler {
    public:
-    smithy::Outcome<AddOutput> Add(const AddInput&,
-                                   const smithy::server::RequestContext& context) override {
+    opal::Outcome<AddOutput> Add(const AddInput&,
+                                 const opal::server::RequestContext& context) override {
       const bool threaded = context.request != nullptr && context.request->method == "POST" &&
                             context.request->headers.Get("x-probe").value_or("") == "42";
       return AddOutput{.sum = threaded ? 1.0 : 0.0};
     }
-    smithy::Outcome<DivideOutput> Divide(const DivideInput&,
-                                         const smithy::server::RequestContext&) override {
+    opal::Outcome<DivideOutput> Divide(const DivideInput&,
+                                       const opal::server::RequestContext&) override {
       return DivideOutput{.quotient = 0};
     }
-    smithy::Outcome<smithy::Unit> Accumulate(const AccumulateInput&, AccumulateServerStream& stream,
-                                             const smithy::server::RequestContext&) override {
+    opal::Outcome<opal::Unit> Accumulate(const AccumulateInput&, AccumulateServerStream& stream,
+                                         const opal::server::RequestContext&) override {
       stream.Close();
-      return smithy::Unit{};
+      return opal::Unit{};
     }
   };
 
   CalculatorServer server(std::make_shared<ContextProbe>());
-  smithy::http::HttpRequest request;
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/";
   request.headers.Set("content-type", "application/json");

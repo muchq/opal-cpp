@@ -15,7 +15,7 @@ runs the whole corpus in CI. File naming is the suite's own convention:
   require that these don't crash or hang.
 
 The overriding invariant the test enforces for *every* file — `y_`, `n_`,
-and `i_` alike — is that `smithy::json::Decode` returns (an ok or an error),
+and `i_` alike — is that `opal::json::Decode` returns (an ok or an error),
 never crashes. That is the property that caught the nesting-depth stack
 overflow this suite was added alongside.
 

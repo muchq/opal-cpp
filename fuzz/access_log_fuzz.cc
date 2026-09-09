@@ -34,7 +34,7 @@ bool IsValidUtf8(const std::string& text) {
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   // Layout: method '\n' target '\n' operation '\n' extra-value '\n' traceparent.
   const std::string all(reinterpret_cast<const char*>(data), size);
-  smithy::server::RequestObservation o;
+  opal::server::RequestObservation o;
   std::string extra_value;
   std::string* fields[] = {&o.method, &o.target, &o.operation, &extra_value, &o.trace_parent};
   std::size_t start = 0;
@@ -46,10 +46,10 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   }
   o.status = size == 0 ? 0 : 100 + data[0] % 500;
   o.client.address = "203.0.113.7";
-  o.client.source = smithy::http::DerivedClient::Source::kForwarded;
+  o.client.source = opal::http::DerivedClient::Source::kForwarded;
 
   const std::string line =
-      smithy::server::FormatAccessLog(o, {{"service_name", "svc"}, {"tenant", extra_value}});
+      opal::server::FormatAccessLog(o, {{"service_name", "svc"}, {"tenant", extra_value}});
 
   // One object, strictly parsed, no trailing bytes. accept() is the strict
   // parser a collector would be: it rejects unescaped control characters and

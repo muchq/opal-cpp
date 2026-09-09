@@ -12,7 +12,7 @@
 #include "smithy/core/error.h"
 #include "smithy/core/fatal.h"
 
-namespace smithy {
+namespace opal {
 
 // Marker value for operations that succeed without producing anything.
 struct Unit {
@@ -117,13 +117,13 @@ class Outcome {
   std::variant<T, E> storage_;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 // One value, one hash — so Unit union members don't block a generated type's
 // std::hash, mirroring Unit's trivial operator<=> (issue #49).
 template <>
-struct std::hash<smithy::Unit> {
-  std::size_t operator()(smithy::Unit /*unit*/) const noexcept { return 0; }
+struct std::hash<opal::Unit> {
+  std::size_t operator()(opal::Unit /*unit*/) const noexcept { return 0; }
 };
 
 #endif  // SMITHY_CORE_OUTCOME_H_

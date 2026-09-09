@@ -14,7 +14,7 @@
 #include "smithy/eventstream/frame.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The vacant direction of a one-directional stream (ADR-0016): when an
 // operation models no event union for a direction, generated code
@@ -312,7 +312,7 @@ class EventStream {
 
   // A handle safe to hold beyond this stream's lifetime (issue #112) — the
   // hub seam: a handler passes Share() to a registry
-  // (smithy::server::SessionRegistry) instead of parking its borrowed
+  // (opal::server::SessionRegistry) instead of parking its borrowed
   // `stream&` in one. A cheap-copy value: all of a stream's handles (and
   // their copies) see one revocable view of the session; destroying the
   // stream closes the session and leaves them failing softly with
@@ -346,6 +346,6 @@ class EventStream {
   internal::SharedViewOwner view_;
 };
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_EVENT_STREAM_H_

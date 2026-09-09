@@ -16,10 +16,10 @@ Guard shared state (the quickstart's in-memory handler shows the minimal mutex p
 
 class MyHandler final : public example::weather::WeatherHandler {
  public:
-  smithy::Outcome<GetCityOutput> GetCity(const GetCityInput& input,
-                                         const smithy::server::RequestContext& context) override {
+  opal::Outcome<GetCityOutput> GetCity(const GetCityInput& input,
+                                         const opal::server::RequestContext& context) override {
     if (/* not found */) {
-      smithy::Error error = smithy::Error::Modeled("NoSuchResource", "no city: " + input.cityId);
+      opal::Error error = opal::Error::Modeled("NoSuchResource", "no city: " + input.cityId);
       error.set_detail(NoSuchResource{.resourceType = "City"});  // serializes the typed body
       return error;
     }
@@ -31,20 +31,20 @@ class MyHandler final : public example::weather::WeatherHandler {
 ```
 
 - **Request metadata**: the second parameter carries what the typed input doesn't model
-  (issue #46). `context.request` is the raw `smithy::http::HttpRequest`: read unmodeled
+  (issue #46). `context.request` is the raw `opal::http::HttpRequest`: read unmodeled
   headers (`context.request->headers.Get("x-tenant")`), the transport-stamped client
   address (`context.request->peer_address`, `"ip:port"`, empty on the in-memory Loopback),
   or the request's `traceparent` — always present and parseable behind a transport, since
   the ingress mints a root context when the client sent none (ADR-0011); parse it with
-  `smithy::http::ParseTraceparent` and `GenerateSpanId` (`smithy/http/trace_context.h`) to
+  `opal::http::ParseTraceparent` and `GenerateSpanId` (`smithy/http/trace_context.h`) to
   open child spans. `context.labels`
   and `context.query_params` hold the decoded routing captures. Handlers that need none of
   it leave the parameter unnamed. Behind a reverse proxy, derive the real client with
-  `smithy::http::ClientAddress` over a `TrustedProxies` set (`smithy/http/forwarded.h`,
+  `opal::http::ClientAddress` over a `TrustedProxies` set (`smithy/http/forwarded.h`,
   ADR-0012) instead of reading `x-forwarded-for` yourself — the raw header is
   client-authored.
 
-- **Modeled errors**: return `smithy::Error::Modeled("<ErrorShapeName>", message)`. The server
+- **Modeled errors**: return `opal::Error::Modeled("<ErrorShapeName>", message)`. The server
   maps the code to the shape's `@httpError` status (else 400/`@error("server")` → 500) and the
   protocol's error identity — simpleRestJson sets the neutral `X-Error-Type` header and serializes the
   detail as the body; rpcv2Cbor writes the fully qualified shape id as `__type` in the CBOR
@@ -60,26 +60,26 @@ class MyHandler final : public example::weather::WeatherHandler {
   layer: the exception is converted into a 500 whose `x-correlation-id` header is the
   request's trace id (ADR-0011), and the same id plus the exception's `what()` is written to
   `std::clog`. One throwing request fails alone — it never unwinds into the transport's I/O
-  thread and terminates the process. Prefer returning `smithy::Error` for expected failures;
+  thread and terminates the process. Prefer returning `opal::Error` for expected failures;
   the catch-all is a safety net, not a control path.
 
 ## Running a server
 
-The server is transport-agnostic: `Handler()` returns a `smithy::http::RequestHandler` that
+The server is transport-agnostic: `Handler()` returns a `opal::http::RequestHandler` that
 plugs into any `HttpServerTransport`:
 
 ```cpp
 example::weather::WeatherServer server(std::make_shared<MyHandler>());
 
-smithy::http::BeastServerTransport transport(options);  // production (ADR-0006)
+opal::http::BeastServerTransport transport(options);  // production (ADR-0006)
 transport.Start(server.Handler());
-// or smithy::http::Loopback for in-process tests. (SocketHttpServer is test-only: one
+// or opal::http::Loopback for in-process tests. (SocketHttpServer is test-only: one
 // connection at a time, loopback only — its Start() says so on std::clog.)
 ```
 
 Cross-cutting behavior (auth checks, request logging, metrics) wraps `server.Handler()` as
-user-supplied middleware — `smithy::server::Chain` composes it outside the generated router,
-and `smithy::server::Observe` is the built-in logging/metrics hook. See
+user-supplied middleware — `opal::server::Chain` composes it outside the generated router,
+and `opal::server::Observe` is the built-in logging/metrics hook. See
 [production-guide.md](production-guide.md).
 
 Routing (method + URI pattern from `@http`, greedy labels, 404/405 with `Allow`),
@@ -108,15 +108,15 @@ session fans out, and all of them share one view of it. A handle sends and close
 any thread while the session lives; once the handler has returned it fails softly with
 `Error::Transport` — exactly what a closed stream reports — so nothing dangles and
 nothing new can go wrong. The generated
-server exposes `StreamRouter()`, a `smithy::server::WebSocketRouter` with every streaming
+server exposes `StreamRouter()`, a `opal::server::WebSocketRouter` with every streaming
 route registered; mount it on the transport in two lines — the upgrade path deliberately
 bypasses the HTTP middleware chain (ADR-0015), so unary dispatch beside it is untouched:
 
 ```cpp
-smithy::http::BeastServerTransport::Options options;
+opal::http::BeastServerTransport::Options options;
 options.websocket_gate = server.StreamRouter()->Gate();  // 404/405 refusals pre-upgrade
 options.on_websocket = server.StreamRouter()->Serve();   // blocking per-session dispatch
-smithy::http::BeastServerTransport transport(options);
+opal::http::BeastServerTransport transport(options);
 transport.Start(server.Handler());                       // unary routes, same port
 ```
 
@@ -131,11 +131,11 @@ and comes back. A clean close is still `nullopt` and a broken wire still a
 while (true) {
   auto event = stream.Receive(std::chrono::seconds(1));
   if (!event.ok()) {
-    if (event.error().code() != "TimeoutError") return smithy::Unit{};  // wire gone
-    if (!PublishHeartbeat(stream)) return smithy::Unit{};
+    if (event.error().code() != "TimeoutError") return opal::Unit{};  // wire gone
+    if (!PublishHeartbeat(stream)) return opal::Unit{};
     continue;                                                           // quiet, not dead
   }
-  if (!event->has_value()) return smithy::Unit{};                       // clean close
+  if (!event->has_value()) return opal::Unit{};                       // clean close
   /* handle **event */
 }
 ```
@@ -159,12 +159,12 @@ route parses them — so a validation failure surfaces as a successful dial whos
 `Receive()` is a terminal `SerializationException`, not as a refused upgrade.
 
 Multi-client fan-out — "N connected players, the server pushes state to all of them" —
-is `smithy::server::SessionRegistry<Out>` (issue #112, ADR-0017), a thread-safe map of
+is `opal::server::SessionRegistry<Out>` (issue #112, ADR-0017), a thread-safe map of
 owning handles with a bounded outbound queue and a writer thread per session, so a
 broadcast never stalls a room behind the slowest client's TCP window:
 
 ```cpp
-smithy::server::SessionRegistry<RoomEvents> registry;
+opal::server::SessionRegistry<RoomEvents> registry;
 registry.Add(player_id, stream.Share());              // handler entry
 registry.SendTo(player_id, event);                    // queued, non-blocking
 registry.Broadcast(ids, [&](const auto& id) { return RedactFor(id); });  // per-recipient
@@ -193,14 +193,14 @@ Every session served through `on_websocket` parks one handler-pool thread for it
 lifetime, so `handler_threads` caps concurrent streams. The completion-driven seam removes
 that: set `Options::on_websocket_session` instead (exactly one of the two), receive the
 session as a `std::shared_ptr<WebSocket>`, launch a
-`smithy::eventstream::Detached` coroutine over
-`smithy::eventstream::AsyncEventStream<Out, In>`, and return — the session lives until a
+`opal::eventstream::Detached` coroutine over
+`opal::eventstream::AsyncEventStream<Out, In>`, and return — the session lives until a
 `Close`, the idle timeout, or `Stop()`:
 
 ```cpp
-smithy::eventstream::Detached Serve(Hub& hub, std::string id,
-                                    std::shared_ptr<smithy::http::WebSocket> socket) {
-  smithy::eventstream::AsyncEventStream<Out, In> stream(std::move(socket), Encode, Decode);
+opal::eventstream::Detached Serve(Hub& hub, std::string id,
+                                    std::shared_ptr<opal::http::WebSocket> socket) {
+  opal::eventstream::AsyncEventStream<Out, In> stream(std::move(socket), Encode, Decode);
   hub.registry().Add(id, stream.Share());              // the same handle, unchanged
   while (true) {
     auto event = co_await stream.Receive();            // parks no thread
@@ -210,8 +210,8 @@ smithy::eventstream::Detached Serve(Hub& hub, std::string id,
   hub.registry().Remove(id);
 }  // stream destroyed here: closes the session and revokes its handles
 
-options.on_websocket_session = [&hub](const smithy::http::HttpRequest& request,
-                                      std::shared_ptr<smithy::http::WebSocket> socket) {
+options.on_websocket_session = [&hub](const opal::http::HttpRequest& request,
+                                      std::shared_ptr<opal::http::WebSocket> socket) {
   Serve(hub, IdFor(request), std::move(socket));  // a Detached coroutine; returns immediately
 };
 ```
@@ -248,17 +248,17 @@ dispatcher).
 Everything above is the hand-mount shape — yours when the generator does not cover a
 transport or a wire. For a generated service, the generator now emits the whole thing:
 implement `<Service>AsyncHandler` — each streaming operation is a coroutine returning
-`smithy::eventstream::StreamTask` over the operation's `<Op>AsyncServerStream&`, unary
+`opal::eventstream::StreamTask` over the operation's `<Op>AsyncServerStream&`, unary
 operations keep their blocking signatures — construct `<Service>Server` with it, and
 mount the session seam:
 
 ```cpp
 class MyHandler final : public example::chat::ChatAsyncHandler {
-  smithy::eventstream::StreamTask Converse(example::chat::ConverseInput input,
+  opal::eventstream::StreamTask Converse(example::chat::ConverseInput input,
                                            example::chat::ConverseAsyncServerStream& stream) override {
     while (true) {
       auto event = co_await stream.Receive();
-      if (!event.ok() || !event->has_value()) co_return smithy::Unit{};
+      if (!event.ok() || !event->has_value()) co_return opal::Unit{};
       // ... co_await stream.Send(reply), registry fan-out via stream.Share() ...
     }
   }
@@ -313,11 +313,11 @@ e2e fixture is ~15 lines:
 
 ```cpp
 auto server = std::make_shared<ChatServer>(std::make_shared<MyHandler>());
-smithy::ClientConfig config;
-config.websocket_dialer = [&](const smithy::http::WebSocketDialRequest& request)
-    -> smithy::Outcome<std::shared_ptr<smithy::http::WebSocket>> {
-  auto [near, far] = smithy::http::InMemoryWebSocketPair::Create();
-  smithy::http::HttpRequest upgrade;                 // what a transport would deliver
+opal::ClientConfig config;
+config.websocket_dialer = [&](const opal::http::WebSocketDialRequest& request)
+    -> opal::Outcome<std::shared_ptr<opal::http::WebSocket>> {
+  auto [near, far] = opal::http::InMemoryWebSocketPair::Create();
+  opal::http::HttpRequest upgrade;                 // what a transport would deliver
   upgrade.method = "GET";
   upgrade.target = request.target;
   upgrade.headers = request.headers;
@@ -341,10 +341,10 @@ issue #113). Two additions to the mount above make a service browser-ready:
 
 ```cpp
 options.websocket_accept_json_frames = true;                     // negotiate the JSON wire
-options.websocket_gate = [origin = smithy::server::RequireOrigin({"https://muchq.com"}),
+options.websocket_gate = [origin = opal::server::RequireOrigin({"https://muchq.com"}),
                           router = server.StreamRouter()->Gate()](
-                             const smithy::http::HttpRequest& request)
-    -> std::optional<smithy::http::HttpResponse> {
+                             const opal::http::HttpRequest& request)
+    -> std::optional<opal::http::HttpResponse> {
   if (auto refusal = origin(request)) return refusal;            // hijacking defense first
   return router(request);                                        // then 404/405 routing
 };

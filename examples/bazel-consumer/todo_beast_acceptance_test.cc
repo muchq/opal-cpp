@@ -34,18 +34,18 @@ using acme::todo::NoSuchTask;
 using acme::todo::TodoClient;
 using acme::todo::TodoHandler;
 using acme::todo::TodoServer;
-using smithy::testing::kTestCertificatePem;
-using smithy::testing::kTestPrivateKeyPem;
+using opal::testing::kTestCertificatePem;
+using opal::testing::kTestPrivateKeyPem;
 
 // The blessed endpoint→FromConfig→Create wiring from the production guide,
 // shared by every test here: plain http by default, https when a trust
 // anchor is supplied.
-smithy::Outcome<TodoClient> MakeTodoClient(int port, const std::string& ca_pem = "") {
-  smithy::ClientConfig config;
+opal::Outcome<TodoClient> MakeTodoClient(int port, const std::string& ca_pem = "") {
+  opal::ClientConfig config;
   config.endpoint =
       std::string(ca_pem.empty() ? "http" : "https") + "://127.0.0.1:" + std::to_string(port);
   config.tls.ca_pem = ca_pem;
-  auto http_client = smithy::http::BeastHttpClient::FromConfig(config);
+  auto http_client = opal::http::BeastHttpClient::FromConfig(config);
   if (!http_client) return std::move(http_client).error();
   config.http_client = *http_client;
   return TodoClient::Create(std::move(config));
@@ -55,17 +55,17 @@ smithy::Outcome<TodoClient> MakeTodoClient(int port, const std::string& ca_pem =
 // "boom" title throws (the bug the framework must contain).
 class AcceptanceHandler final : public TodoHandler {
  public:
-  smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
+  opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput& input,
+                                       const opal::server::RequestContext&) override {
     if (input.title == "boom") {
       throw std::runtime_error("consumer handler bug");
     }
     return AddTaskOutput{.taskId = "task-1", .title = input.title};
   }
 
-  smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                         const smithy::server::RequestContext&) override {
-    smithy::Error error = smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+  opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                       const opal::server::RequestContext&) override {
+    opal::Error error = opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
     error.set_detail(NoSuchTask{.message = "no task: " + input.taskId});
     return error;
   }
@@ -79,8 +79,8 @@ class TodoBeastAcceptanceTest : public ::testing::Test {
  protected:
   void SetUp() override {
     server_ = std::make_unique<TodoServer>(std::make_shared<AcceptanceHandler>());
-    transport_ = std::make_unique<smithy::http::BeastServerTransport>(
-        smithy::http::BeastServerTransport::Options{
+    transport_ = std::make_unique<opal::http::BeastServerTransport>(
+        opal::http::BeastServerTransport::Options{
             .threads = 1, .handler_threads = 8, .drain_timeout_seconds = 5});
     ASSERT_TRUE(transport_->Start(server_->Handler()).ok());
 
@@ -92,7 +92,7 @@ class TodoBeastAcceptanceTest : public ::testing::Test {
   void TearDown() override { transport_->Stop(); }
 
   std::unique_ptr<TodoServer> server_;
-  std::unique_ptr<smithy::http::BeastServerTransport> transport_;
+  std::unique_ptr<opal::http::BeastServerTransport> transport_;
   std::unique_ptr<TodoClient> client_;
 };
 
@@ -112,9 +112,9 @@ TEST_F(TodoBeastAcceptanceTest, RoundTripsAndModeledErrorsWork) {
 // the generated server before the handler runs, and the generated client
 // serializes valid ones — the same generator output consumers ship.
 TEST_F(TodoBeastAcceptanceTest, NumericBoundsAreEnforcedOverTheRealSocket) {
-  smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
+  opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
   const auto post = [&raw](const std::string& body) {
-    smithy::http::HttpRequest request;
+    opal::http::HttpRequest request;
     request.method = "POST";
     request.target = "/tasks";
     request.headers.Set("content-type", "application/json");
@@ -163,8 +163,8 @@ TEST_F(TodoBeastAcceptanceTest, LifecycleStopsAndRestartsAcrossTransportGenerati
   transport_->Stop();
   EXPECT_LT(std::chrono::steady_clock::now() - begin, std::chrono::seconds(10));
 
-  smithy::http::BeastServerTransport second_generation(
-      smithy::http::BeastServerTransport::Options{.threads = 1, .handler_threads = 8});
+  opal::http::BeastServerTransport second_generation(
+      opal::http::BeastServerTransport::Options{.threads = 1, .handler_threads = 8});
   ASSERT_TRUE(second_generation.Start(server_->Handler()).ok());
   auto client = MakeTodoClient(second_generation.port());
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -191,19 +191,19 @@ TEST(TodoBeastMetadataTest, ContextArrivesOverTheProductionTransport) {
   // and loopback flavors are pinned in todo_integration_test.cc).
   class PeerProbe final : public TodoHandler {
    public:
-    smithy::Outcome<AddTaskOutput> AddTask(const AddTaskInput&,
-                                           const smithy::server::RequestContext& context) override {
+    opal::Outcome<AddTaskOutput> AddTask(const AddTaskInput&,
+                                         const opal::server::RequestContext& context) override {
       return AddTaskOutput{.taskId = "task-1", .title = context.request->peer_address};
     }
-    smithy::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
-                                           const smithy::server::RequestContext&) override {
-      return smithy::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
+    opal::Outcome<GetTaskOutput> GetTask(const GetTaskInput& input,
+                                         const opal::server::RequestContext&) override {
+      return opal::Error::Modeled("NoSuchTask", "no task: " + input.taskId);
     }
   };
 
   TodoServer server(std::make_shared<PeerProbe>());
-  smithy::http::BeastServerTransport transport(
-      smithy::http::BeastServerTransport::Options{.threads = 1});
+  opal::http::BeastServerTransport transport(
+      opal::http::BeastServerTransport::Options{.threads = 1});
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
   auto client = MakeTodoClient(transport.port());
   ASSERT_TRUE(client.ok()) << client.error().message();
@@ -218,19 +218,19 @@ TEST(TodoBeastMetadataTest, TransportRejectionsAreObservableFromAConsumerBuild) 
   // convention): an over-limit rejection that Observe middleware can never
   // see reaches the consumer's own hook.
   std::mutex mutex;
-  std::vector<smithy::http::BeastServerTransport::RejectedRequest> rejected;
+  std::vector<opal::http::BeastServerTransport::RejectedRequest> rejected;
   TodoServer server(std::make_shared<AcceptanceHandler>());
-  smithy::http::BeastServerTransport transport(smithy::http::BeastServerTransport::Options{
+  opal::http::BeastServerTransport transport(opal::http::BeastServerTransport::Options{
       .threads = 1,
       .max_body_bytes = 1024,
-      .on_rejected = [&](const smithy::http::BeastServerTransport::RejectedRequest& r) {
+      .on_rejected = [&](const opal::http::BeastServerTransport::RejectedRequest& r) {
         const std::lock_guard<std::mutex> lock(mutex);
         rejected.push_back(r);
       }});
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
 
-  smithy::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport.port()});
-  smithy::http::HttpRequest request;
+  opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport.port()});
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/tasks";
   request.headers.Set("content-type", "application/json");
@@ -251,17 +251,17 @@ TEST(TodoBeastMetadataTest, ConnectionEventsAreObservableFromAConsumerBuild) {
   // The on_connection_event knob at the module boundary (ADR-0013): a TLS
   // client speaking to a plain-http server never produces a request, so
   // only the transport can see it — as framing garbage (the ClientHello).
-  smithy::testing::ConnectionEventRecorder recorder;
+  opal::testing::ConnectionEventRecorder recorder;
   TodoServer server(std::make_shared<AcceptanceHandler>());
-  smithy::http::BeastServerTransport transport(smithy::http::BeastServerTransport::Options{
+  opal::http::BeastServerTransport transport(opal::http::BeastServerTransport::Options{
       .threads = 1, .on_connection_event = recorder.Hook()});
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
 
-  smithy::http::BeastHttpClient wrong_scheme({.host = "127.0.0.1",
-                                              .port = transport.port(),
-                                              .tls = true,
-                                              .tls_options = {.ca_pem = kTestCertificatePem}});
-  smithy::http::HttpRequest request;
+  opal::http::BeastHttpClient wrong_scheme({.host = "127.0.0.1",
+                                            .port = transport.port(),
+                                            .tls = true,
+                                            .tls_options = {.ca_pem = kTestCertificatePem}});
+  opal::http::HttpRequest request;
   request.method = "POST";
   request.target = "/tasks";
   const auto response = wrong_scheme.Send(request);
@@ -272,7 +272,7 @@ TEST(TodoBeastMetadataTest, ConnectionEventsAreObservableFromAConsumerBuild) {
     const std::lock_guard<std::mutex> lock(recorder.mutex);
     ASSERT_EQ(recorder.events.size(), 1u);
     EXPECT_EQ(recorder.events[0].kind,
-              smithy::http::BeastServerTransport::ConnectionEvent::Kind::kFramingError);
+              opal::http::BeastServerTransport::ConnectionEvent::Kind::kFramingError);
     EXPECT_EQ(recorder.events[0].peer_address.rfind("127.0.0.1:", 0), 0u)
         << recorder.events[0].peer_address;
   }
@@ -286,10 +286,10 @@ TEST(TodoBeastTlsAcceptanceTest, TlsTerminationServesTheGeneratedClient) {
   // pinned in the runtime suite) composes with the blessed FromConfig client
   // from a consumer build.
   TodoServer server(std::make_shared<AcceptanceHandler>());
-  smithy::http::BeastServerTransport transport(
-      smithy::http::BeastServerTransport::Options{.threads = 1,
-                                                  .tls_certificate_chain_pem = kTestCertificatePem,
-                                                  .tls_private_key_pem = kTestPrivateKeyPem});
+  opal::http::BeastServerTransport transport(
+      opal::http::BeastServerTransport::Options{.threads = 1,
+                                                .tls_certificate_chain_pem = kTestCertificatePem,
+                                                .tls_private_key_pem = kTestPrivateKeyPem});
   ASSERT_TRUE(transport.Start(server.Handler()).ok());
 
   auto client = MakeTodoClient(transport.port(), kTestCertificatePem);

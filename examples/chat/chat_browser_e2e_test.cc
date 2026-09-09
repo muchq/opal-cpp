@@ -36,7 +36,7 @@
 namespace example::chat {
 namespace {
 
-const std::string kJsonToken(smithy::eventstream::kJsonFramesSubprotocol);
+const std::string kJsonToken(opal::eventstream::kJsonFramesSubprotocol);
 constexpr char kAllowedOrigin[] = "https://muchq.com";
 
 // What a page on kAllowedOrigin does, and nothing more: offer the
@@ -99,19 +99,19 @@ class ChatBrowserEndToEndTest : public testing::Test {
  protected:
   void SetUp() override {
     server_ = std::make_unique<ChatServer>(std::make_shared<RoomHandler>());
-    smithy::http::BeastServerTransport::Options options;
+    opal::http::BeastServerTransport::Options options;
     // The production browser wiring (ADR-0018): origin allowlist first,
     // then the generated router's refusals; JSON-text negotiation on.
     options.websocket_gate =
-        [origin = smithy::server::RequireOrigin({kAllowedOrigin}),
+        [origin = opal::server::RequireOrigin({kAllowedOrigin}),
          router = server_->StreamRouter()->Gate()](
-            const smithy::http::HttpRequest& request) -> std::optional<smithy::http::HttpResponse> {
+            const opal::http::HttpRequest& request) -> std::optional<opal::http::HttpResponse> {
       if (auto refusal = origin(request)) return refusal;
       return router(request);
     };
     options.on_websocket = server_->StreamRouter()->Serve();
     options.websocket_accept_json_frames = true;
-    transport_ = std::make_unique<smithy::http::BeastServerTransport>(options);
+    transport_ = std::make_unique<opal::http::BeastServerTransport>(options);
     ASSERT_TRUE(transport_->Start(server_->Handler()).ok());
   }
 
@@ -120,7 +120,7 @@ class ChatBrowserEndToEndTest : public testing::Test {
   }
 
   std::unique_ptr<ChatServer> server_;
-  std::unique_ptr<smithy::http::BeastServerTransport> transport_;
+  std::unique_ptr<opal::http::BeastServerTransport> transport_;
 };
 
 TEST_F(ChatBrowserEndToEndTest, ABrowserConversesInJsonTextFrames) {
@@ -190,7 +190,7 @@ TEST_F(ChatBrowserEndToEndTest, ANativeClientStaysBinaryBesideTheBrowser) {
   // The generated client never offers the subprotocol: same port, same
   // gate chain (no Origin header — the allowlist only judges browsers),
   // binary wire as always.
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.retry.max_attempts = 1;
   config.endpoint = "http://127.0.0.1:" + std::to_string(transport_->port());
   auto client = ChatClient::Create(std::move(config));

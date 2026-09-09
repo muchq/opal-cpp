@@ -16,62 +16,62 @@
 namespace example::roundtrip::rest {
 
 // Document-pivot serde for every aggregate shape in the model closure.
-// Serializers never fail; deserializers return smithy::Error on wire
+// Serializers never fail; deserializers return opal::Error on wire
 // mismatches and enforce @required members.
 
-smithy::Document SerializeDescribeSinkError(const DescribeSinkError& value);
-smithy::Outcome<DescribeSinkError> DeserializeDescribeSinkError(const smithy::Document& doc);
+opal::Document SerializeDescribeSinkError(const DescribeSinkError& value);
+opal::Outcome<DescribeSinkError> DeserializeDescribeSinkError(const opal::Document& doc);
 
-smithy::Document SerializeDescribeSinkInput(const DescribeSinkInput& value);
-smithy::Outcome<DescribeSinkInput> DeserializeDescribeSinkInput(const smithy::Document& doc);
+opal::Document SerializeDescribeSinkInput(const DescribeSinkInput& value);
+opal::Outcome<DescribeSinkInput> DeserializeDescribeSinkInput(const opal::Document& doc);
 
-smithy::Document SerializeStringMap(const std::map<std::string, std::string>& value);
-smithy::Outcome<std::map<std::string, std::string>> DeserializeStringMap(const smithy::Document& doc);
+opal::Document SerializeStringMap(const std::map<std::string, std::string>& value);
+opal::Outcome<std::map<std::string, std::string>> DeserializeStringMap(const opal::Document& doc);
 
-smithy::Document SerializeNestedConfig(const NestedConfig& value);
-smithy::Outcome<NestedConfig> DeserializeNestedConfig(const smithy::Document& doc);
+opal::Document SerializeNestedConfig(const NestedConfig& value);
+opal::Outcome<NestedConfig> DeserializeNestedConfig(const opal::Document& doc);
 
-smithy::Document SerializeSinkChoice(const SinkChoice& value);
-smithy::Outcome<SinkChoice> DeserializeSinkChoice(const smithy::Document& doc);
+opal::Document SerializeSinkChoice(const SinkChoice& value);
+opal::Outcome<SinkChoice> DeserializeSinkChoice(const opal::Document& doc);
 
-smithy::Document SerializeStringList(const std::vector<std::string>& value);
-smithy::Outcome<std::vector<std::string>> DeserializeStringList(const smithy::Document& doc);
+opal::Document SerializeStringList(const std::vector<std::string>& value);
+opal::Outcome<std::vector<std::string>> DeserializeStringList(const opal::Document& doc);
 
-smithy::Document SerializeSparseIntegerList(const std::vector<std::optional<std::int32_t>>& value);
-smithy::Outcome<std::vector<std::optional<std::int32_t>>> DeserializeSparseIntegerList(const smithy::Document& doc);
+opal::Document SerializeSparseIntegerList(const std::vector<std::optional<std::int32_t>>& value);
+opal::Outcome<std::vector<std::optional<std::int32_t>>> DeserializeSparseIntegerList(const opal::Document& doc);
 
-smithy::Document SerializeUniqueStringList(const std::vector<std::string>& value);
-smithy::Outcome<std::vector<std::string>> DeserializeUniqueStringList(const smithy::Document& doc);
+opal::Document SerializeUniqueStringList(const std::vector<std::string>& value);
+opal::Outcome<std::vector<std::string>> DeserializeUniqueStringList(const opal::Document& doc);
 
-smithy::Document SerializeKitchenSink(const KitchenSink& value);
-smithy::Outcome<KitchenSink> DeserializeKitchenSink(const smithy::Document& doc);
+opal::Document SerializeKitchenSink(const KitchenSink& value);
+opal::Outcome<KitchenSink> DeserializeKitchenSink(const opal::Document& doc);
 
-smithy::Document SerializeDescribeSinkOutput(const DescribeSinkOutput& value);
-smithy::Outcome<DescribeSinkOutput> DeserializeDescribeSinkOutput(const smithy::Document& doc);
+opal::Document SerializeDescribeSinkOutput(const DescribeSinkOutput& value);
+opal::Outcome<DescribeSinkOutput> DeserializeDescribeSinkOutput(const opal::Document& doc);
 
-smithy::Document SerializeSinkNotFound(const SinkNotFound& value);
-smithy::Outcome<SinkNotFound> DeserializeSinkNotFound(const smithy::Document& doc);
+opal::Document SerializeSinkNotFound(const SinkNotFound& value);
+opal::Outcome<SinkNotFound> DeserializeSinkNotFound(const opal::Document& doc);
 
-smithy::Document SerializePutSinkInput(const PutSinkInput& value);
-smithy::Outcome<PutSinkInput> DeserializePutSinkInput(const smithy::Document& doc);
+opal::Document SerializePutSinkInput(const PutSinkInput& value);
+opal::Outcome<PutSinkInput> DeserializePutSinkInput(const opal::Document& doc);
 
-smithy::Document SerializePutSinkResponse(const PutSinkResponse& value);
-smithy::Outcome<PutSinkResponse> DeserializePutSinkResponse(const smithy::Document& doc);
+opal::Document SerializePutSinkResponse(const PutSinkResponse& value);
+opal::Outcome<PutSinkResponse> DeserializePutSinkResponse(const opal::Document& doc);
 
-smithy::Document SerializePutSinkOutput(const PutSinkOutput& value);
-smithy::Outcome<PutSinkOutput> DeserializePutSinkOutput(const smithy::Document& doc);
+opal::Document SerializePutSinkOutput(const PutSinkOutput& value);
+opal::Outcome<PutSinkOutput> DeserializePutSinkOutput(const opal::Document& doc);
 
-smithy::Document SerializeSinkQuotaExceeded(const SinkQuotaExceeded& value);
-smithy::Outcome<SinkQuotaExceeded> DeserializeSinkQuotaExceeded(const smithy::Document& doc);
+opal::Document SerializeSinkQuotaExceeded(const SinkQuotaExceeded& value);
+opal::Outcome<SinkQuotaExceeded> DeserializeSinkQuotaExceeded(const opal::Document& doc);
 
-smithy::Document SerializeReceipt(const Receipt& value);
-smithy::Outcome<Receipt> DeserializeReceipt(const smithy::Document& doc);
+opal::Document SerializeReceipt(const Receipt& value);
+opal::Outcome<Receipt> DeserializeReceipt(const opal::Document& doc);
 
-smithy::Document SerializeUploadAttachmentInput(const UploadAttachmentInput& value);
-smithy::Outcome<UploadAttachmentInput> DeserializeUploadAttachmentInput(const smithy::Document& doc);
+opal::Document SerializeUploadAttachmentInput(const UploadAttachmentInput& value);
+opal::Outcome<UploadAttachmentInput> DeserializeUploadAttachmentInput(const opal::Document& doc);
 
-smithy::Document SerializeUploadAttachmentOutput(const UploadAttachmentOutput& value);
-smithy::Outcome<UploadAttachmentOutput> DeserializeUploadAttachmentOutput(const smithy::Document& doc);
+opal::Document SerializeUploadAttachmentOutput(const UploadAttachmentOutput& value);
+opal::Outcome<UploadAttachmentOutput> DeserializeUploadAttachmentOutput(const opal::Document& doc);
 
 }  // namespace example::roundtrip::rest
 

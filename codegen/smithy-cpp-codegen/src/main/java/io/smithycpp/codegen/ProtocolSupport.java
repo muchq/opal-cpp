@@ -17,7 +17,7 @@ import software.amazon.smithy.model.traits.RetryableTrait;
 final class ProtocolSupport {
 
   /** The handler methods' second parameter (ADR-0010), spelled once. */
-  static final String REQUEST_CONTEXT_PARAM = "const smithy::server::RequestContext&";
+  static final String REQUEST_CONTEXT_PARAM = "const opal::server::RequestContext&";
 
   /**
    * Opens a generated test-stub handler override — the one signature every test generator's handler
@@ -26,7 +26,7 @@ final class ProtocolSupport {
   static void openTestHandlerOverride(
       CppWriter w, String outputType, String opName, String inputType) {
     w.openBlock(
-        "smithy::Outcome<$L> $L(const $L& input, $L) override {",
+        "opal::Outcome<$L> $L(const $L& input, $L) override {",
         outputType,
         opName,
         inputType,
@@ -78,20 +78,20 @@ final class ProtocolSupport {
     w.write("int status = 0;");
     w.write("std::string code = \"UnknownError\";");
     w.write("std::string message;");
-    w.write("smithy::Document doc;");
+    w.write("opal::Document doc;");
     w.closeBlock("};");
     w.write("");
   }
 
-  /** Emits GenericError: the fallback smithy::Error for unrecognized wire errors. */
+  /** Emits GenericError: the fallback opal::Error for unrecognized wire errors. */
   static void writeGenericError(CppWriter w) {
-    w.openBlock("smithy::Error GenericError(ParsedError parsed) {");
+    w.openBlock("opal::Error GenericError(ParsedError parsed) {");
     w.write("const bool retryable = parsed.status >= 500;");
     w.write(
-        "if (parsed.code == \"UnknownError\") return smithy::Error(smithy::ErrorKind::kUnknown, "
+        "if (parsed.code == \"UnknownError\") return opal::Error(opal::ErrorKind::kUnknown, "
             + "std::move(parsed.code), std::move(parsed.message), retryable);");
     w.write(
-        "return smithy::Error::Modeled(std::move(parsed.code), std::move(parsed.message), "
+        "return opal::Error::Modeled(std::move(parsed.code), std::move(parsed.message), "
             + "retryable);");
     w.closeBlock("}");
     w.write("");
@@ -109,7 +109,7 @@ final class ProtocolSupport {
     w.write("// [[maybe_unused]]: only unary response paths parse wire errors; a");
     w.write("// service whose operations all stream never calls this.");
     w.openBlock(
-        "[[maybe_unused]] ParsedError ParseError(const smithy::http::HttpResponse& response) {");
+        "[[maybe_unused]] ParsedError ParseError(const opal::http::HttpResponse& response) {");
     w.write("ParsedError parsed;");
     w.write("parsed.status = response.status;");
     w.write("parsed.message = \"HTTP \" + std::to_string(response.status);");
@@ -121,12 +121,12 @@ final class ProtocolSupport {
           "if (type_header.has_value()) parsed.code = helpers::SanitizeErrorCode(*type_header);");
     }
     w.openBlock("if (parsed.doc.is_map()) {");
-    w.write("const smithy::Document* type = parsed.doc.Find(\"__type\");");
+    w.write("const opal::Document* type = parsed.doc.Find(\"__type\");");
     w.write("if (type == nullptr) type = parsed.doc.Find(\"code\");");
     w.write(
         "if (parsed.code == \"UnknownError\" && type != nullptr && type->is_string()) "
             + "parsed.code = helpers::SanitizeErrorCode(type->as_string());");
-    w.write("const smithy::Document* text = parsed.doc.Find(\"message\");");
+    w.write("const opal::Document* text = parsed.doc.Find(\"message\");");
     w.write("if (text != nullptr && text->is_string()) parsed.message = text->as_string();");
     w.closeBlock("}");
     w.write("return parsed;");
@@ -146,7 +146,7 @@ final class ProtocolSupport {
     w.write("// Trailing text, floats-for-ints, and out-of-range values are rejected");
     w.write("// (the malformed-request suites pin this).");
     w.openBlock(
-        "[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, "
+        "[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, "
             + "std::int64_t min_value, std::int64_t max_value) {");
     w.write("std::int64_t value = 0;");
     w.write("const char* first = text.data();");
@@ -156,7 +156,7 @@ final class ProtocolSupport {
         "if (text.empty() || result.ec != std::errc() || result.ptr != last || "
             + "value < min_value || value > max_value) {");
     w.indent();
-    w.write("return smithy::Error::Serialization(\"invalid integer: \" + text);");
+    w.write("return opal::Error::Serialization(\"invalid integer: \" + text);");
     w.dedent();
     w.write("}");
     w.write("return value;");
@@ -166,7 +166,7 @@ final class ProtocolSupport {
     // pair a strict character-set check (rejects hex, inf/nan spellings, and
     // leading '+'/whitespace strtod would accept) with a fully-consuming strtod.
     w.openBlock(
-        "[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {");
+        "[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {");
     w.write("if (text == \"NaN\") return std::numeric_limits<double>::quiet_NaN();");
     w.write("if (text == \"Infinity\") return std::numeric_limits<double>::infinity();");
     w.write("if (text == \"-Infinity\") return -std::numeric_limits<double>::infinity();");
@@ -178,12 +178,12 @@ final class ProtocolSupport {
     w.openBlock(
         "if (text.empty() || text.front() == '+' || "
             + "!std::all_of(text.begin(), text.end(), valid_char)) {");
-    w.write("return smithy::Error::Serialization(\"invalid number: \" + text);");
+    w.write("return opal::Error::Serialization(\"invalid number: \" + text);");
     w.closeBlock("}");
     w.write("char* parse_end = nullptr;");
     w.write("const double value = std::strtod(text.c_str(), &parse_end);");
     w.openBlock("if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {");
-    w.write("return smithy::Error::Serialization(\"invalid number: \" + text);");
+    w.write("return opal::Error::Serialization(\"invalid number: \" + text);");
     w.closeBlock("}");
     w.write("return value;");
     w.closeBlock("}");
@@ -253,7 +253,7 @@ final class ProtocolSupport {
     w.openBlock(
         "if (request.body.size() >= "
             + "static_cast<std::size_t>(config_.request_min_compression_size_bytes)) {");
-    w.write("auto compressed = smithy::GzipCompress(request.body);");
+    w.write("auto compressed = opal::GzipCompress(request.body);");
     w.write("if (!compressed) return std::move(compressed).error();");
     w.write("request.body = *std::move(compressed);");
     w.write("const auto existing_encoding = request.headers.Get(\"content-encoding\");");
@@ -287,7 +287,7 @@ final class ProtocolSupport {
         "if (const auto request_encoding = request.headers.Get(\"content-encoding\"); "
             + "request_encoding.has_value() && (*request_encoding == \"gzip\" || "
             + "request_encoding->ends_with(\", gzip\"))) {");
-    w.write("auto decompressed = smithy::GzipDecompress(request.body);");
+    w.write("auto decompressed = opal::GzipDecompress(request.body);");
     w.openBlock("if (!decompressed) {");
     w.write(
         "return helpers::$L($L, $S, \"invalid gzip request body\", {}$L);",
@@ -320,12 +320,12 @@ final class ProtocolSupport {
       String extraHeaderName,
       String extraHeaderValue) {
     w.openBlock(
-        "smithy::http::HttpResponse $L(int status, const std::string& code, "
-            + "const std::string& message, smithy::DocumentMap body) {",
+        "opal::http::HttpResponse $L(int status, const std::string& code, "
+            + "const std::string& message, opal::DocumentMap body) {",
         name);
-    w.write("if (!code.empty()) body.insert_or_assign(\"__type\", smithy::Document(code));");
-    w.write("if (!message.empty()) body.insert_or_assign(\"message\", smithy::Document(message));");
-    w.write("smithy::http::HttpResponse response;");
+    w.write("if (!code.empty()) body.insert_or_assign(\"__type\", opal::Document(code));");
+    w.write("if (!message.empty()) body.insert_or_assign(\"message\", opal::Document(message));");
+    w.write("opal::http::HttpResponse response;");
     w.write("response.status = status;");
     if (!extraHeaderName.isEmpty()) {
       w.write("response.headers.Set($S, $S);", extraHeaderName, extraHeaderValue);
@@ -345,7 +345,7 @@ final class ProtocolSupport {
   static String writeRpcRequestPrelude(CppWriter w, CppContext context, StructureShape input) {
     String in =
         prepareIdempotencyTokens(w, context, input, context.cppSymbols().toSymbol(input).getName());
-    w.write("smithy::http::HttpRequest request;");
+    w.write("opal::http::HttpRequest request;");
     w.write("request.method = \"POST\";");
     return in;
   }
@@ -460,7 +460,7 @@ final class ProtocolSupport {
 
   /**
    * Positional variant behind the {@link ErrorResponseSpec} entry point: {@code extraParams} is
-   * appended to ErrorToResponse's signature (e.g. ", const smithy::Document& id") and {@code
+   * appended to ErrorToResponse's signature (e.g. ", const opal::Document& id") and {@code
    * extraArgs} to every {@code errorBodyFn} call (e.g. ", id"). jsonRpc2 uses this to echo the
    * request id into error envelopes.
    */
@@ -486,18 +486,18 @@ final class ProtocolSupport {
     w.write("// [[maybe_unused]]: only unary routes map handler errors here; a service");
     w.write("// whose operations all stream reports errors on the stream instead.");
     w.openBlock(
-        "[[maybe_unused]] smithy::http::HttpResponse ErrorToResponse(const smithy::Error& "
+        "[[maybe_unused]] opal::http::HttpResponse ErrorToResponse(const opal::Error& "
             + "error$L) {",
         extraParams);
     if (!errortypeHeader.isEmpty()) {
       w.write("std::vector<std::pair<std::string, std::string>> header_values;");
       w.write("(void)header_values;");
     }
-    w.openBlock("if (error.kind() == smithy::ErrorKind::kModeled) {");
+    w.openBlock("if (error.kind() == opal::ErrorKind::kModeled) {");
     for (StructureShape shape : errorShapes.values()) {
       String type = context.cppSymbols().toSymbol(shape).getName();
       w.openBlock("if (error.code() == $S) {", shape.getId().getName());
-      w.write("smithy::DocumentMap body;");
+      w.write("opal::DocumentMap body;");
       w.openBlock("if (const auto* detail = error.detail<types::$L>()) {", type);
       w.write(
           "body = Serialize$L(*detail).as_map();",
@@ -508,7 +508,7 @@ final class ProtocolSupport {
           "const bool has_message = body.count(\"message\") != 0 || "
               + "body.count(\"Message\") != 0;");
       w.openBlock("if (!has_message && !error.message().empty()) {");
-      w.write("body.emplace(\"message\", smithy::Document(error.message()));");
+      w.write("body.emplace(\"message\", opal::Document(error.message()));");
       w.closeBlock("}");
       if (!errortypeHeader.isEmpty()) {
         // restJson1: @httpHeader-bound error members travel as headers, and the
@@ -537,7 +537,7 @@ final class ProtocolSupport {
                         + "std::to_string(it->second.as_int()));";
                 case FLOAT, DOUBLE ->
                     "if (it->second.is_double()) header_values.emplace_back($S, "
-                        + "smithy::FormatDouble(it->second.as_double()));";
+                        + "opal::FormatDouble(it->second.as_double()));";
                 case BOOLEAN ->
                     "if (it->second.is_bool()) header_values.emplace_back($S, "
                         + "it->second.as_bool() ? \"true\" : \"false\");";
@@ -579,16 +579,16 @@ final class ProtocolSupport {
       // restJson1: parse failures answer 400 with the SerializationException
       // error identity in the header (the malformed-request suite pins this).
       w.openBlock(
-          "if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == "
-              + "smithy::ErrorKind::kSerialization) {");
+          "if (error.kind() == opal::ErrorKind::kValidation || error.kind() == "
+              + "opal::ErrorKind::kSerialization) {");
       w.write("auto response = $L(400, \"\", error.message(), {}$L);", errorCall, extraArgs);
       w.write("response.headers.Set($S, \"SerializationException\");", errortypeHeader);
       w.write("return response;");
       w.closeBlock("}");
     } else {
       w.write(
-          "if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == "
-              + "smithy::ErrorKind::kSerialization) return $L(400, \"SerializationException\", "
+          "if (error.kind() == opal::ErrorKind::kValidation || error.kind() == "
+              + "opal::ErrorKind::kSerialization) return $L(400, \"SerializationException\", "
               + "error.message(), {}$L);",
           errorCall,
           extraArgs);
@@ -636,7 +636,7 @@ final class ProtocolSupport {
     for (StructureShape shape : errorShapes.values()) {
       boolean retryable = shape.hasTrait(RetryableTrait.class);
       w.openBlock(
-          "smithy::Error $L(const smithy::http::HttpResponse& response, ParsedError parsed) {",
+          "opal::Error $L(const opal::http::HttpResponse& response, ParsedError parsed) {",
           makeErrorFunction(context, shape));
       w.write("(void)response;");
       if (retryable) {
@@ -647,12 +647,12 @@ final class ProtocolSupport {
       // code() carries the wire-level shape name, which can differ from the
       // C++ type name when a foreign-namespace shape was disambiguated.
       w.write(
-          "smithy::Error error = smithy::Error::Modeled($S, std::move(parsed.message), "
+          "opal::Error error = opal::Error::Modeled($S, std::move(parsed.message), "
               + "retryable);",
           shape.getId().getName());
       // Errors with header-only payloads (or none at all) may have no body:
       // deserialize from an empty map so the typed detail still attaches.
-      w.write("if (!parsed.doc.is_map()) parsed.doc = smithy::Document(smithy::DocumentMap{});");
+      w.write("if (!parsed.doc.is_map()) parsed.doc = opal::Document(opal::DocumentMap{});");
       // Header-bound members are patched into the document before it
       // deserializes, so @required header members are satisfied.
       protocol.writeErrorDocPatches(w, context, shape);
@@ -687,7 +687,7 @@ final class ProtocolSupport {
       // Serialize/Deserialize<Shape> namespace, and a same-named file-local
       // helper would hide them (C++ name hiding) for shapes named <Op>Error.
       w.openBlock(
-          "smithy::Error $L(const smithy::http::HttpResponse& response) {",
+          "opal::Error $L(const opal::http::HttpResponse& response) {",
           parseErrorFunction(operation));
       w.write("ParsedError parsed = helpers::ParseError(response);");
       for (Map.Entry<String, StructureShape> entry : sorted.entrySet()) {
@@ -758,9 +758,9 @@ final class ProtocolSupport {
       }
       String field = "prepared." + context.cppSymbols().toMemberName(member);
       if (member.isRequired()) {
-        w.write("if ($L.empty()) $L = smithy::GenerateUuidV4();", field, field);
+        w.write("if ($L.empty()) $L = opal::GenerateUuidV4();", field, field);
       } else {
-        w.write("if (!$L.has_value()) $L = smithy::GenerateUuidV4();", field, field);
+        w.write("if (!$L.has_value()) $L = opal::GenerateUuidV4();", field, field);
       }
     }
     return any ? "prepared" : "input";
@@ -775,8 +775,8 @@ final class ProtocolSupport {
       case ENUM -> "std::string(" + valueExpr + ".ToString())";
       case BYTE, SHORT, INTEGER, LONG, INT_ENUM ->
           "std::to_string(static_cast<std::int64_t>(" + valueExpr + "))";
-      case FLOAT -> "smithy::FormatFloat(" + valueExpr + ")";
-      case DOUBLE -> "smithy::FormatDouble(" + valueExpr + ")";
+      case FLOAT -> "opal::FormatFloat(" + valueExpr + ")";
+      case DOUBLE -> "opal::FormatDouble(" + valueExpr + ")";
       case BOOLEAN -> "(" + valueExpr + " ? \"true\" : \"false\")";
       case TIMESTAMP -> valueExpr + ".Format(" + timestampFormat + ")";
       default ->

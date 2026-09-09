@@ -19,11 +19,11 @@
 
 namespace {
 
-using smithy::Blob;
-using smithy::Timestamp;
-using smithy::eventstream::DecodeMessage;
-using smithy::eventstream::EncodeMessage;
-using smithy::eventstream::Message;
+using opal::Blob;
+using opal::Timestamp;
+using opal::eventstream::DecodeMessage;
+using opal::eventstream::EncodeMessage;
+using opal::eventstream::Message;
 
 TEST(EventStreamConsumerTest, TheDocumentedTransportLoopDrainsAChunkedStream) {
   // Two frames arriving from a "socket" seven bytes at a time; the inner
@@ -64,7 +64,7 @@ TEST(EventStreamConsumerTest, TheDocumentedTransportLoopDrainsAChunkedStream) {
   EXPECT_EQ(*received[1].FindString(":event-type"), "end");
   EXPECT_EQ(received[1].FindString("seq"), nullptr);  // absent on the end event
 
-  // The timestamp header comes back as the runtime's own smithy::Timestamp.
+  // The timestamp header comes back as the runtime's own opal::Timestamp.
   const auto* at = received[0].FindHeader("at");
   ASSERT_NE(at, nullptr);
   EXPECT_EQ(std::get<Timestamp>(*at).epoch_milliseconds(), 1721400000000);
@@ -79,7 +79,7 @@ TEST(EventStreamConsumerTest, CorruptionSurfacesAsAnErrorAConsumerCanLog) {
   ASSERT_FALSE(decoded.ok());
   EXPECT_NE(decoded.error().message().find("eventstream"), std::string::npos);
   // And the message itself debug-renders for that log line.
-  const std::string rendered = smithy::DebugString(Message{.headers = {{":event-type", "chat"}}});
+  const std::string rendered = opal::DebugString(Message{.headers = {{":event-type", "chat"}}});
   EXPECT_NE(rendered.find(":event-type"), std::string::npos);
 }
 

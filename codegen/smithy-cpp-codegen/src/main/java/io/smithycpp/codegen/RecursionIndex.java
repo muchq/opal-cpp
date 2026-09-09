@@ -17,7 +17,7 @@ import software.amazon.smithy.model.shapes.ShapeId;
 /**
  * Strongly connected components over the model's aggregate shapes (structures, unions, lists,
  * maps), driving boxed-recursion support: a structure member whose target is a structure on the
- * same cycle is represented as {@code smithy::Boxed<T>} (heap indirection with value semantics);
+ * same cycle is represented as {@code opal::Boxed<T>} (heap indirection with value semantics);
  * cycles through lists need only a forward declaration ({@code std::vector} permits incomplete
  * element types). Cycles through union members or map values are not supported yet — {@link
  * #unsupportedCycleMember(MemberShape)} names them so generation fails with a clear message instead
@@ -54,7 +54,7 @@ final class RecursionIndex {
     return sameCycle(member.getContainer(), member.getTarget());
   }
 
-  /** Structure member targeting a structure on the same cycle: emitted as smithy::Boxed. */
+  /** Structure member targeting a structure on the same cycle: emitted as opal::Boxed. */
   boolean isBoxed(MemberShape member) {
     if (!cyclicEdge(member)) {
       return false;

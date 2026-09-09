@@ -8,10 +8,10 @@
 #include "smithy/core/outcome.h"
 #include "smithy/http/message.h"
 
-namespace smithy::http {
+namespace opal::http {
 
 // TLS verification knobs, defined once for both sides of the handoff:
-// smithy::ClientConfig carries one (the knob consumers set) and TLS-capable
+// opal::ClientConfig carries one (the knob consumers set) and TLS-capable
 // client transports embed the same struct (BeastHttpClient::Options), so the
 // shape, defaults, and semantics can't drift apart. Certificate + hostname
 // verification is on by default. `ca_pem` replaces the system trust roots
@@ -54,6 +54,6 @@ class HttpServerTransport {
   virtual void Stop() = 0;
 };
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_TRANSPORT_H_

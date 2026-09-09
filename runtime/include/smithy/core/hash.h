@@ -11,7 +11,7 @@
 
 #include "smithy/core/container_traits.h"
 
-namespace smithy {
+namespace opal {
 
 // Hashing support for generated types (issue #49): a generated type
 // specializes std::hash exactly when it defaults operator<=>, so it keys
@@ -59,6 +59,6 @@ std::size_t HashValue(const T& value) noexcept {
   }
 }
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_HASH_H_

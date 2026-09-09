@@ -5,7 +5,7 @@
 #include <random>
 #include <string_view>
 
-namespace smithy::http {
+namespace opal::http {
 namespace {
 
 bool IsLowerHex(std::string_view text) {
@@ -84,4 +84,4 @@ std::string GenerateSpanId() {
   return id;
 }
 
-}  // namespace smithy::http
+}  // namespace opal::http

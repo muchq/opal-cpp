@@ -24,7 +24,7 @@
 #include "smithy/http/websocket.h"
 #include "smithy/http/websocket_pair.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 // Distinct client-to-server and server-to-client types, so a swapped
@@ -417,4 +417,4 @@ TEST(EventStreamHandleTest, AReceiveOnlyStreamStillSharesForClose) {
 }
 
 }  // namespace
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

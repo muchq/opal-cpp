@@ -16,19 +16,18 @@
 namespace example::roundtrip::rest {
 namespace {
 
-class CapturingTransport final : public smithy::http::HttpClient {
+class CapturingTransport final : public opal::http::HttpClient {
  public:
-  smithy::Outcome<smithy::http::HttpResponse> Send(
-      const smithy::http::HttpRequest& request) override {
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
     last_request = request;
-    return smithy::http::HttpResponse{200, {}, ""};
+    return opal::http::HttpResponse{200, {}, ""};
   }
 
-  smithy::http::HttpRequest last_request;
+  opal::http::HttpRequest last_request;
 };
 
 RoundTripRestClient MakeClient(std::shared_ptr<CapturingTransport> transport) {
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = std::move(transport);
   config.api_key = [] { return std::string("k&e y"); };  // needs encoding
   return *RoundTripRestClient::Create(std::move(config));
@@ -51,7 +50,7 @@ TEST(ApiKeyQueryTest, AppendsToAnExistingQueryString) {
 
 TEST(ApiKeyQueryTest, AbsentProviderLeavesTheTargetAlone) {
   auto transport = std::make_shared<CapturingTransport>();
-  smithy::ClientConfig config;
+  opal::ClientConfig config;
   config.http_client = transport;
   auto client = RoundTripRestClient::Create(std::move(config));
   ASSERT_TRUE(client.ok());

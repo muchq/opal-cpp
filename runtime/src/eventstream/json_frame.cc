@@ -10,7 +10,7 @@
 #include "smithy/eventstream/envelope.h"
 #include "smithy/json/json.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 namespace {
 
 constexpr std::string_view kEventMember = "event";
@@ -134,4 +134,4 @@ Outcome<Message> DecodeJsonFrame(std::string_view text) {
              : MakeExceptionMessage(type.as_string(), kJsonContentType, std::move(payload_bytes));
 }
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream

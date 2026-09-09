@@ -2,14 +2,14 @@
 
 smithy-cpp versions the **runtime** and the **generator** together — a
 release is one git tag (`vX.Y.Z`, signed) covering both, and generated code
-from generator X.Y is supported against runtime X.Y. `smithy::Version()`
+from generator X.Y is supported against runtime X.Y. `opal::Version()`
 returns the runtime's version.
 
 ## Current state: 0.2.0 released, 0.3.0 in development
 
 `v0.2.0` is the current release; `main` develops 0.3.0. The one product version
-consumers observe — `smithy::Version()` (`runtime/src/core/version.cc`) and the
-client `User-Agent` (`smithy::ClientConfig::user_agent`) — reports
+consumers observe — `opal::Version()` (`runtime/src/core/version.cc`) and the
+client `User-Agent` (`opal::ClientConfig::user_agent`) — reports
 **`0.3.0-dev`** on `main` until that tag lands, and the generator's Gradle
 `version` (`codegen/gradle.properties`) tracks it, since the two ship under one
 tag. The bzlmod **module** version in `MODULE.bazel` is a separate identifier
@@ -39,7 +39,7 @@ Pre-1.0 caveat (per semver): minor releases may break. Concretely:
    exclusion lists) are the executable definition.
 2. **Generated-code shape** — the Smithy → C++ mapping contract in
    [generated-types.md](generated-types.md): type mappings, optionality
-   rules, naming, error surfacing (`smithy::Error` + typed details), the
+   rules, naming, error surfacing (`opal::Error` + typed details), the
    `<Service>Client` / `<Service>Handler` / `<Service>Server` interfaces.
    Consumers write code against generated headers; changes that break
    recompilation of handler implementations or client call sites are
@@ -65,7 +65,7 @@ suites are the contract instead).
 
 ## Release mechanics
 
-- Update `smithy::Version()` + `CHANGELOG.md` in the release PR; CI must be
+- Update `opal::Version()` + `CHANGELOG.md` in the release PR; CI must be
   fully green (full test matrix, consumer acceptance, all three protocol
   conformance suites). `//tools:release_test` fails the PR if the version
   sources disagree or the CHANGELOG's leading section doesn't match the state

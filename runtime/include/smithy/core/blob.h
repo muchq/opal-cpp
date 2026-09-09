@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-namespace smithy {
+namespace opal {
 
 // Owning byte buffer for Smithy blob shapes. Distinct from std::string to keep
 // binary payloads and text from mixing accidentally.
@@ -61,13 +61,13 @@ class Blob {
   std::vector<std::uint8_t> bytes_;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 // Hashes by byte content, so blob-bearing generated structs can key unordered
 // containers (issue #49). Process-local: never persist hash values.
 template <>
-struct std::hash<smithy::Blob> {
-  std::size_t operator()(const smithy::Blob& blob) const noexcept {
+struct std::hash<opal::Blob> {
+  std::size_t operator()(const opal::Blob& blob) const noexcept {
     return std::hash<std::string_view>{}(
         std::string_view(reinterpret_cast<const char*>(blob.data()), blob.size()));
   }

@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-namespace smithy {
+namespace opal {
 namespace {
 
 TEST(VersionTest, ReturnsSemanticVersion) {
@@ -11,4 +11,4 @@ TEST(VersionTest, ReturnsSemanticVersion) {
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

@@ -10,7 +10,7 @@
 #include "smithy/eventstream/frame.h"
 #include "smithy/http/websocket.h"
 
-namespace smithy::eventstream {
+namespace opal::eventstream {
 
 // The jsonRpc2 stream translation (ADR-0023), worn as a delegating
 // WebSocket: above it, EventStream/AsyncEventStream and generated code
@@ -101,6 +101,6 @@ class JsonRpcStreamSocket final : public http::WebSocket {
   Role role_;
 };
 
-}  // namespace smithy::eventstream
+}  // namespace opal::eventstream
 
 #endif  // SMITHY_EVENTSTREAM_JSONRPC_STREAM_SOCKET_H_

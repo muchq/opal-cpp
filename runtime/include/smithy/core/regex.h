@@ -8,7 +8,7 @@
 
 #include "smithy/core/outcome.h"
 
-namespace smithy {
+namespace opal {
 
 // Linear-time regular expressions for generated @pattern validation. The
 // pattern compiles to a Thompson NFA that Search() simulates breadth-first
@@ -83,6 +83,6 @@ class Regex {
   friend class RegexCompiler;
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 #endif  // SMITHY_CORE_REGEX_H_

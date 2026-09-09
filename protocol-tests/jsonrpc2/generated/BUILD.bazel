@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "types",
-    hdrs = ["include/smithy/protocoltests/jsonrpc2/types.h"],
+    hdrs = ["include/opal/protocoltests/jsonrpc2/types.h"],
     copts = [
         "-Wall",
         "-Wextra",
@@ -18,7 +18,7 @@ cc_library(
 cc_library(
     name = "serde",
     srcs = ["src/serde.cc"],
-    hdrs = ["include/smithy/protocoltests/jsonrpc2/serde.h"],
+    hdrs = ["include/opal/protocoltests/jsonrpc2/serde.h"],
     copts = [
         "-Wall",
         "-Wextra",
@@ -33,7 +33,7 @@ cc_library(
 cc_library(
     name = "client",
     srcs = ["src/client.cc"],
-    hdrs = ["include/smithy/protocoltests/jsonrpc2/client.h"],
+    hdrs = ["include/opal/protocoltests/jsonrpc2/client.h"],
     copts = [
         "-Wall",
         "-Wextra",
@@ -55,7 +55,7 @@ cc_library(
 cc_library(
     name = "server",
     srcs = ["src/server.cc"],
-    hdrs = ["include/smithy/protocoltests/jsonrpc2/server.h"],
+    hdrs = ["include/opal/protocoltests/jsonrpc2/server.h"],
     copts = [
         "-Wall",
         "-Wextra",

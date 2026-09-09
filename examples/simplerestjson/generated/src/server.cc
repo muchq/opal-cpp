@@ -34,18 +34,18 @@ namespace helpers {
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -53,12 +53,12 @@ namespace helpers {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
@@ -69,31 +69,31 @@ namespace helpers {
   return status >= 200 && status != 204 && status != 205 && status != 304;
 }
 
-smithy::http::HttpResponse JsonError(int status, const std::string& code, const std::string& message, smithy::DocumentMap body) {
-  if (!code.empty()) body.insert_or_assign("__type", smithy::Document(code));
-  if (!message.empty()) body.insert_or_assign("message", smithy::Document(message));
-  smithy::http::HttpResponse response;
+opal::http::HttpResponse JsonError(int status, const std::string& code, const std::string& message, opal::DocumentMap body) {
+  if (!code.empty()) body.insert_or_assign("__type", opal::Document(code));
+  if (!message.empty()) body.insert_or_assign("message", opal::Document(message));
+  opal::http::HttpResponse response;
   response.status = status;
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body)));
+  response.body = opal::json::Encode(opal::Document(std::move(body)));
   return response;
 }
 
 // [[maybe_unused]]: only unary routes map handler errors here; a service
 // whose operations all stream reports errors on the stream instead.
-[[maybe_unused]] smithy::http::HttpResponse ErrorToResponse(const smithy::Error& error) {
+[[maybe_unused]] opal::http::HttpResponse ErrorToResponse(const opal::Error& error) {
   std::vector<std::pair<std::string, std::string>> header_values;
   (void)header_values;
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+  if (error.kind() == opal::ErrorKind::kModeled) {
     if (error.code() == "BookNotFound") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::BookNotFound>()) {
         body = SerializeBookNotFound(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       auto response = helpers::JsonError(404, "", "", std::move(body));
       response.headers.Set("x-error-type", error.code());
@@ -102,7 +102,7 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
     }
     return helpers::JsonError(400, error.code(), error.message(), {});
   }
-  if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) {
+  if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) {
     auto response = helpers::JsonError(400, "", error.message(), {});
     response.headers.Set("x-error-type", "SerializationException");
     return response;
@@ -113,74 +113,74 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
 
 // Constraint validation (smithy.framework#ValidationException): messages
 // and '/member' paths follow the official validation conformance suite.
-void AddValidationFailure(std::vector<smithy::server::ValidationFailure>* failures, std::string path, std::string message) {
+void AddValidationFailure(std::vector<opal::server::ValidationFailure>* failures, std::string path, std::string message) {
   failures->push_back({std::move(path), std::move(message)});
 }
 
 // [[maybe_unused]]: only unary routes reject invalid input over HTTP; a
 // service whose operations all stream reports validation on the stream.
-[[maybe_unused]] smithy::http::HttpResponse ValidationErrorResponse(const std::vector<smithy::server::ValidationFailure>& failures) {
+[[maybe_unused]] opal::http::HttpResponse ValidationErrorResponse(const std::vector<opal::server::ValidationFailure>& failures) {
   std::string summary = std::to_string(failures.size()) + " validation error" + (failures.size() == 1 ? "" : "s") + " detected. ";
-  smithy::DocumentList field_list;
+  opal::DocumentList field_list;
   for (std::size_t i = 0; i < failures.size(); ++i) {
     if (i > 0) summary += "; ";
     summary += failures[i].message;
-    smithy::DocumentMap field;
-    field.emplace("message", smithy::Document(failures[i].message));
-    field.emplace("path", smithy::Document(failures[i].path));
-    field_list.push_back(smithy::Document(std::move(field)));
+    opal::DocumentMap field;
+    field.emplace("message", opal::Document(failures[i].message));
+    field.emplace("path", opal::Document(failures[i].path));
+    field_list.push_back(opal::Document(std::move(field)));
   }
-  smithy::DocumentMap body;
-  body.emplace("fieldList", smithy::Document(std::move(field_list)));
-  smithy::http::HttpResponse response = helpers::JsonError(400, "", summary, std::move(body));
+  opal::DocumentMap body;
+  body.emplace("fieldList", opal::Document(std::move(field_list)));
+  opal::http::HttpResponse response = helpers::JsonError(400, "", summary, std::move(body));
   response.headers.Set("x-error-type", "ValidationException");
   return response;
 }
 
-smithy::Outcome<types::AddBookInput> ParseAddBookInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::AddBookInput> ParseAddBookInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
   types::AddBookInput input{};
-  auto body_doc = smithy::json::Decode(request.body.empty() ? "{}" : request.body);
+  auto body_doc = opal::json::Decode(request.body.empty() ? "{}" : request.body);
   if (!body_doc) return std::move(body_doc).error();
-  if (!body_doc->is_map()) return smithy::Error::Serialization("AddBook: expected a JSON object body");
+  if (!body_doc->is_map()) return opal::Error::Serialization("AddBook: expected a JSON object body");
   {
-    const smithy::Document* member = body_doc->Find("isbn");
+    const opal::Document* member = body_doc->Find("isbn");
     if (member == nullptr || member->is_null()) {
       helpers::AddValidationFailure(validation_failures, "/isbn", "Value at '/isbn' failed to satisfy constraint: Member must not be null");
     } else {
-      if (!member->is_string()) return smithy::Error::Serialization("AddBookInput.isbn: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("AddBookInput.isbn: unexpected type on the wire");
       input.isbn = member->as_string();
     }
   }
   {
-    const smithy::Document* member = body_doc->Find("title");
+    const opal::Document* member = body_doc->Find("title");
     if (member == nullptr || member->is_null()) {
       helpers::AddValidationFailure(validation_failures, "/title", "Value at '/title' failed to satisfy constraint: Member must not be null");
     } else {
-      if (!member->is_string()) return smithy::Error::Serialization("AddBookInput.title: unexpected type on the wire");
+      if (!member->is_string()) return opal::Error::Serialization("AddBookInput.title: unexpected type on the wire");
       input.title = member->as_string();
     }
   }
   return input;
 }
 
-smithy::http::HttpResponse BuildAddBookResponse(const types::AddBookOutput& output) {
+opal::http::HttpResponse BuildAddBookResponse(const types::AddBookOutput& output) {
   (void)output;
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 201;
   response.status = static_cast<int>(output.status);
   if (helpers::StatusAllowsContent(response.status)) {
-    smithy::DocumentMap body_map;
-    body_map.emplace("isbn", smithy::Document(output.isbn));
+    opal::DocumentMap body_map;
+    body_map.emplace("isbn", opal::Document(output.isbn));
     response.headers.Set("content-type", "application/json");
-    response.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+    response.body = opal::json::Encode(opal::Document(std::move(body_map)));
   }
   return response;
 }
 
-smithy::Outcome<types::GetBookInput> ParseGetBookInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::GetBookInput> ParseGetBookInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -198,18 +198,18 @@ smithy::Outcome<types::GetBookInput> ParseGetBookInput(const smithy::http::HttpR
   return input;
 }
 
-smithy::http::HttpResponse BuildGetBookResponse(const types::GetBookOutput& output) {
+opal::http::HttpResponse BuildGetBookResponse(const types::GetBookOutput& output) {
   (void)output;
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
-  smithy::DocumentMap body_map;
+  opal::DocumentMap body_map;
   if (output.price.has_value()) {
-    body_map.emplace("price", smithy::Document(static_cast<double>((*output.price))));
+    body_map.emplace("price", opal::Document(static_cast<double>((*output.price))));
   }
-  body_map.emplace("isbn", smithy::Document(output.isbn));
-  body_map.emplace("title", smithy::Document(output.title));
+  body_map.emplace("isbn", opal::Document(output.isbn));
+  body_map.emplace("title", opal::Document(output.title));
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  response.body = opal::json::Encode(opal::Document(std::move(body_map)));
   return response;
 }
 
@@ -217,26 +217,26 @@ smithy::http::HttpResponse BuildGetBookResponse(const types::GetBookOutput& outp
 }  // namespace
 
 BookstoreServer::BookstoreServer(std::shared_ptr<BookstoreHandler> handler)
-  : router_(std::make_shared<smithy::server::Router>()) {
+  : router_(std::make_shared<opal::server::Router>()) {
   // The route table is derived from the model's @http traits; conflicts are
   // a modeling error surfaced by Router::Add (checked at generation time in a
   // later phase), so registration results are intentionally discarded.
-  (void)router_->Add("POST", "/books", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("POST", "/books", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     // Content-Type validation per the HTTP binding spec (415), then Accept (406);
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
     // any content type / accept.
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/json") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/json") {
       auto error_response = helpers::JsonError(415, "", "unsupported media type", {});
       error_response.headers.Set("x-error-type", "UnsupportedMediaTypeException");
       return error_response;
     }
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseAddBookInput(request, context, &validation_failures);
     if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
@@ -244,22 +244,22 @@ BookstoreServer::BookstoreServer(std::shared_ptr<BookstoreHandler> handler)
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
     return helpers::BuildAddBookResponse(*outcome);
   }, "AddBook");
-  (void)router_->Add("GET", "/books/{isbn}", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("GET", "/books/{isbn}", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     // Content-Type validation per the HTTP binding spec (415), then Accept (406);
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
     // any content type / accept.
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/json") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/json") {
       auto error_response = helpers::JsonError(415, "", "unsupported media type", {});
       error_response.headers.Set("x-error-type", "UnsupportedMediaTypeException");
       return error_response;
     }
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseGetBookInput(request, context, &validation_failures);
     if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
@@ -269,9 +269,9 @@ BookstoreServer::BookstoreServer(std::shared_ptr<BookstoreHandler> handler)
   }, "GetBook");
 }
 
-smithy::http::RequestHandler BookstoreServer::Handler() const {
+opal::http::RequestHandler BookstoreServer::Handler() const {
   auto router = router_;
-  return [router](const smithy::http::HttpRequest& request) { return router->Route(request); };
+  return [router](const opal::http::HttpRequest& request) { return router->Route(request); };
 }
 
 }  // namespace example::bookstore

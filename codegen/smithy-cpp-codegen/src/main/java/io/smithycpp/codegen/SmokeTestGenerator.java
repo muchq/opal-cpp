@@ -192,9 +192,9 @@ final class SmokeTestGenerator {
     w.write("");
     w.openBlock("$LClient MakeClient(std::shared_ptr<$LHandler> handler) {", name, name);
     w.write("$LServer server(std::move(handler));", name);
-    w.write("auto loopback = std::make_shared<smithy::http::Loopback>();");
+    w.write("auto loopback = std::make_shared<opal::http::Loopback>();");
     w.write("(void)loopback->Start(server.Handler());");
-    w.write("smithy::ClientConfig config;");
+    w.write("opal::ClientConfig config;");
     w.write("config.retry.max_attempts = 1;  // wire-exact tests: no retries");
     w.write("config.http_client = loopback;");
     w.write("// Create cannot fail when a transport is injected.");
@@ -250,11 +250,11 @@ final class SmokeTestGenerator {
     ProtocolSupport.openTestHandlerOverride(
         w, typeName(output(errorOp)), opName, typeName(input(errorOp)));
     w.write("(void)input;");
-    w.write("smithy::Error error = smithy::Error::Modeled($S, \"smoke\");", wireName);
+    w.write("opal::Error error = opal::Error::Modeled($S, \"smoke\");", wireName);
     w.writeWithNoFormatting("    auto detail = " + literals.minimalExpression(errorShape) + ";");
     // A modeled "message" member would otherwise serialize its minimal value and
     // shadow the generic error message on the wire. (Case-sensitive: only the
-    // lowercase wire key feeds smithy::Error::message() on the client side.)
+    // lowercase wire key feeds opal::Error::message() on the client side.)
     for (var member : errorShape.members()) {
       if (!member.getMemberName().equals("message")) {
         continue;
@@ -273,7 +273,7 @@ final class SmokeTestGenerator {
     writeSmokeInput(w, errorOp);
     w.write("const auto outcome = client.$L(input);", opName);
     w.write("ASSERT_FALSE(outcome.ok());");
-    w.write("EXPECT_EQ(outcome.error().kind(), smithy::ErrorKind::kModeled);");
+    w.write("EXPECT_EQ(outcome.error().kind(), opal::ErrorKind::kModeled);");
     w.write("EXPECT_EQ(outcome.error().code(), $S);", wireName);
     w.write("EXPECT_EQ(outcome.error().message(), \"smoke\");");
     w.write("EXPECT_NE(outcome.error().detail<$L>(), nullptr);", errorType);

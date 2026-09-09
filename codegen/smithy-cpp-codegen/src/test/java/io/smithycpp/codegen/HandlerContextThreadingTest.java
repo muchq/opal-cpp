@@ -12,7 +12,7 @@ import software.amazon.smithy.build.MockManifest;
  */
 class HandlerContextThreadingTest {
 
-  private static final String CONTEXT_PARAM = "const smithy::server::RequestContext& context";
+  private static final String CONTEXT_PARAM = "const opal::server::RequestContext& context";
 
   private static final String REST_MODEL =
       """
@@ -66,7 +66,7 @@ class HandlerContextThreadingTest {
     String header = manifest.expectFileString("/include/test/ctx/server.h");
     assertTrue(header.contains("Ping(const PingInput& input, " + CONTEXT_PARAM + ") = 0;"), header);
     String server = manifest.expectFileString("/src/server.cc");
-    assertTrue(server.contains(CONTEXT_PARAM + ") -> smithy::http::HttpResponse {"), server);
+    assertTrue(server.contains(CONTEXT_PARAM + ") -> opal::http::HttpResponse {"), server);
     assertTrue(server.contains("handler->Ping(input, context)"), server);
   }
 
@@ -78,7 +78,7 @@ class HandlerContextThreadingTest {
     String server = manifest.expectFileString("/src/server.cc");
     // The envelope dispatch happens in Handle<Op> free functions: the context
     // enters their signature and rides every dispatch call.
-    assertTrue(server.contains("const smithy::Document& id, " + CONTEXT_PARAM + ") {"), server);
+    assertTrue(server.contains("const opal::Document& id, " + CONTEXT_PARAM + ") {"), server);
     assertTrue(server.contains("handler.Ping(input, context)"), server);
     assertTrue(server.contains("HandlePing(*handler, *params, id, context)"), server);
   }

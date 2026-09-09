@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-namespace smithy::http {
+namespace opal::http {
 
 // HTTP header collection: case-insensitive names, repeated names preserved in
 // insertion order (as list-valued headers require).
@@ -88,6 +88,6 @@ std::optional<std::string> FindUnsafeHeader(const Headers& headers);
 // the transports default to "/").
 bool ValidRequestLineField(std::string_view field);
 
-}  // namespace smithy::http
+}  // namespace opal::http
 
 #endif  // SMITHY_HTTP_HEADERS_H_

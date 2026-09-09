@@ -46,7 +46,7 @@ final class NodeLiteralGenerator {
       case DOUBLE -> floatingExpression(node, false);
       case TIMESTAMP -> timestampExpression(node);
       case BLOB ->
-          "smithy::Blob::FromString("
+          "opal::Blob::FromString("
               + CppLiterals.stringLiteral(node.expectStringNode().getValue())
               + ")";
       case DOCUMENT -> documentExpression(node);
@@ -92,13 +92,13 @@ final class NodeLiteralGenerator {
   private static String timestampExpression(Node node) {
     NumberNode number = node.expectNumberNode();
     long millis = Math.round(number.getValue().doubleValue() * 1000.0);
-    return "smithy::Timestamp::FromEpochMilliseconds(" + millis + "LL)";
+    return "opal::Timestamp::FromEpochMilliseconds(" + millis + "LL)";
   }
 
   private String structureExpression(StructureShape shape, Node node) {
     ObjectNode object = node.expectObjectNode();
     if (shape.getId().toString().equals("smithy.api#Unit")) {
-      return "smithy::Unit{}";
+      return "opal::Unit{}";
     }
     StringBuilder out = new StringBuilder("[] {\n");
     out.append("  ").append(typeName(shape)).append(" v{};\n");
@@ -194,9 +194,9 @@ final class NodeLiteralGenerator {
       case STRING -> minimalStringExpression(shape, member);
       case ENUM -> minimalEnumExpression(shape);
       case INT_ENUM -> minimalIntEnumExpression(shape);
-      case BLOB -> "smithy::Blob()";
-      case TIMESTAMP -> "smithy::Timestamp::FromEpochMilliseconds(0)";
-      case DOCUMENT -> "smithy::Document(smithy::DocumentMap{})";
+      case BLOB -> "opal::Blob()";
+      case TIMESTAMP -> "opal::Timestamp::FromEpochMilliseconds(0)";
+      case DOCUMENT -> "opal::Document(opal::DocumentMap{})";
       case LIST, MAP -> typeName(shape) + "{}";
       case STRUCTURE -> minimalStructureExpression(shape.asStructureShape().orElseThrow());
       case UNION -> minimalUnionExpression(shape.asUnionShape().orElseThrow());
@@ -281,7 +281,7 @@ final class NodeLiteralGenerator {
 
   private String minimalStructureExpression(StructureShape shape) {
     if (shape.getId().toString().equals("smithy.api#Unit")) {
-      return "smithy::Unit{}";
+      return "opal::Unit{}";
     }
     // Default construction is already minimal unless a required member's
     // default is invalid on the wire or under constraint validation.
@@ -356,32 +356,30 @@ final class NodeLiteralGenerator {
 
   private String documentExpression(Node node) {
     if (node.isNullNode()) {
-      return "smithy::Document(nullptr)";
+      return "opal::Document(nullptr)";
     }
     if (node.isBooleanNode()) {
-      return "smithy::Document(" + (node.expectBooleanNode().getValue() ? "true" : "false") + ")";
+      return "opal::Document(" + (node.expectBooleanNode().getValue() ? "true" : "false") + ")";
     }
     if (node.isNumberNode()) {
       NumberNode number = node.expectNumberNode();
       if (number.isFloatingPointNumber()) {
-        return "smithy::Document("
-            + CppLiterals.doubleLiteral(number.getValue().doubleValue())
-            + ")";
+        return "opal::Document(" + CppLiterals.doubleLiteral(number.getValue().doubleValue()) + ")";
       }
-      return "smithy::Document(std::int64_t{" + number.getValue().longValue() + "})";
+      return "opal::Document(std::int64_t{" + number.getValue().longValue() + "})";
     }
     if (node.isStringNode()) {
       StringNode string = node.expectStringNode();
-      return "smithy::Document(std::string(" + CppLiterals.stringLiteral(string.getValue()) + "))";
+      return "opal::Document(std::string(" + CppLiterals.stringLiteral(string.getValue()) + "))";
     }
     if (node.isArrayNode()) {
-      StringBuilder out = new StringBuilder("[] {\n  smithy::DocumentList list;\n");
+      StringBuilder out = new StringBuilder("[] {\n  opal::DocumentList list;\n");
       for (Node element : node.expectArrayNode().getElements()) {
         out.append("  list.emplace_back(").append(documentExpression(element)).append(");\n");
       }
-      return out.append("  return smithy::Document(std::move(list));\n}()").toString();
+      return out.append("  return opal::Document(std::move(list));\n}()").toString();
     }
-    StringBuilder out = new StringBuilder("[] {\n  smithy::DocumentMap map;\n");
+    StringBuilder out = new StringBuilder("[] {\n  opal::DocumentMap map;\n");
     for (var entry : node.expectObjectNode().getStringMap().entrySet()) {
       out.append("  map.emplace(")
           .append(CppLiterals.stringLiteral(entry.getKey()))
@@ -389,6 +387,6 @@ final class NodeLiteralGenerator {
           .append(documentExpression(entry.getValue()))
           .append(");\n");
     }
-    return out.append("  return smithy::Document(std::move(map));\n}()").toString();
+    return out.append("  return opal::Document(std::move(map));\n}()").toString();
   }
 }

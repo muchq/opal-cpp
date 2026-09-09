@@ -25,17 +25,17 @@ namespace example::calculator {
 
 /// The typed session Accumulate returns (ADR-0016): Tx = what this client
 /// sends, Rx = what the server sends.
-using AccumulateClientStream = smithy::eventstream::EventStream<Terms, Totals>;
+using AccumulateClientStream = opal::eventstream::EventStream<Terms, Totals>;
 
 /// jsonRpc2 client for example.calculator#Calculator.
-/// Modeled service errors surface as smithy::Error with kind kModeled,
+/// Modeled service errors surface as opal::Error with kind kModeled,
 /// code() set to the error shape name, and the deserialized error
 /// structure attached. Dispatch on them through the per-operation
 /// <Operation>Errors listings below rather than comparing code() text.
 class CalculatorClient {
   public:
     /// Fails when the endpoint cannot be parsed and no transport is injected.
-    static smithy::Outcome<CalculatorClient> Create(smithy::ClientConfig config);
+    static opal::Outcome<CalculatorClient> Create(opal::ClientConfig config);
 
     /// A running-total session over the JSON-RPC stream wire (ADR-0023): the
     /// opening call's params seed the accumulator, each streamed term answers
@@ -46,22 +46,22 @@ class CalculatorClient {
     /// (ADR-0016). Send carries input events, Receive yields output events
     /// (nullopt on the peer's clean close), and a received exception
     /// surfaces through Receive() as a modeled error, the unary shape.
-    smithy::Outcome<AccumulateClientStream> Accumulate(const AccumulateInput& input) const;
+    opal::Outcome<AccumulateClientStream> Accumulate(const AccumulateInput& input) const;
     /// Adds two numbers.
-    smithy::Outcome<AddOutput> Add(const AddInput& input) const;
+    opal::Outcome<AddOutput> Add(const AddInput& input) const;
     /// Divides dividend by divisor; dividing by zero is a modeled error.
-    smithy::Outcome<DivideOutput> Divide(const DivideInput& input) const;
+    opal::Outcome<DivideOutput> Divide(const DivideInput& input) const;
 
   private:
-    CalculatorClient(smithy::ClientConfig config, std::shared_ptr<smithy::http::HttpClient> transport, std::string path_prefix);
-    smithy::Outcome<smithy::http::HttpResponse> Send(smithy::http::HttpRequest request) const;
+    CalculatorClient(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> transport, std::string path_prefix);
+    opal::Outcome<opal::http::HttpResponse> Send(opal::http::HttpRequest request) const;
 
-    smithy::ClientConfig config_;
-    std::shared_ptr<smithy::http::HttpClient> transport_;
+    opal::ClientConfig config_;
+    std::shared_ptr<opal::http::HttpClient> transport_;
     std::string path_prefix_;
 };
 
-/// The modeled errors of Accumulate, matched from a smithy::Error so dispatch is
+/// The modeled errors of Accumulate, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -72,9 +72,9 @@ class AccumulateErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static AccumulateErrors FromError(const smithy::Error& error) {
+    static AccumulateErrors FromError(const opal::Error& error) {
       AccumulateErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "Overflow") {
         const auto* detail = error.detail<Overflow>();
         result.value_.emplace<1>(detail != nullptr ? *detail : Overflow{});
@@ -113,7 +113,7 @@ class AccumulateErrors {
       switch (value_.index()) {
         case 1:
           out += "overflow = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -132,14 +132,14 @@ class AccumulateErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("AccumulateErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("AccumulateErrors", requested, case_name());
       }
     }
 
     std::variant<std::monostate, Overflow> value_;
 };
 
-/// The modeled errors of Divide, matched from a smithy::Error so dispatch is
+/// The modeled errors of Divide, matched from a opal::Error so dispatch is
 /// typed and exhaustive instead of string-compared. FromError() is empty()
 /// when the error is none of this operation's modeled errors (transport,
 /// serialization, unknown, or another operation's error).
@@ -150,9 +150,9 @@ class DivideErrors {
     /// Matches `error` against this operation's modeled errors. An engaged
     /// member carries the deserialized error detail, default-initialized when
     /// the error arrived without one.
-    static DivideErrors FromError(const smithy::Error& error) {
+    static DivideErrors FromError(const opal::Error& error) {
       DivideErrors result;
-      if (error.kind() != smithy::ErrorKind::kModeled) return result;
+      if (error.kind() != opal::ErrorKind::kModeled) return result;
       if (error.code() == "DivisionByZero") {
         const auto* detail = error.detail<DivisionByZero>();
         result.value_.emplace<1>(detail != nullptr ? *detail : DivisionByZero{});
@@ -191,7 +191,7 @@ class DivideErrors {
       switch (value_.index()) {
         case 1:
           out += "division_by_zero = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -210,7 +210,7 @@ class DivideErrors {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("DivideErrors", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("DivideErrors", requested, case_name());
       }
     }
 
@@ -227,8 +227,8 @@ template <>
 struct std::hash<example::calculator::AccumulateErrors> {
   std::size_t operator()(const example::calculator::AccumulateErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -236,8 +236,8 @@ template <>
 struct std::hash<example::calculator::DivideErrors> {
   std::size_t operator()(const example::calculator::DivideErrors& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 

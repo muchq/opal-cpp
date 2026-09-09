@@ -9,7 +9,7 @@ import software.amazon.smithy.model.traits.DocumentationTrait;
 /**
  * Emits server.h / src/server.cc: the pure-virtual {@code <Service>Handler} interface users
  * implement and the {@code <Service>Server} that binds it to the runtime router. Transport agnostic
- * — the resulting {@code smithy::http::RequestHandler} plugs into any {@code HttpServerTransport}
+ * — the resulting {@code opal::http::RequestHandler} plugs into any {@code HttpServerTransport}
  * (Loopback, SocketHttpServer, BeastServerTransport).
  */
 final class ServerGenerator {
@@ -110,10 +110,10 @@ final class ServerGenerator {
           w, context, service, streamingOperations(), /* serverSide= */ true);
     }
     w.write("/// Implement one method per operation. Return a modeled error as");
-    w.write("/// smithy::Error::Modeled(\"<ErrorShapeName>\", message), optionally with the");
+    w.write("/// opal::Error::Modeled(\"<ErrorShapeName>\", message), optionally with the");
     w.write("/// typed error structure attached via set_detail() so it serializes fully.");
     w.write("/// The context carries the raw request and routing captures — see");
-    w.write("/// smithy::server::RequestContext; leave the parameter unnamed when unused.");
+    w.write("/// opal::server::RequestContext; leave the parameter unnamed when unused.");
     w.write("/// Implementations must be thread-safe: transports may invoke any mix of");
     w.write("/// operations concurrently on the one handler instance.");
     w.openBlock("class $LHandler {", name);
@@ -146,7 +146,7 @@ final class ServerGenerator {
         w.write("/// thread still using it. Blocks the transport's handler thread for");
         w.write("/// the session's lifetime.");
         w.write(
-            "virtual smithy::Outcome<smithy::Unit> $L(const $L& input, $L& stream, $L context)"
+            "virtual opal::Outcome<opal::Unit> $L(const $L& input, $L& stream, $L context)"
                 + " = 0;",
             CppReservedWords.escape(operation.getId().getName()),
             context.cppSymbols().toSymbol(input).getName(),
@@ -167,7 +167,7 @@ final class ServerGenerator {
         protocol.name(),
         service.getId().toString());
     w.write("/// response serialization, and modeled-error mapping. Pass Handler() to any");
-    w.write("/// smithy::http::HttpServerTransport.");
+    w.write("/// opal::http::HttpServerTransport.");
     w.openBlock("class $LServer {", name);
     w.write("public:").indent();
     w.write("explicit $LServer(std::shared_ptr<$LHandler> handler);", name, name);
@@ -179,7 +179,7 @@ final class ServerGenerator {
       w.write("explicit $LServer(std::shared_ptr<$LAsyncHandler> handler);", name, name);
     }
     w.write("");
-    w.write("smithy::http::RequestHandler Handler() const;");
+    w.write("opal::http::RequestHandler Handler() const;");
     if (hasStreaming) {
       w.write("");
       w.write("/// The WebSocket router carrying every streaming route (ADR-0016), ready");
@@ -189,13 +189,13 @@ final class ServerGenerator {
       w.write("///   options.on_websocket = server.StreamRouter()->Serve();  // blocking handler");
       w.write("///   options.on_websocket_session =");
       w.write("///       server.StreamRouter()->ServeSession();  // async handler (ADR-0021)");
-      w.write("std::shared_ptr<smithy::server::WebSocketRouter> StreamRouter() const;");
+      w.write("std::shared_ptr<opal::server::WebSocketRouter> StreamRouter() const;");
     }
     w.write("").dedent();
     w.write("private:").indent();
-    w.write("std::shared_ptr<smithy::server::Router> router_;");
+    w.write("std::shared_ptr<opal::server::Router> router_;");
     if (hasStreaming) {
-      w.write("std::shared_ptr<smithy::server::WebSocketRouter> stream_router_;");
+      w.write("std::shared_ptr<opal::server::WebSocketRouter> stream_router_;");
     }
     w.dedent();
     w.closeBlock("};");
@@ -222,7 +222,7 @@ final class ServerGenerator {
    */
   private void writeUnaryVirtual(CppWriter w, OperationShape operation) {
     w.write(
-        "virtual smithy::Outcome<$L> $L(const $L& input, $L context) = 0;",
+        "virtual opal::Outcome<$L> $L(const $L& input, $L context) = 0;",
         context.cppSymbols().toSymbol(ProtocolSupport.outputShape(context, operation)).getName(),
         CppReservedWords.escape(operation.getId().getName()),
         context.cppSymbols().toSymbol(ProtocolSupport.inputShape(context, operation)).getName(),
@@ -261,8 +261,8 @@ final class ServerGenerator {
           w.write("/// Async streaming operation (ADR-0021): a coroutine serving the whole");
           w.write("/// session — co_await stream.Receive()/Send() until done.");
         }
-        w.write("/// co_return smithy::Unit{} for a clean close, or an error — modeled as");
-        w.write("/// smithy::Error::Modeled(\"<ErrorShapeName>\", message) + set_detail(),");
+        w.write("/// co_return opal::Unit{} for a clean close, or an error — modeled as");
+        w.write("/// opal::Error::Modeled(\"<ErrorShapeName>\", message) + set_detail(),");
         w.write("/// like a blocking handler — which ends the stream with one best-effort");
         w.write("/// exception message before the close. `input` is the coroutine's own");
         w.write("/// copy: the upgrade request (and its RequestContext) is gone by the");
@@ -272,7 +272,7 @@ final class ServerGenerator {
         w.write("/// handler thread (brief blocking is fine there); every later resumption");
         w.write("/// is a transport completion context — never block those.");
         w.write(
-            "virtual smithy::eventstream::StreamTask $L($L input, $L& stream) = 0;",
+            "virtual opal::eventstream::StreamTask $L($L input, $L& stream) = 0;",
             CppReservedWords.escape(operation.getId().getName()),
             context.cppSymbols().toSymbol(input).getName(),
             EventStreamCodeGen.asyncServerStreamAlias(operation));
@@ -305,10 +305,10 @@ final class ServerGenerator {
 
     w.openBlock("$LServer::$LServer(std::shared_ptr<$LHandler> handler)", name, name, name);
     if (hasStreaming) {
-      w.write(": router_(std::make_shared<smithy::server::Router>()),");
-      w.write("  stream_router_(std::make_shared<smithy::server::WebSocketRouter>()) {");
+      w.write(": router_(std::make_shared<opal::server::Router>()),");
+      w.write("  stream_router_(std::make_shared<opal::server::WebSocketRouter>()) {");
     } else {
-      w.write(": router_(std::make_shared<smithy::server::Router>()) {");
+      w.write(": router_(std::make_shared<opal::server::Router>()) {");
     }
     w.dedent();
     w.indent();
@@ -328,8 +328,8 @@ final class ServerGenerator {
 
     if (hasStreaming) {
       w.openBlock("$LServer::$LServer(std::shared_ptr<$LAsyncHandler> handler)", name, name, name);
-      w.write(": router_(std::make_shared<smithy::server::Router>()),");
-      w.write("  stream_router_(std::make_shared<smithy::server::WebSocketRouter>()) {");
+      w.write(": router_(std::make_shared<opal::server::Router>()),");
+      w.write("  stream_router_(std::make_shared<opal::server::WebSocketRouter>()) {");
       w.dedent();
       w.indent();
       w.write("// The same unary table; every streaming route rides the shared-session");
@@ -342,18 +342,17 @@ final class ServerGenerator {
       w.write("");
     }
 
-    w.openBlock("smithy::http::RequestHandler $LServer::Handler() const {", name);
+    w.openBlock("opal::http::RequestHandler $LServer::Handler() const {", name);
     w.write("auto router = router_;");
     w.write(
-        "return [router](const smithy::http::HttpRequest& request) "
+        "return [router](const opal::http::HttpRequest& request) "
             + "{ return router->Route(request); };");
     w.closeBlock("}");
     w.write("");
 
     if (hasStreaming) {
       w.openBlock(
-          "std::shared_ptr<smithy::server::WebSocketRouter> $LServer::StreamRouter() const {",
-          name);
+          "std::shared_ptr<opal::server::WebSocketRouter> $LServer::StreamRouter() const {", name);
       w.write("return stream_router_;");
       w.closeBlock("}");
       w.write("");

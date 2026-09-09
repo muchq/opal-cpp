@@ -37,18 +37,18 @@ namespace helpers {
 // emitted for every service; not every service binds numeric values).
 // Trailing text, floats-for-ints, and out-of-range values are rejected
 // (the malformed-request suites pin this).
-[[maybe_unused]] smithy::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
+[[maybe_unused]] opal::Outcome<std::int64_t> ParseInt64Text(const std::string& text, std::int64_t min_value, std::int64_t max_value) {
   std::int64_t value = 0;
   const char* first = text.data();
   const char* last = first + text.size();
   const auto result = std::from_chars(first, last, value, 10);
   if (text.empty() || result.ec != std::errc() || result.ptr != last || value < min_value || value > max_value) {
-    return smithy::Error::Serialization("invalid integer: " + text);
+    return opal::Error::Serialization("invalid integer: " + text);
   }
   return value;
 }
 
-[[maybe_unused]] smithy::Outcome<double> ParseDoubleText(const std::string& text) {
+[[maybe_unused]] opal::Outcome<double> ParseDoubleText(const std::string& text) {
   if (text == "NaN") return std::numeric_limits<double>::quiet_NaN();
   if (text == "Infinity") return std::numeric_limits<double>::infinity();
   if (text == "-Infinity") return -std::numeric_limits<double>::infinity();
@@ -56,12 +56,12 @@ namespace helpers {
     return (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
   };
   if (text.empty() || text.front() == '+' || !std::all_of(text.begin(), text.end(), valid_char)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   char* parse_end = nullptr;
   const double value = std::strtod(text.c_str(), &parse_end);
   if (parse_end != text.c_str() + text.size() || !std::isfinite(value)) {
-    return smithy::Error::Serialization("invalid number: " + text);
+    return opal::Error::Serialization("invalid number: " + text);
   }
   return value;
 }
@@ -72,31 +72,31 @@ namespace helpers {
   return status >= 200 && status != 204 && status != 205 && status != 304;
 }
 
-smithy::http::HttpResponse JsonError(int status, const std::string& code, const std::string& message, smithy::DocumentMap body) {
-  if (!code.empty()) body.insert_or_assign("__type", smithy::Document(code));
-  if (!message.empty()) body.insert_or_assign("message", smithy::Document(message));
-  smithy::http::HttpResponse response;
+opal::http::HttpResponse JsonError(int status, const std::string& code, const std::string& message, opal::DocumentMap body) {
+  if (!code.empty()) body.insert_or_assign("__type", opal::Document(code));
+  if (!message.empty()) body.insert_or_assign("message", opal::Document(message));
+  opal::http::HttpResponse response;
   response.status = status;
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body)));
+  response.body = opal::json::Encode(opal::Document(std::move(body)));
   return response;
 }
 
 // [[maybe_unused]]: only unary routes map handler errors here; a service
 // whose operations all stream reports errors on the stream instead.
-[[maybe_unused]] smithy::http::HttpResponse ErrorToResponse(const smithy::Error& error) {
+[[maybe_unused]] opal::http::HttpResponse ErrorToResponse(const opal::Error& error) {
   std::vector<std::pair<std::string, std::string>> header_values;
   (void)header_values;
-  if (error.kind() == smithy::ErrorKind::kModeled) {
+  if (error.kind() == opal::ErrorKind::kModeled) {
     if (error.code() == "DescribeSinkError") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::DescribeSinkError>()) {
         body = SerializeDescribeSinkError(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       auto response = helpers::JsonError(410, "", "", std::move(body));
       response.headers.Set("x-error-type", error.code());
@@ -104,14 +104,14 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
       return response;
     }
     if (error.code() == "SinkNotFound") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::SinkNotFound>()) {
         body = SerializeSinkNotFound(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       auto response = helpers::JsonError(404, "", "", std::move(body));
       response.headers.Set("x-error-type", error.code());
@@ -119,14 +119,14 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
       return response;
     }
     if (error.code() == "SinkQuotaExceeded") {
-      smithy::DocumentMap body;
+      opal::DocumentMap body;
       if (const auto* detail = error.detail<types::SinkQuotaExceeded>()) {
         body = SerializeSinkQuotaExceeded(*detail).as_map();
       }
       // The typed detail's own message member wins over the generic one.
       const bool has_message = body.count("message") != 0 || body.count("Message") != 0;
       if (!has_message && !error.message().empty()) {
-        body.emplace("message", smithy::Document(error.message()));
+        body.emplace("message", opal::Document(error.message()));
       }
       if (auto it = body.find("retryAfterSeconds"); it != body.end()) {
         if (it->second.is_int()) header_values.emplace_back("x-retry-after-seconds", std::to_string(it->second.as_int()));
@@ -139,7 +139,7 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
     }
     return helpers::JsonError(400, error.code(), error.message(), {});
   }
-  if (error.kind() == smithy::ErrorKind::kValidation || error.kind() == smithy::ErrorKind::kSerialization) {
+  if (error.kind() == opal::ErrorKind::kValidation || error.kind() == opal::ErrorKind::kSerialization) {
     auto response = helpers::JsonError(400, "", error.message(), {});
     response.headers.Set("x-error-type", "SerializationException");
     return response;
@@ -150,27 +150,27 @@ smithy::http::HttpResponse JsonError(int status, const std::string& code, const 
 
 // Constraint validation (smithy.framework#ValidationException): messages
 // and '/member' paths follow the official validation conformance suite.
-void AddValidationFailure(std::vector<smithy::server::ValidationFailure>* failures, std::string path, std::string message) {
+void AddValidationFailure(std::vector<opal::server::ValidationFailure>* failures, std::string path, std::string message) {
   failures->push_back({std::move(path), std::move(message)});
 }
 
-void ValidateDescribeSinkInput(const types::DescribeSinkInput& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidateDescribeSinkInput(const types::DescribeSinkInput& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   {
     const std::string member_path = path + "/sinkId";
     {
-      const std::size_t member_length = smithy::Utf8CodePointCount(value.sinkId);
+      const std::size_t member_length = opal::Utf8CodePointCount(value.sinkId);
       if (member_length < 1ULL || member_length > 32ULL) {
         helpers::AddValidationFailure(failures, member_path, "Value with length " + std::to_string(member_length) + " at '" + member_path + "' failed to satisfy constraint: Member must have length between 1 and 32, inclusive");
       }
     }
-    static const smithy::Outcome<smithy::Regex> kPattern0 = smithy::Regex::Compile(R"__smithy(^[A-Za-z0-9]+$)__smithy");
+    static const opal::Outcome<opal::Regex> kPattern0 = opal::Regex::Compile(R"__smithy(^[A-Za-z0-9]+$)__smithy");
     if (!kPattern0.ok() || !kPattern0->Search(value.sinkId)) {
       helpers::AddValidationFailure(failures, member_path, "Value at '" + member_path + "' failed to satisfy constraint: Member must satisfy regular expression pattern: " + std::string("^[A-Za-z0-9]+$"));
     }
   }
 }
 
-void ValidateKitchenSink(const types::KitchenSink& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidateKitchenSink(const types::KitchenSink& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   if (value.priority.has_value()) {
     const std::string member_path = path + "/priority";
     if ((*value.priority).value() == Priority::Value::kUnknown) {
@@ -199,16 +199,16 @@ void ValidateKitchenSink(const types::KitchenSink& value, const std::string& pat
   }
 }
 
-void ValidatePutSinkInput(const types::PutSinkInput& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidatePutSinkInput(const types::PutSinkInput& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   {
     const std::string member_path = path + "/sinkId";
     {
-      const std::size_t member_length = smithy::Utf8CodePointCount(value.sinkId);
+      const std::size_t member_length = opal::Utf8CodePointCount(value.sinkId);
       if (member_length < 1ULL || member_length > 32ULL) {
         helpers::AddValidationFailure(failures, member_path, "Value with length " + std::to_string(member_length) + " at '" + member_path + "' failed to satisfy constraint: Member must have length between 1 and 32, inclusive");
       }
     }
-    static const smithy::Outcome<smithy::Regex> kPattern1 = smithy::Regex::Compile(R"__smithy(^[A-Za-z0-9]+$)__smithy");
+    static const opal::Outcome<opal::Regex> kPattern1 = opal::Regex::Compile(R"__smithy(^[A-Za-z0-9]+$)__smithy");
     if (!kPattern1.ok() || !kPattern1->Search(value.sinkId)) {
       helpers::AddValidationFailure(failures, member_path, "Value at '" + member_path + "' failed to satisfy constraint: Member must satisfy regular expression pattern: " + std::string("^[A-Za-z0-9]+$"));
     }
@@ -231,16 +231,16 @@ void ValidatePutSinkInput(const types::PutSinkInput& value, const std::string& p
   }
 }
 
-void ValidateUploadAttachmentInput(const types::UploadAttachmentInput& value, const std::string& path, std::vector<smithy::server::ValidationFailure>* failures) {
+void ValidateUploadAttachmentInput(const types::UploadAttachmentInput& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
   {
     const std::string member_path = path + "/sinkId";
     {
-      const std::size_t member_length = smithy::Utf8CodePointCount(value.sinkId);
+      const std::size_t member_length = opal::Utf8CodePointCount(value.sinkId);
       if (member_length < 1ULL || member_length > 32ULL) {
         helpers::AddValidationFailure(failures, member_path, "Value with length " + std::to_string(member_length) + " at '" + member_path + "' failed to satisfy constraint: Member must have length between 1 and 32, inclusive");
       }
     }
-    static const smithy::Outcome<smithy::Regex> kPattern2 = smithy::Regex::Compile(R"__smithy(^[A-Za-z0-9]+$)__smithy");
+    static const opal::Outcome<opal::Regex> kPattern2 = opal::Regex::Compile(R"__smithy(^[A-Za-z0-9]+$)__smithy");
     if (!kPattern2.ok() || !kPattern2->Search(value.sinkId)) {
       helpers::AddValidationFailure(failures, member_path, "Value at '" + member_path + "' failed to satisfy constraint: Member must satisfy regular expression pattern: " + std::string("^[A-Za-z0-9]+$"));
     }
@@ -249,25 +249,25 @@ void ValidateUploadAttachmentInput(const types::UploadAttachmentInput& value, co
 
 // [[maybe_unused]]: only unary routes reject invalid input over HTTP; a
 // service whose operations all stream reports validation on the stream.
-[[maybe_unused]] smithy::http::HttpResponse ValidationErrorResponse(const std::vector<smithy::server::ValidationFailure>& failures) {
+[[maybe_unused]] opal::http::HttpResponse ValidationErrorResponse(const std::vector<opal::server::ValidationFailure>& failures) {
   std::string summary = std::to_string(failures.size()) + " validation error" + (failures.size() == 1 ? "" : "s") + " detected. ";
-  smithy::DocumentList field_list;
+  opal::DocumentList field_list;
   for (std::size_t i = 0; i < failures.size(); ++i) {
     if (i > 0) summary += "; ";
     summary += failures[i].message;
-    smithy::DocumentMap field;
-    field.emplace("message", smithy::Document(failures[i].message));
-    field.emplace("path", smithy::Document(failures[i].path));
-    field_list.push_back(smithy::Document(std::move(field)));
+    opal::DocumentMap field;
+    field.emplace("message", opal::Document(failures[i].message));
+    field.emplace("path", opal::Document(failures[i].path));
+    field_list.push_back(opal::Document(std::move(field)));
   }
-  smithy::DocumentMap body;
-  body.emplace("fieldList", smithy::Document(std::move(field_list)));
-  smithy::http::HttpResponse response = helpers::JsonError(400, "", summary, std::move(body));
+  opal::DocumentMap body;
+  body.emplace("fieldList", opal::Document(std::move(field_list)));
+  opal::http::HttpResponse response = helpers::JsonError(400, "", summary, std::move(body));
   response.headers.Set("x-error-type", "ValidationException");
   return response;
 }
 
-smithy::Outcome<types::DescribeSinkInput> ParseDescribeSinkInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::DescribeSinkInput> ParseDescribeSinkInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -279,20 +279,20 @@ smithy::Outcome<types::DescribeSinkInput> ParseDescribeSinkInput(const smithy::h
   return input;
 }
 
-smithy::http::HttpResponse BuildDescribeSinkResponse(const types::DescribeSinkOutput& output) {
+opal::http::HttpResponse BuildDescribeSinkResponse(const types::DescribeSinkOutput& output) {
   (void)output;
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
-  smithy::DocumentMap body_map;
+  opal::DocumentMap body_map;
   if (output.sink.has_value()) {
     body_map.emplace("sink", SerializeKitchenSink((*output.sink)));
   }
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  response.body = opal::json::Encode(opal::Document(std::move(body_map)));
   return response;
 }
 
-smithy::Outcome<types::PutSinkInput> ParsePutSinkInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::PutSinkInput> ParsePutSinkInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -302,7 +302,7 @@ smithy::Outcome<types::PutSinkInput> ParsePutSinkInput(const smithy::http::HttpR
     input.sinkId = label_value;
   }
   if (const auto header_value = request.headers.Get("x-sink-created"); header_value.has_value()) {
-    auto parsed_ts = smithy::Timestamp::Parse((*header_value), smithy::TimestampFormat::kHttpDate);
+    auto parsed_ts = opal::Timestamp::Parse((*header_value), opal::TimestampFormat::kHttpDate);
     if (!parsed_ts) return std::move(parsed_ts).error();
     input.created = *std::move(parsed_ts);
   }
@@ -326,15 +326,15 @@ smithy::Outcome<types::PutSinkInput> ParsePutSinkInput(const smithy::http::HttpR
   }
   if (!saw_limit) AddValidationFailure(validation_failures, "/limit", "Value at '/limit' failed to satisfy constraint: Member must not be null");
   for (const auto& [header_name, header_value] : request.headers.entries()) {
-    if (!smithy::http::HeaderNameStartsWith(header_name, "x-meta-")) continue;
+    if (!opal::http::HeaderNameStartsWith(header_name, "x-meta-")) continue;
     if (!input.metadata.has_value()) input.metadata.emplace();
     (*input.metadata).insert_or_assign(header_name.substr(7), header_value);
   }
-  auto body_doc = smithy::json::Decode(request.body.empty() ? "{}" : request.body);
+  auto body_doc = opal::json::Decode(request.body.empty() ? "{}" : request.body);
   if (!body_doc) return std::move(body_doc).error();
-  if (!body_doc->is_map()) return smithy::Error::Serialization("PutSink: expected a JSON object body");
+  if (!body_doc->is_map()) return opal::Error::Serialization("PutSink: expected a JSON object body");
   {
-    const smithy::Document* member = body_doc->Find("sink");
+    const opal::Document* member = body_doc->Find("sink");
     if (member != nullptr && !member->is_null()) {
       types::KitchenSink parsed_member{};
       {
@@ -346,9 +346,9 @@ smithy::Outcome<types::PutSinkInput> ParsePutSinkInput(const smithy::http::HttpR
     }
   }
   {
-    const smithy::Document* member = body_doc->Find("freeform");
+    const opal::Document* member = body_doc->Find("freeform");
     if (member != nullptr && !member->is_null()) {
-      smithy::Document parsed_member{};
+      opal::Document parsed_member{};
       parsed_member = *member;
       input.freeform = std::move(parsed_member);
     }
@@ -356,9 +356,9 @@ smithy::Outcome<types::PutSinkInput> ParsePutSinkInput(const smithy::http::HttpR
   return input;
 }
 
-smithy::http::HttpResponse BuildPutSinkResponse(const types::PutSinkOutput& output) {
+opal::http::HttpResponse BuildPutSinkResponse(const types::PutSinkOutput& output) {
   (void)output;
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
   if (output.revision.has_value()) {
     response.headers.Set("x-sink-revision", std::to_string(static_cast<std::int64_t>((*output.revision))));
@@ -368,8 +368,8 @@ smithy::http::HttpResponse BuildPutSinkResponse(const types::PutSinkOutput& outp
       response.headers.Set("x-echo-" + map_key, map_value);
     }
   }
-  smithy::DocumentMap body_map;
-  body_map.emplace("sinkId", smithy::Document(output.sinkId));
+  opal::DocumentMap body_map;
+  body_map.emplace("sinkId", opal::Document(output.sinkId));
   if (output.sink.has_value()) {
     body_map.emplace("sink", SerializeKitchenSink((*output.sink)));
   }
@@ -377,11 +377,11 @@ smithy::http::HttpResponse BuildPutSinkResponse(const types::PutSinkOutput& outp
     body_map.emplace("echo", SerializePutSinkResponse((*output.echo)));
   }
   response.headers.Set("content-type", "application/json");
-  response.body = smithy::json::Encode(smithy::Document(std::move(body_map)));
+  response.body = opal::json::Encode(opal::Document(std::move(body_map)));
   return response;
 }
 
-smithy::Outcome<types::UploadAttachmentInput> ParseUploadAttachmentInput(const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context, std::vector<smithy::server::ValidationFailure>* validation_failures) {
+opal::Outcome<types::UploadAttachmentInput> ParseUploadAttachmentInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
   (void)validation_failures;
@@ -394,17 +394,17 @@ smithy::Outcome<types::UploadAttachmentInput> ParseUploadAttachmentInput(const s
     input.name = (*header_value);
   }
   if (!request.body.empty()) {
-    input.data = smithy::Blob::FromString(request.body);
+    input.data = opal::Blob::FromString(request.body);
   }
   return input;
 }
 
-smithy::http::HttpResponse BuildUploadAttachmentResponse(const types::UploadAttachmentOutput& output) {
+opal::http::HttpResponse BuildUploadAttachmentResponse(const types::UploadAttachmentOutput& output) {
   (void)output;
-  smithy::http::HttpResponse response;
+  opal::http::HttpResponse response;
   response.status = 200;
   if (output.receipt.has_value()) {
-    response.body = smithy::json::Encode(SerializeReceipt((*output.receipt)));
+    response.body = opal::json::Encode(SerializeReceipt((*output.receipt)));
   } else {
     response.body = "{}";
   }
@@ -417,26 +417,26 @@ smithy::http::HttpResponse BuildUploadAttachmentResponse(const types::UploadAtta
 }  // namespace
 
 RoundTripRestServer::RoundTripRestServer(std::shared_ptr<RoundTripRestHandler> handler)
-  : router_(std::make_shared<smithy::server::Router>()) {
+  : router_(std::make_shared<opal::server::Router>()) {
   // The route table is derived from the model's @http traits; conflicts are
   // a modeling error surfaced by Router::Add (checked at generation time in a
   // later phase), so registration results are intentionally discarded.
-  (void)router_->Add("GET", "/sinks/{sinkId}", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("GET", "/sinks/{sinkId}", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     // Content-Type validation per the HTTP binding spec (415), then Accept (406);
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
     // any content type / accept.
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/json") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/json") {
       auto error_response = helpers::JsonError(415, "", "unsupported media type", {});
       error_response.headers.Set("x-error-type", "UnsupportedMediaTypeException");
       return error_response;
     }
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseDescribeSinkInput(request, context, &validation_failures);
     if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
@@ -446,11 +446,11 @@ RoundTripRestServer::RoundTripRestServer(std::shared_ptr<RoundTripRestHandler> h
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
     return helpers::BuildDescribeSinkResponse(*outcome);
   }, "DescribeSink");
-  (void)router_->Add("PUT", "/sinks/{sinkId}", [handler](const smithy::http::HttpRequest& raw_request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
-    smithy::http::HttpRequest request = raw_request;
+  (void)router_->Add("PUT", "/sinks/{sinkId}", [handler](const opal::http::HttpRequest& raw_request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
+    opal::http::HttpRequest request = raw_request;
     // @requestCompression(gzip): decode before parsing.
     if (const auto request_encoding = request.headers.Get("content-encoding"); request_encoding.has_value() && (*request_encoding == "gzip" || request_encoding->ends_with(", gzip"))) {
-      auto decompressed = smithy::GzipDecompress(request.body);
+      auto decompressed = opal::GzipDecompress(request.body);
       if (!decompressed) {
         return helpers::JsonError(400, "", "invalid gzip request body", {});
       }
@@ -460,17 +460,17 @@ RoundTripRestServer::RoundTripRestServer(std::shared_ptr<RoundTripRestHandler> h
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
     // any content type / accept.
-    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && smithy::http::MediaTypeOf(*content_type) != "application/json") {
+    if (const auto content_type = request.headers.Get("content-type"); content_type.has_value() && opal::http::MediaTypeOf(*content_type) != "application/json") {
       auto error_response = helpers::JsonError(415, "", "unsupported media type", {});
       error_response.headers.Set("x-error-type", "UnsupportedMediaTypeException");
       return error_response;
     }
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParsePutSinkInput(request, context, &validation_failures);
     if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
@@ -480,17 +480,17 @@ RoundTripRestServer::RoundTripRestServer(std::shared_ptr<RoundTripRestHandler> h
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
     return helpers::BuildPutSinkResponse(*outcome);
   }, "PutSink");
-  (void)router_->Add("POST", "/sinks/{sinkId}/attachment", [handler](const smithy::http::HttpRequest& request, const smithy::server::RequestContext& context) -> smithy::http::HttpResponse {
+  (void)router_->Add("POST", "/sinks/{sinkId}/attachment", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context) -> opal::http::HttpResponse {
     // Content-Type validation per the HTTP binding spec (415), then Accept (406);
     // the malformed-request suite pins the error-identity headers. A missing
     // content-type is tolerated, and blob payloads without @mediaType accept
     // any content type / accept.
-    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !smithy::http::AcceptMatches(*accept, "application/json")) {
+    if (const auto accept = request.headers.Get("accept"); accept.has_value() && !opal::http::AcceptMatches(*accept, "application/json")) {
       auto error_response = helpers::JsonError(406, "", "not acceptable", {});
       error_response.headers.Set("x-error-type", "NotAcceptableException");
       return error_response;
     }
-    std::vector<smithy::server::ValidationFailure> validation_failures;
+    std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseUploadAttachmentInput(request, context, &validation_failures);
     if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
@@ -502,9 +502,9 @@ RoundTripRestServer::RoundTripRestServer(std::shared_ptr<RoundTripRestHandler> h
   }, "UploadAttachment");
 }
 
-smithy::http::RequestHandler RoundTripRestServer::Handler() const {
+opal::http::RequestHandler RoundTripRestServer::Handler() const {
   auto router = router_;
-  return [router](const smithy::http::HttpRequest& request) { return router->Route(request); };
+  return [router](const opal::http::HttpRequest& request) { return router->Route(request); };
 }
 
 }  // namespace example::roundtrip::rest

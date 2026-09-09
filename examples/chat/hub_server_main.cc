@@ -30,13 +30,13 @@ int main(int argc, char** argv) {
 
   auto handler = std::make_shared<example::chat::HubHandler>();
   example::chat::ChatServer server(handler);
-  smithy::http::BeastServerTransport::Options options;
+  opal::http::BeastServerTransport::Options options;
   options.address = "0.0.0.0";
   options.port = argc > 1 ? std::atoi(argv[1]) : 8080;  // 0 binds an ephemeral port
   options.websocket_gate = server.StreamRouter()->Gate();
   options.on_websocket = server.StreamRouter()->Serve();
-  smithy::http::BeastServerTransport transport(options);
-  smithy::Outcome<smithy::Unit> started = transport.Start(server.Handler());
+  opal::http::BeastServerTransport transport(options);
+  opal::Outcome<opal::Unit> started = transport.Start(server.Handler());
   if (!started.ok()) {
     std::fprintf(stderr, "chat-hub: start failed: %s\n", started.error().message().c_str());
     return 1;

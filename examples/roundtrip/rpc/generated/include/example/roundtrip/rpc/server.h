@@ -13,10 +13,10 @@
 namespace example::roundtrip::rpc {
 
 /// Implement one method per operation. Return a modeled error as
-/// smithy::Error::Modeled("<ErrorShapeName>", message), optionally with the
+/// opal::Error::Modeled("<ErrorShapeName>", message), optionally with the
 /// typed error structure attached via set_detail() so it serializes fully.
 /// The context carries the raw request and routing captures — see
-/// smithy::server::RequestContext; leave the parameter unnamed when unused.
+/// opal::server::RequestContext; leave the parameter unnamed when unused.
 /// Implementations must be thread-safe: transports may invoke any mix of
 /// operations concurrently on the one handler instance.
 class RoundTripRpcHandler {
@@ -27,24 +27,24 @@ class RoundTripRpcHandler {
     /// pin that the rpcv2Cbor server ignores request bodies sent to a no-input
     /// operation (issue #68 — the upstream conformance suite carries no such
     /// case, and #67 fixed a client/server asymmetry exactly here).
-    virtual smithy::Outcome<PingOutput> Ping(const PingInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<PingOutput> Ping(const PingInput& input, const opal::server::RequestContext& context) = 0;
     /// The RPC variant round-trips the same kitchen sink over CBOR — compressed,
     /// so the rpcv2Cbor decompress path and jsonRpc2's shared-endpoint
     /// anyCompressed branch both land in compiled goldens (issue #68).
-    virtual smithy::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const smithy::server::RequestContext& context) = 0;
+    virtual opal::Outcome<PutSinkRpcOutput> PutSinkRpc(const PutSinkRpcInput& input, const opal::server::RequestContext& context) = 0;
 };
 
 /// rpcv2Cbor server for example.roundtrip#RoundTripRpc: routing, deserialization, handler dispatch,
 /// response serialization, and modeled-error mapping. Pass Handler() to any
-/// smithy::http::HttpServerTransport.
+/// opal::http::HttpServerTransport.
 class RoundTripRpcServer {
   public:
     explicit RoundTripRpcServer(std::shared_ptr<RoundTripRpcHandler> handler);
 
-    smithy::http::RequestHandler Handler() const;
+    opal::http::RequestHandler Handler() const;
 
   private:
-    std::shared_ptr<smithy::server::Router> router_;
+    std::shared_ptr<opal::server::Router> router_;
 };
 
 }  // namespace example::roundtrip::rpc

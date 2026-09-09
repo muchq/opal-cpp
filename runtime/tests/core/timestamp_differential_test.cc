@@ -13,7 +13,7 @@
 
 #include "smithy/core/timestamp.h"
 
-namespace smithy {
+namespace opal {
 namespace {
 
 bool GmTime(std::int64_t epoch_seconds, std::tm* out) {
@@ -135,4 +135,4 @@ TEST(TimestampDifferentialTest, EpochSecondsReconstructsFromItsOwnTextOverRandom
 }
 
 }  // namespace
-}  // namespace smithy
+}  // namespace opal

@@ -28,7 +28,7 @@ struct Term {
     out += sep;
     sep = ", ";
     out += ".value = ";
-    smithy::DebugAppend(out, this->value);
+    opal::DebugAppend(out, this->value);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -80,7 +80,7 @@ class Terms {
       switch (value_.index()) {
         case 1:
           out += "add = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -99,7 +99,7 @@ class Terms {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("Terms", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("Terms", requested, case_name());
       }
     }
 
@@ -119,13 +119,13 @@ struct AccumulateInput {
       out += sep;
       sep = ", ";
       out += ".start = ";
-      smithy::DebugAppend(out, *this->start);
+      opal::DebugAppend(out, *this->start);
     }
     if (this->terms.has_value()) {
       out += sep;
       sep = ", ";
       out += ".terms = ";
-      smithy::DebugAppend(out, *this->terms);
+      opal::DebugAppend(out, *this->terms);
     }
     out += '}';
   }
@@ -149,7 +149,7 @@ struct RunningTotal {
     out += sep;
     sep = ", ";
     out += ".value = ";
-    smithy::DebugAppend(out, this->value);
+    opal::DebugAppend(out, this->value);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -201,7 +201,7 @@ class Totals {
       switch (value_.index()) {
         case 1:
           out += "total = ";
-          smithy::DebugAppend(out, std::get<1>(value_));
+          opal::DebugAppend(out, std::get<1>(value_));
           break;
         default:
           break;
@@ -220,7 +220,7 @@ class Totals {
   private:
     void require_is(std::size_t index, const char* requested) const {
       if (value_.index() != index) {
-        smithy::internal::FatalWrongUnionAccess("Totals", requested, case_name());
+        opal::internal::FatalWrongUnionAccess("Totals", requested, case_name());
       }
     }
 
@@ -239,7 +239,7 @@ struct AccumulateOutput {
       out += sep;
       sep = ", ";
       out += ".totals = ";
-      smithy::DebugAppend(out, *this->totals);
+      opal::DebugAppend(out, *this->totals);
     }
     out += '}';
   }
@@ -266,11 +266,11 @@ struct Overflow {
     out += sep;
     sep = ", ";
     out += ".message = ";
-    smithy::DebugAppend(out, this->message);
+    opal::DebugAppend(out, this->message);
     out += sep;
     sep = ", ";
     out += ".limit = ";
-    smithy::DebugAppend(out, this->limit);
+    opal::DebugAppend(out, this->limit);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -294,11 +294,11 @@ struct AddInput {
     out += sep;
     sep = ", ";
     out += ".a = ";
-    smithy::DebugAppend(out, this->a);
+    opal::DebugAppend(out, this->a);
     out += sep;
     sep = ", ";
     out += ".b = ";
-    smithy::DebugAppend(out, this->b);
+    opal::DebugAppend(out, this->b);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -321,7 +321,7 @@ struct AddOutput {
     out += sep;
     sep = ", ";
     out += ".sum = ";
-    smithy::DebugAppend(out, this->sum);
+    opal::DebugAppend(out, this->sum);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -346,16 +346,16 @@ struct DivideInput {
     out += sep;
     sep = ", ";
     out += ".dividend = ";
-    smithy::DebugAppend(out, this->dividend);
+    opal::DebugAppend(out, this->dividend);
     out += sep;
     sep = ", ";
     out += ".divisor = ";
-    smithy::DebugAppend(out, this->divisor);
+    opal::DebugAppend(out, this->divisor);
     if (this->requestToken.has_value()) {
       out += sep;
       sep = ", ";
       out += ".requestToken = ";
-      smithy::DebugAppend(out, *this->requestToken);
+      opal::DebugAppend(out, *this->requestToken);
     }
     out += '}';
   }
@@ -379,7 +379,7 @@ struct DivideOutput {
     out += sep;
     sep = ", ";
     out += ".quotient = ";
-    smithy::DebugAppend(out, this->quotient);
+    opal::DebugAppend(out, this->quotient);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -402,7 +402,7 @@ struct DivisionByZero {
     out += sep;
     sep = ", ";
     out += ".message = ";
-    smithy::DebugAppend(out, this->message);
+    opal::DebugAppend(out, this->message);
     out += '}';
   }
   std::string DebugString() const { std::string out; AppendDebugTo(out); return out; }
@@ -424,7 +424,7 @@ template <>
 struct std::hash<example::calculator::Term> {
   std::size_t operator()(const example::calculator::Term& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.value));
+    seed = opal::HashCombine(seed, opal::HashValue(value.value));
     return seed;
   }
 };
@@ -433,8 +433,8 @@ template <>
 struct std::hash<example::calculator::Terms> {
   std::size_t operator()(const example::calculator::Terms& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -442,8 +442,8 @@ template <>
 struct std::hash<example::calculator::AccumulateInput> {
   std::size_t operator()(const example::calculator::AccumulateInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.start));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.terms));
+    seed = opal::HashCombine(seed, opal::HashValue(value.start));
+    seed = opal::HashCombine(seed, opal::HashValue(value.terms));
     return seed;
   }
 };
@@ -452,7 +452,7 @@ template <>
 struct std::hash<example::calculator::RunningTotal> {
   std::size_t operator()(const example::calculator::RunningTotal& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.value));
+    seed = opal::HashCombine(seed, opal::HashValue(value.value));
     return seed;
   }
 };
@@ -461,8 +461,8 @@ template <>
 struct std::hash<example::calculator::Totals> {
   std::size_t operator()(const example::calculator::Totals& value) const noexcept {
     const std::size_t member =
-        std::visit([](const auto& v) { return smithy::HashValue(v); }, value.value_);
-    return smithy::HashCombine(value.value_.index(), member);
+        std::visit([](const auto& v) { return opal::HashValue(v); }, value.value_);
+    return opal::HashCombine(value.value_.index(), member);
   }
 };
 
@@ -470,7 +470,7 @@ template <>
 struct std::hash<example::calculator::AccumulateOutput> {
   std::size_t operator()(const example::calculator::AccumulateOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.totals));
+    seed = opal::HashCombine(seed, opal::HashValue(value.totals));
     return seed;
   }
 };
@@ -479,8 +479,8 @@ template <>
 struct std::hash<example::calculator::Overflow> {
   std::size_t operator()(const example::calculator::Overflow& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.limit));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.limit));
     return seed;
   }
 };
@@ -489,8 +489,8 @@ template <>
 struct std::hash<example::calculator::AddInput> {
   std::size_t operator()(const example::calculator::AddInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.a));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.b));
+    seed = opal::HashCombine(seed, opal::HashValue(value.a));
+    seed = opal::HashCombine(seed, opal::HashValue(value.b));
     return seed;
   }
 };
@@ -499,7 +499,7 @@ template <>
 struct std::hash<example::calculator::AddOutput> {
   std::size_t operator()(const example::calculator::AddOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.sum));
+    seed = opal::HashCombine(seed, opal::HashValue(value.sum));
     return seed;
   }
 };
@@ -508,9 +508,9 @@ template <>
 struct std::hash<example::calculator::DivideInput> {
   std::size_t operator()(const example::calculator::DivideInput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.dividend));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.divisor));
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.requestToken));
+    seed = opal::HashCombine(seed, opal::HashValue(value.dividend));
+    seed = opal::HashCombine(seed, opal::HashValue(value.divisor));
+    seed = opal::HashCombine(seed, opal::HashValue(value.requestToken));
     return seed;
   }
 };
@@ -519,7 +519,7 @@ template <>
 struct std::hash<example::calculator::DivideOutput> {
   std::size_t operator()(const example::calculator::DivideOutput& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.quotient));
+    seed = opal::HashCombine(seed, opal::HashValue(value.quotient));
     return seed;
   }
 };
@@ -528,7 +528,7 @@ template <>
 struct std::hash<example::calculator::DivisionByZero> {
   std::size_t operator()(const example::calculator::DivisionByZero& value) const noexcept {
     std::size_t seed = 0;
-    seed = smithy::HashCombine(seed, smithy::HashValue(value.message));
+    seed = opal::HashCombine(seed, opal::HashValue(value.message));
     return seed;
   }
 };

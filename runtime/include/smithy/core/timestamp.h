@@ -10,7 +10,7 @@
 
 #include "smithy/core/outcome.h"
 
-namespace smithy {
+namespace opal {
 
 // The three timestamp serializations defined by the Smithy spec. Which one a
 // member uses is decided by the protocol and the @timestampFormat trait.
@@ -68,14 +68,14 @@ class Timestamp {
   std::int64_t ms_ = 0;  // Milliseconds since 1970-01-01T00:00:00Z.
 };
 
-}  // namespace smithy
+}  // namespace opal
 
 // Hashes by the instant (epoch milliseconds), matching operator==, so
 // timestamp-bearing generated structs can key unordered containers
 // (issue #49). Process-local: never persist hash values.
 template <>
-struct std::hash<smithy::Timestamp> {
-  std::size_t operator()(smithy::Timestamp timestamp) const noexcept {
+struct std::hash<opal::Timestamp> {
+  std::size_t operator()(opal::Timestamp timestamp) const noexcept {
     return std::hash<std::int64_t>{}(timestamp.epoch_milliseconds());
   }
 };
