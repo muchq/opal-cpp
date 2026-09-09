@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to smithy-cpp are documented here. The format follows
+All notable changes to opal-cpp are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 policy in [docs/versioning.md](docs/versioning.md).
 
@@ -8,6 +8,14 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Breaking
 
+- **The default client `User-Agent` is `opal-cpp/<version>`**, formerly
+  `smithy-cpp/<version>`, following the repository's rename to
+  [`muchq/opal-cpp`](https://github.com/muchq/opal-cpp) (ADR-0024 addendum).
+  Anything matching on the old product token — a WAF rule, a log query, a
+  server-side allowlist — needs the new one. `ClientConfig::user_agent` is
+  still yours to set. The banner on generated files reads `Code generated
+  by opal-cpp (cpp-codegen)` for the same reason; goldens regenerate. The
+  old repository URL redirects.
 - **The Bazel module is `opal_cpp`, not `smithy_cpp`** (#201, ADR-0024; the
   third and last surface, which closes the issue). `bazel_dep(name =
   "smithy_cpp")` is now `bazel_dep(name = "opal_cpp")`, the runtime labels
@@ -806,5 +814,5 @@ Central publishing remain deferred (see [docs/versioning.md](docs/versioning.md)
   per-module summary, and uploads the rendered HTML report as an artifact;
   `make coverage` runs the same locally. Measurement only — no gate yet.
 
-[0.2.0]: https://github.com/muchq/smithy-cpp/releases/tag/v0.2.0
-[0.1.0]: https://github.com/muchq/smithy-cpp/releases/tag/v0.1.0
+[0.2.0]: https://github.com/muchq/opal-cpp/releases/tag/v0.2.0
+[0.1.0]: https://github.com/muchq/opal-cpp/releases/tag/v0.1.0

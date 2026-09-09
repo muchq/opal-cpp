@@ -1,7 +1,7 @@
-# smithy-cpp
+# opal-cpp
 
 Smithy code generators for C++ — generate idiomatic C++ clients and servers from
-[Smithy](https://smithy.io) models, plus the shared C++ runtime they build on.
+[Smithy](https://smithy.io) models, plus `opal`, the shared C++ runtime they build on.
 
 **Start here → [docs/quickstart.md](docs/quickstart.md):** empty directory to a generated C++
 client integration-testing a generated C++ server, in one Bazel module — no prior Smithy
@@ -10,7 +10,7 @@ experience assumed. Day 2 (evolving the model) is
 
 - **Vendor-neutral:** implements Smithy and its protocol specs; nothing AWS-specific. The REST
   protocol is [`alloy#simpleRestJson`](https://disneystreaming.github.io/smithy4s/docs/protocols/simple-rest-json/overview/)
-  (the neutral protocol smithy4s uses — so smithy-cpp clients and smithy4s services interoperate).
+  (the neutral protocol smithy4s uses — so opal-cpp clients and smithy4s services interoperate).
 - **Three protocols:** `alloy#simpleRestJson` (REST/JSON), `smithy.protocols#rpcv2Cbor` (RPC/CBOR),
   and `smithy.cpp.protocols#jsonRpc2` (RPC/JSON over JSON-RPC 2.0) — all vendor-neutral.
 - **Bazel-native:** Bazel 9 is the sole supported build system for the repo and consumers.
@@ -68,7 +68,7 @@ Roadmap and per-phase status live in [`docs/PLAN.md`](docs/PLAN.md).
 | [generated-types.md](docs/generated-types.md) | The Smithy → C++ mapping contract |
 | [server-guide.md](docs/server-guide.md) | What the generated server does before/after your handler |
 | [production-guide.md](docs/production-guide.md) | Real transports, TLS, retries, auth, middleware |
-| [runtime.md](docs/runtime.md) | The `smithy-cpp-runtime` library, module by module |
+| [runtime.md](docs/runtime.md) | The `opal-cpp-runtime` library, module by module |
 | [development.md](docs/development.md) | Building, testing, and linting this repo |
 | [versioning.md](docs/versioning.md) | Compatibility policy; [CHANGELOG.md](CHANGELOG.md) has releases |
 | [PLAN.md](docs/PLAN.md) | The phased roadmap; [adr/](docs/adr) records architecture decisions |

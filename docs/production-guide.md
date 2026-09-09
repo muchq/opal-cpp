@@ -1,6 +1,6 @@
 # Production guide
 
-How to configure generated smithy-cpp clients and servers for production use:
+How to configure generated opal-cpp clients and servers for production use:
 timeouts, retries, and request compression. Every knob lives on
 `opal::ClientConfig` (`opal/client/config.h`), so the guidance below
 applies to every generated client the same way.

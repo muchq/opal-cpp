@@ -41,4 +41,4 @@ from.
 - Further protocols slot in behind the same `ProtocolGenerator` interface later, added on
   demand (JSON-RPC 2.0 landed in Phase 7e as `smithy.cpp.protocols#jsonRpc2`; restXml remains
   a candidate).
-- smithy-cpp stays vendor-neutral: no AWS traits, auth, endpoint logic, or SDK behaviors (PLAN §2).
+- opal-cpp stays vendor-neutral: no AWS traits, auth, endpoint logic, or SDK behaviors (PLAN §2).

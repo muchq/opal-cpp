@@ -5,7 +5,7 @@
 
 namespace opal {
 
-// Returns the smithy-cpp runtime version as a semantic version string.
+// Returns the opal-cpp runtime version as a semantic version string.
 std::string_view Version();
 
 }  // namespace opal

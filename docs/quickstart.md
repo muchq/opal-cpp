@@ -6,7 +6,7 @@ no prior [Smithy](https://smithy.io) experience assumed, and no generator intern
 If Smithy is new to you: it's an interface-definition language. You describe a service once —
 its operations, their inputs and outputs, the errors they can raise — in a small `.smithy`
 text file, and code generators produce the client, the server scaffolding, and the wire
-handling in whatever language you need. smithy-cpp is that generator for C++. You write the
+handling in whatever language you need. opal-cpp is that generator for C++. You write the
 model and the business logic; parsing, routing, validation, serialization, and error mapping
 are generated.
 
@@ -54,7 +54,7 @@ bazel_dep(name = "opal_cpp", version = "0.0.0")
 # release tag. The `version` above is ignored while an override is in effect.
 git_override(
     module_name = "opal_cpp",
-    remote = "https://github.com/muchq/smithy-cpp.git",
+    remote = "https://github.com/muchq/opal-cpp.git",
     tag = "v0.2.0",
 )
 
@@ -68,7 +68,7 @@ so you never install or invoke Java yourself). Supported platforms are Linux and
 ([ADR-0008](adr/0008-drop-windows-support.md) dropped Windows):
 
 ```
-# C++20 (the smithy-cpp runtime baseline) and the Java 17 toolchain the
+# C++20 (the opal-cpp runtime baseline) and the Java 17 toolchain the
 # generator action runs on. Copy these lines into your own .bazelrc.
 common --enable_platform_specific_config
 
@@ -87,7 +87,7 @@ test --test_output=errors
 # exponential backoff, so a sustained outage still fails the fetch.
 common --experimental_repository_downloader_retries=5
 
-# Warnings are errors for this module's own code (smithy-cpp issue #65): the
+# Warnings are errors for this module's own code (opal-cpp issue #65): the
 # ^// label filter covers the hand-written mains/tests and the generated
 # acme/* libraries (already compiled at -Wall -Wextra by the smithy_cpp_*
 # macros), while @opal_cpp and every other external module keep their own
@@ -342,7 +342,7 @@ SIGTERM → drain → clean exit.
 
 ## The first build: cost, caching, and locked-down networks
 
-The first `bazel build` fetches everything the module graph needs: the smithy-cpp sources at
+The first `bazel build` fetches everything the module graph needs: the opal-cpp sources at
 your `git_override` tag, a hermetic JDK 17, the generator's five Maven jars from
 `repo1.maven.org`, and the C++ runtime's dependencies (BoringSSL, Boost.Beast/asio,
 nlohmann_json, zlib). That's hundreds of MB — expect a multi-minute cold build. It happens
@@ -380,7 +380,7 @@ version control):
   [vendor mode](https://bazel.build/external/vendor)
   (`bazel vendor //... --vendor_dir=<dir>`, then build with the same `--vendor_dir`).
 
-(The same recipes, framed for developing smithy-cpp itself, are in
+(The same recipes, framed for developing opal-cpp itself, are in
 [development.md](development.md).)
 
 ## Troubleshooting generation failures
@@ -408,11 +408,11 @@ full generator command line. The usual causes:
   (see [§3](#3-declare-the-generated-libraries) — the trait usually lives in an overlay).
 
 If the action fails with **no** `cpp-codegen:` line, you have found a generator bug — please
-[file an issue](https://github.com/muchq/smithy-cpp/issues) with the stack trace.
+[file an issue](https://github.com/muchq/opal-cpp/issues) with the stack trace.
 
 ## Header validation (`parse_headers`) and third-party closures
 
-smithy-cpp's own headers — the runtime's and every generated one — are validated as
+opal-cpp's own headers — the runtime's and every generated one — are validated as
 self-contained (each compiles standalone) in upstream CI, and the repo ships that guarantee via
 `REPO.bazel`'s `parse_headers` feature, so toolchains that parse headers (e.g. `toolchains_llvm`
 with `--features=parse_headers`) can build them without surprises.
@@ -424,7 +424,7 @@ uses `std::result_of`, which C++20 removed and libc++ does not retain, and zlib'
 don't parse as C++ at all. If you hit one of these:
 
 - drop `--process_headers_in_dependencies` (keep `--features=parse_headers` — your own headers
-  and smithy-cpp's stay validated), or
+  and opal-cpp's stay validated), or
 - patch the offending module from **your root module** with a `single_version_override` (only
   the root module's overrides apply), or
 - on libc++ ≤ 19, `--cxxopt=-D_LIBCPP_ENABLE_CXX20_REMOVED_TYPE_TRAITS` restores the removed

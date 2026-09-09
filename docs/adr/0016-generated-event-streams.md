@@ -25,7 +25,7 @@ the ADR-0015 session underneath rather than re-implemented.
 ## The wire binding (authored, vendor-neutral)
 
 Neither alloy nor core Smithy defines how these protocols' event streams
-ride WebSocket, so smithy-cpp authors the convention the way it authored
+ride WebSocket, so opal-cpp authors the convention the way it authored
 jsonRpc2 (ADR-0002 precedent: the trait and the generator are the
 normative definition, with an in-repo suite):
 

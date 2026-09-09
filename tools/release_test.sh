@@ -94,7 +94,7 @@ else
     fail "bump: version.cc not rewritten"
   grep -q 'EXPECT_EQ(Version(), "9.9.9-dev");' runtime/tests/core/version_test.cc ||
     fail "bump: version_test.cc not rewritten"
-  grep -q 'smithy-cpp/9.9.9-dev' runtime/include/opal/client/config.h ||
+  grep -q 'opal-cpp/9.9.9-dev' runtime/include/opal/client/config.h ||
     fail "bump: config.h not rewritten"
   grep -qx 'version=9.9.9-dev' codegen/gradle.properties ||
     fail "bump: gradle.properties not rewritten"

@@ -6,7 +6,7 @@
 # version any module in the graph requests, so a transitive dependency could
 # quietly drag the security-sensitive TLS library past the pinned-and-tested
 # version — every CI leg would still be green while consumers link a
-# boringssl no smithy-cpp job ever exercised. This check turns that silent
+# boringssl no opal-cpp job ever exercised. This check turns that silent
 # skew into a failure. Run from anywhere; CI runs it in the consumer job
 # after the test suite.
 set -euo pipefail

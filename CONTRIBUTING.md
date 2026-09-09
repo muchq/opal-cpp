@@ -1,4 +1,4 @@
-# Contributing to smithy-cpp
+# Contributing to opal-cpp
 
 Thanks for your interest! This project is in early development — see
 [`docs/PLAN.md`](docs/PLAN.md) for the roadmap and [`docs/adr/`](docs/adr/) for the decisions

@@ -1,6 +1,6 @@
-# smithy-cpp — Phased Implementation Plan
+# opal-cpp — Phased Implementation Plan
 
-A plan for building **smithy-cpp**: a [Smithy](https://smithy.io) code generator that produces
+A plan for building **opal-cpp**: a [Smithy](https://smithy.io) code generator that produces
 idiomatic, well-tested C++ **clients** and **servers**, plus the shared C++ **runtime library**
 the generated code depends on. A core requirement threaded through every phase: **generated
 clients are used to integration-test generated servers**, so the two halves continuously verify
@@ -58,7 +58,7 @@ each other.
 - **Stand on smithy-rs's shoulders.** smithy-rs (§3.2a) already solved client+server generation
   for a systems language with the same codegen framework; we port its architecture and test
   strategy to C++ instead of rediscovering them.
-- **Vendor-neutral.** smithy-cpp implements the Smithy specification and its protocol specs —
+- **Vendor-neutral.** opal-cpp implements the Smithy specification and its protocol specs —
   nothing AWS-specific: no SigV4, no AWS traits, no endpoint/region logic, no AWS SDK behaviors.
   AWS-adjacent artifacts are limited to what protocol specs mandate (e.g. restJson1's
   error-discriminator header) and the reuse of official protocol-test suites and smithy-rs as
@@ -75,7 +75,7 @@ each other.
 ### 3.1 Components
 
 ```
-smithy-cpp/
+opal-cpp/
 ├── codegen/                  # The generator (JVM, Smithy DirectedCodegen) — §3.2
 │   ├── smithy-cpp-codegen/           # core: symbol provider, type/serde generation
 │   ├── smithy-cpp-codegen-client/    # client-specific generation
@@ -118,7 +118,7 @@ official Smithy generator that ships **both a client and a server generator plus
 which is exactly our shape. We will treat it as the reference implementation and consult it
 before designing each subsystem, mapping its structure onto ours:
 
-| smithy-rs (Kotlin/Rust) | smithy-cpp equivalent | Used in |
+| smithy-rs (Kotlin/Rust) | opal-cpp equivalent | Used in |
 |---|---|---|
 | `codegen-core` (SymbolProvider, `RustWriter`, protocol serde generators shared by client & server) | `smithy-cpp-codegen` core module, `CppWriter` | Phase 2 |
 | `codegen-client` + `ClientProtocolTestGenerator` | `smithy-cpp-codegen-client` + client protocol-test generation | Phase 3 |
@@ -149,7 +149,7 @@ Further protocols slot in behind the same interface later (§9).
 A note on vendor neutrality: `restJson1` lives in the `aws.protocols` trait namespace for
 historical reasons, but it is the de-facto standard protocol for generic (non-AWS) Smithy REST
 services — smithy-rs's generic server targets it — and carries no AWS coupling beyond
-protocol-mandated names (e.g. its error-discriminator header). smithy-cpp implements protocol
+protocol-mandated names (e.g. its error-discriminator header). opal-cpp implements protocol
 specs and nothing else: no AWS traits, endpoints, auth, or SDK behaviors (see §2).
 
 > **Superseded before 0.1.0 (Phase 7e).** We used `restJson1` through Phases 3–7 precisely
@@ -223,7 +223,7 @@ with documented commands; ADRs 1–4 merged.
 
 ---
 
-### Phase 1 — Runtime core: `smithy-cpp-runtime` (≈3–4 weeks)
+### Phase 1 — Runtime core: `opal-cpp-runtime` (≈3–4 weeks)
 
 **Goals:** the hand-written C++ library that generated code will call into. No codegen yet — the
 runtime is designed against *hand-written* mock "generated" code for the weather example, which
@@ -299,7 +299,7 @@ containing all **data types** — no operations yet.
   `std::unique_ptr` indirection, C++ reserved-word and keyword escaping, PascalCase/camelCase
   conventions documented and fixed here).
 - Generate: headers + sources for all shapes in closure, a `BUILD.bazel` for the generated
-  module (a `cc_library` depending on `smithy-cpp-runtime`), equality operators, and
+  module (a `cc_library` depending on `opal-cpp-runtime`), equality operators, and
   builder-style construction (designated initializers where possible).
 - Deterministic output (stable ordering) — a hard requirement for golden tests.
 - Stand up the **generate→compile→run test pipeline** modeled on smithy-rs's
@@ -483,11 +483,11 @@ without reading generator internals or touching Gradle.
     Bazel 9 module that depends on the released `opal_cpp` module, defines a model, builds
     client + server, and runs the Phase-5-style integration test — this is the quick-start
     acceptance test.
-- **CLI wrapper**: `smithy-cpp generate --model … --mode client|server|both --out …` (thin wrapper
+- **CLI wrapper**: `opal-cpp generate --model … --mode client|server|both --out …` (thin wrapper
   around `smithy build` with our plugin preconfigured) for generation outside Bazel — inspecting
   output, or vendoring generated sources into other environments (unsupported paths, but the
   escape hatch exists); distributed via the Smithy CLI's plugin mechanism.
-- **Project template**: `smithy-cpp init` / a template repo producing the canonical Bazel 9
+- **Project template**: `opal-cpp init` / a template repo producing the canonical Bazel 9
   module layout (model/, client/, server/, integration-test skeleton *pre-wired to test the
   server with the client*, mirroring our Phase 5 harness — users inherit the pattern for free).
 - **Packaging**: Bazel Central Registry module (rules + runtime); pinned generator distribution

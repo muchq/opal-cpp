@@ -14,6 +14,6 @@ labels: bug
 
 ## Environment
 
-- smithy-cpp version/commit:
+- opal-cpp version/commit:
 - Bazel version (`bazel version`):
 - OS and compiler:

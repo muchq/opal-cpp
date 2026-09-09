@@ -1,6 +1,6 @@
 # Versioning and compatibility policy
 
-smithy-cpp versions the **runtime** and the **generator** together — a
+opal-cpp versions the **runtime** and the **generator** together — a
 release is one git tag (`vX.Y.Z`, signed) covering both, and generated code
 from generator X.Y is supported against runtime X.Y. `opal::Version()`
 returns the runtime's version.

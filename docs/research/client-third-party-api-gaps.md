@@ -2,7 +2,7 @@
 
 **Status:** Research note (2026-08-16). No decision — input for ADRs / follow-up
 issues. Maps options for
-[issue #189](https://github.com/muchq/smithy-cpp/issues/189), sourced from
+[issue #189](https://github.com/muchq/opal-cpp/issues/189), sourced from
 [MoonBase#1390](https://github.com/muchq/MoonBase/issues/1390).
 
 Evaluated against current `master`. Prior art that constrains the transport
@@ -230,7 +230,7 @@ Defer:                           1B/1D, Beast CONNECT, 6c, HTTP/2
 
 ## Sources (in-repo)
 
-- Issue [#189](https://github.com/muchq/smithy-cpp/issues/189)
+- Issue [#189](https://github.com/muchq/opal-cpp/issues/189)
 - ADR-0005, ADR-0007; `docs/research/libwebsockets-transport.md`
 - `runtime/include/opal/http/transport.h`, `client/config.h`, `client/retry.h`
 - `runtime/src/http/beast_transport.cc` (`SetupClientTlsContext`), `socket_transport.cc`
