@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "smithy/http/forwarded.h"
@@ -98,6 +99,16 @@ struct ReadinessCheck {
 // composed inside an observability chain reports as itself rather than as
 // the empty operation that 404s and 405s already use.
 Middleware HealthEndpoint(std::string path = "/health", std::vector<ReadinessCheck> checks = {});
+
+// The route an observability backend reports for a request that reached no
+// operation (RequestObservation::operation empty): a 404/405/400 dispatch
+// failure, or a Guard rejection that never reached the router. Never the
+// empty string — prom_proxy's `route!="/health"` matches the empty string,
+// so unrouted traffic would silently join the serving figures, and an empty
+// route on a log line reads as a missing field rather than as a failure.
+// Shared by the metrics scrape and the access log so a panel and a log query
+// spell the pivot identically.
+inline constexpr std::string_view kUnmatchedRoute = "unmatched";
 
 // One served request, as seen from outside the router. FormatAccessLog
 // (smithy/server/access_log.h) renders one as a JSON access-log line.

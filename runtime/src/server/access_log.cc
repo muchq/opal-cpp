@@ -34,12 +34,6 @@ constexpr std::array<std::string_view, 11> kBuiltInKeys = {
     kMethod,        kTarget, kRoute,        kStatus,       kDurationUs, kRequestBytes,
     kResponseBytes, kClient, kClientSource, kHandlerThrew, kTraceId};
 
-// The metrics' spelling for a request that reached no operation
-// (metrics.cc pins the same literal, and access_log_test.cc pins that the
-// two agree). Never the empty string: an empty route on a log line reads as
-// a missing field, not as a dispatch failure.
-constexpr std::string_view kUnmatchedRoute = "unmatched";
-
 std::string_view SourceName(http::DerivedClient::Source source) {
   using Source = http::DerivedClient::Source;
   switch (source) {
@@ -167,9 +161,32 @@ void AppendInteger(std::string& out, std::string_view key, Integer value) {
   out += std::to_string(value);
 }
 
+// Keys are code constants, and the checks below are what make that
+// documentation a contract. Uniqueness has to hold on what reaches the
+// object, not on the raw bytes: AppendEscaped replaces every malformed byte
+// with U+FFFD, which is not injective, so two distinct malformed keys would
+// land as one duplicated key with neither branch below noticing. Rejecting a
+// key that is not well-formed UTF-8 keeps raw and emitted equality the same
+// thing. An empty key is rejected for the same reason a shadowing one is: it
+// is a name nobody can query by.
 void CheckExtraKeys(const AccessLogFields& extra) {
   for (std::size_t i = 0; i < extra.size(); ++i) {
     const std::string& key = extra[i].first;
+    if (key.empty()) {
+      smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field key is empty");
+    }
+    for (std::size_t k = 0; k < key.size();) {
+      if (static_cast<unsigned char>(key[k]) < 0x80) {
+        ++k;
+        continue;
+      }
+      const std::size_t length = Utf8SequenceLength(key, k);
+      if (length == 0) {
+        smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field key '" + key +
+                                "' is not well-formed UTF-8");
+      }
+      k += length;
+    }
     for (const std::string_view built_in : kBuiltInKeys) {
       if (key == built_in) {
         smithy::internal::Fatal("smithy::server::FormatAccessLog: extra field '" + key +

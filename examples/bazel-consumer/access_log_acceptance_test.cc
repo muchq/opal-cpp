@@ -46,11 +46,14 @@ using acme::todo::TodoServer;
 // One access-log record: the typed fields, which let the tests compare the
 // log against the limiter without parsing, and the JSON line a real sink
 // would write for the same observation (#203), asserted on where the typed
-// fields cannot stand in for it.
+// fields cannot stand in for it. `operation` is the observation's raw field —
+// empty when no operation was reached — and is NOT the log vocabulary: the
+// line spells that case `route:"unmatched"`, and only `json` carries the
+// line's words.
 struct LogLine {
   std::string json;
   std::string method;
-  std::string route;
+  std::string operation;
   int status = 0;
   std::size_t request_bytes = 0;
   std::size_t response_bytes = 0;
@@ -66,7 +69,7 @@ class AccessLog {
     lines_.push_back(
         LogLine{.json = smithy::server::FormatAccessLog(o, {{"service_name", "todo-service"}}),
                 .method = o.method,
-                .route = o.operation,
+                .operation = o.operation,
                 .status = o.status,
                 .request_bytes = o.request_bytes,
                 .response_bytes = o.response_bytes,
@@ -225,7 +228,7 @@ TEST_F(AccessLogAcceptanceTest, ARejectionIsLoggedWithTheClientItWasRejectedFor)
   EXPECT_EQ(last.client, kForwardedClient);
   EXPECT_EQ(last.client, limiter_->keys().back());
   // The limiter short-circuits, so the request never reached the router.
-  EXPECT_EQ(last.route, "");
+  EXPECT_EQ(last.operation, "");
   // And the line a sink would write says the same, in the scrape's words:
   // the bucket's client, and the `unmatched` route rather than an empty one.
   EXPECT_NE(last.json.find(R"("status":429)"), std::string::npos) << last.json;
@@ -269,7 +272,7 @@ TEST_F(AccessLogAcceptanceTest, ByteCountsComeFromTheRealWireBodies) {
   EXPECT_EQ(lines[0].request_bytes, body.size());
   EXPECT_EQ(lines[0].response_bytes, served->body.size());
   EXPECT_GT(lines[0].response_bytes, 0u);
-  EXPECT_EQ(lines[0].route, "AddTask") << "the route came from the generated router";
+  EXPECT_EQ(lines[0].operation, "AddTask") << "the route came from the generated router";
 }
 
 TEST_F(AccessLogAcceptanceTest, AThrownHandlerIsLoggedAsThrownThroughBeastContainment) {

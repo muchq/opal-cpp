@@ -69,11 +69,14 @@ namespace smithy::server {
 //
 // `extra` is how a service attaches what the observation cannot know — its
 // own `service_name` (the label the metrics contract requires, so a line can
-// pivot to a panel), a tenant, a request id. Keys are code constants, so a
-// key that collides with a built-in or repeats within `extra` aborts
-// (ADR-0009): duplicate keys in JSON are ambiguous, and a collector that
-// resolves them silently would put the wrong value under the right name.
-// Values are data and are escaped like every other string.
+// pivot to a panel), a tenant, a request id. Keys are code constants, never
+// request data, so a key that collides with a built-in, repeats within
+// `extra`, is empty, or is not well-formed UTF-8 aborts (ADR-0009): duplicate
+// keys in JSON are ambiguous, and a collector that resolves them silently
+// would put the wrong value under the right name. The UTF-8 rule is what
+// keeps the uniqueness check honest — a malformed key would be replaced on
+// the way out, and two distinct malformed keys can replace to one. Values
+// are data and are escaped like every other string.
 using AccessLogFields = std::vector<std::pair<std::string, std::string>>;
 
 std::string FormatAccessLog(const RequestObservation& observation,

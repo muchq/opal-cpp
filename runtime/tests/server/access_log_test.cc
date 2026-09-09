@@ -100,6 +100,7 @@ TEST(AccessLogTest, TheRouteSentinelIsTheOneTheScrapeUses) {
   const std::string route = parsed["route"];
   EXPECT_NE(scrape.find("route=\"" + route + "\""), std::string::npos)
       << "the line says route=" << route << " and the scrape does not";
+  EXPECT_EQ(route, kUnmatchedRoute) << "both spell the shared sentinel";
 }
 
 TEST(AccessLogTest, TheMethodIsVerbatimWhereTheScrapeCollapsesIt) {
@@ -222,6 +223,23 @@ TEST(AccessLogDeathTest, AnExtraFieldThatShadowsABuiltInAborts) {
 TEST(AccessLogDeathTest, ARepeatedExtraFieldAborts) {
   EXPECT_DEATH(
       { (void)FormatAccessLog(Served(), {{"tenant", "a"}, {"tenant", "b"}}); }, "given twice");
+}
+
+TEST(AccessLogDeathTest, AMalformedExtraFieldKeyAbortsRatherThanCollidingAfterReplacement) {
+  // Uniqueness is only meaningful on what reaches the object. Both of these
+  // keys are invalid UTF-8 and would each be replaced with two U+FFFD, so
+  // without this check the line would carry one key twice and the repeat
+  // check — comparing raw bytes — would never fire.
+  EXPECT_DEATH(
+      { (void)FormatAccessLog(Served(), {{"\xC0\xAF", "a"}, {"\x80\x81", "b"}}); },
+      "not well-formed UTF-8");
+  // A well-formed non-ASCII key is fine: it passes through byte-identical.
+  const json parsed = Parse(FormatAccessLog(Served(), {{"caf\xC3\xA9", "x"}}));
+  EXPECT_EQ(parsed["caf\xC3\xA9"], "x");
+}
+
+TEST(AccessLogDeathTest, AnEmptyExtraFieldKeyAborts) {
+  EXPECT_DEATH({ (void)FormatAccessLog(Served(), {{"", "a"}}); }, "key is empty");
 }
 
 TEST(AccessLogTest, FormatsWhatObserveReports) {
