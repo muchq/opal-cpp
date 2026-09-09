@@ -10,6 +10,7 @@
 #include <thread>
 #include <vector>
 
+#include "opal/http/http1.h"
 #include "opal/http/transport.h"
 #include "opal/http/websocket.h"
 
@@ -258,6 +259,9 @@ class BeastHttpClient : public HttpClient {
     int request_timeout_ms = 30000;
     // Idle keep-alive connections retained for reuse.
     std::size_t max_idle_connections = 4;
+    // ClientConfig::max_response_bytes: a response body over it fails Send
+    // with a non-retryable transport error and the connection is dropped.
+    std::size_t max_response_bytes = kDefaultMaxBodyBytes;
   };
 
   explicit BeastHttpClient(Options options);
@@ -265,8 +269,8 @@ class BeastHttpClient : public HttpClient {
 
   // One-stop construction from the ClientConfig the generated client will
   // use: endpoint (scheme/host/port), tls.verify_peer/tls.ca_pem,
-  // request_timeout_ms, and max_idle_connections all come from the config,
-  // so nothing is configured twice. Fails on an unparsable or non-http(s)
+  // request_timeout_ms, max_idle_connections, and max_response_bytes all
+  // come from the config, so nothing is configured twice. Fails on an unparsable or non-http(s)
   // endpoint. Any endpoint path prefix stays the generated client's job.
   static Outcome<std::shared_ptr<BeastHttpClient>> FromConfig(const ClientConfig& config);
 

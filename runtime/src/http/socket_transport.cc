@@ -57,12 +57,13 @@ bool SendAll(SocketFd fd, std::string_view data) {
 // hostile-input bank and the fuzz harness exercise it without a socket). For
 // responses without Content-Length the body extends to EOF (we always
 // request/emit Connection: close).
-Outcome<Http1Message> ReadMessage(SocketFd fd, bool body_until_eof, bool has_body = true) {
+Outcome<Http1Message> ReadMessage(SocketFd fd, bool body_until_eof, bool has_body = true,
+                                  std::size_t max_body_bytes = kDefaultMaxBodyBytes) {
   return ReadHttp1Message(
       [fd](char* buffer, std::size_t capacity) {
         return static_cast<long>(recv(fd, buffer, capacity, 0));
       },
-      body_until_eof, has_body);
+      body_until_eof, has_body, max_body_bytes);
 }
 
 }  // namespace
@@ -129,7 +130,7 @@ Outcome<HttpResponse> SocketHttpClient::Send(const HttpRequest& request) {
   // (issue #192) — honouring that header would block for a body the server
   // is required not to send.
   auto message = ReadMessage(fd, /*body_until_eof=*/true,
-                             /*has_body=*/request.method != "HEAD");
+                             /*has_body=*/request.method != "HEAD", max_response_bytes_);
   close(fd);
   if (!message) return std::move(message).error();
 

@@ -9,6 +9,7 @@
 
 #include "opal/client/interceptor.h"
 #include "opal/client/retry.h"
+#include "opal/http/http1.h"
 #include "opal/http/transport.h"
 #include "opal/http/websocket.h"
 
@@ -40,6 +41,16 @@ struct ClientConfig {
   // retains for reuse; the built-in socket transport opens one connection
   // per request.
   std::size_t max_idle_connections = 4;
+
+  // The largest response body a transport built from this config will hold
+  // (issue #189). Responses are buffered whole before decoding, so this is
+  // the memory one call can make the process commit: a body over it fails
+  // the call with a non-retryable transport error naming this knob — on the
+  // declared Content-Length before any of it is read where the server
+  // declares one. Both built-in transports honor it; an injected transport
+  // owns its own limit. Size it to the largest response the service can
+  // legitimately return, not to the machine.
+  std::size_t max_response_bytes = http::kDefaultMaxBodyBytes;
 
   // Full-jitter exponential backoff for transport failures and transient
   // statuses (429/5xx); retry.max_attempts = 1 disables retries.

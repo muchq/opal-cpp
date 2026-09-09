@@ -2,11 +2,13 @@
 #define OPAL_HTTP_SOCKET_TRANSPORT_H_
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <thread>
 
+#include "opal/http/http1.h"
 #include "opal/http/transport.h"
 
 namespace opal::http {
@@ -19,8 +21,14 @@ namespace opal::http {
 // pooling and TLS.
 class SocketHttpClient : public HttpClient {
  public:
-  SocketHttpClient(std::string host, int port, int timeout_ms = 30000)
-      : host_(std::move(host)), port_(port), timeout_ms_(timeout_ms) {}
+  // max_response_bytes is ClientConfig::max_response_bytes: a response body
+  // over it fails Send with a non-retryable transport error (see http1.h).
+  SocketHttpClient(std::string host, int port, int timeout_ms = 30000,
+                   std::size_t max_response_bytes = kDefaultMaxBodyBytes)
+      : host_(std::move(host)),
+        port_(port),
+        timeout_ms_(timeout_ms),
+        max_response_bytes_(max_response_bytes) {}
 
   Outcome<HttpResponse> Send(const HttpRequest& request) override;
 
@@ -28,6 +36,7 @@ class SocketHttpClient : public HttpClient {
   std::string host_;
   int port_;
   int timeout_ms_;
+  std::size_t max_response_bytes_;
 };
 
 // Built-in dependency-free HTTP/1.1 server over TCP, bound to 127.0.0.1.

@@ -21,6 +21,11 @@ namespace opal::http {
 // content-lengths are rejected outright: they are the classic
 // request-smuggling desync vectors.
 
+// The body cap both transports apply unless told otherwise: the socket
+// server's request limit, and the default for ClientConfig::max_response_bytes
+// (the same 64 MiB BeastServerTransport::Options::max_body_bytes defaults to).
+inline constexpr std::size_t kDefaultMaxBodyBytes = std::size_t{64} * 1024 * 1024;
+
 struct Http1Message {
   std::string start_line;
   Headers headers;
@@ -39,8 +44,15 @@ using Http1ReadFn = std::function<long(char* buffer, std::size_t capacity)>;
 // the HEAD response: RFC 9110 §9.3.2 has it carry the Content-Length the
 // equivalent GET would, with no body behind it, so a reader that honoured
 // the header would block for bytes that are never coming (issue #192).
+//
+// A body over max_body_bytes is refused with a non-retryable transport
+// error: a declared Content-Length over the cap before a single body byte
+// is read, an undeclared (until-EOF) body the moment it crosses the cap.
+// The cap bounds what one message can make this process hold; the caller
+// that chose it is the only one who knows what that budget is.
 Outcome<Http1Message> ReadHttp1Message(const Http1ReadFn& read, bool body_until_eof,
-                                       bool has_body = true);
+                                       bool has_body = true,
+                                       std::size_t max_body_bytes = kDefaultMaxBodyBytes);
 
 // Splits a request line "GET /target HTTP/1.1" into method and target;
 // false when the line does not have its two spaces.

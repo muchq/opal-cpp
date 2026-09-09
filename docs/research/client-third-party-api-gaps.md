@@ -191,6 +191,15 @@ JSON/blob downloads.
 **6a** for the initial third-party JSON client. Revisit **6b/6d** when a
 concrete multi-MB concurrency budget appears. Do not block 1–4 on **6c**.
 
+**Status (2026-09-09):** 6a, plus the bound it was missing:
+`ClientConfig::max_response_bytes` (default 64 MiB) caps what one buffered
+response can make the process hold, on both built-in transports. Before it
+the Beast client accepted responses of any size. 6b (a transport body sink,
+streaming only for non-retryable statuses so the retry loop stays
+transparent) is the next slice when a consumer has a blob download to make;
+6c waits for a model with a `@streaming` blob, and its upload half needs
+chunked transfer-encoding, which the http1 codec refuses by design.
+
 ---
 
 ## 7. Overall deadline

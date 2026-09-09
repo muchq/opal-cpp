@@ -125,6 +125,25 @@ cc_test(
     ],
 )
 
+# Acceptance for ClientConfig::max_response_bytes (issue #189): the
+# generated client, built from an endpoint alone, refuses a blob payload
+# over the budget without retrying and delivers one at the budget whole.
+cc_test(
+    name = "response_cap_acceptance_test",
+    size = "small",
+    srcs = ["response_cap_acceptance_test.cc"],
+    copts = OPAL_COPTS,
+    deps = [
+        ":redirector_client",
+        ":redirector_server",
+        "@googletest//:gtest_main",
+        "@opal_cpp//runtime:client",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:server",
+    ],
+)
+
 # Production-transport acceptance: the same generated service on
 # BeastServerTransport + BeastHttpClient::FromConfig (the production-guide
 # wiring), including the handler-executor and throwing-handler paths. Behind

@@ -2133,7 +2133,7 @@ struct BeastHttpClient::State {
 
     beast::flat_buffer buffer;
     bhttp::response_parser<bhttp::string_body> parser;
-    parser.body_limit(boost::none);  // Clients accept responses of any size.
+    parser.body_limit(opts.max_response_bytes);
     // A HEAD response carries the Content-Length the equivalent GET would
     // and no octets (RFC 9110 §9.3.2), so the parser has to be told the
     // message ends at the headers. Without this it waits for a body that is
@@ -2148,6 +2148,14 @@ struct BeastHttpClient::State {
       bhttp::async_read(*connection.plain, buffer, parser, read_handler);
     }
     connection.Run();
+    if (read_ec == bhttp::error::body_limit) {
+      // Over ClientConfig::max_response_bytes (issue #189). The connection is
+      // mid-body and unusable; the caller drops it. Not retryable: the peer
+      // would send the same body again.
+      return Error::Transport("beast client: response body exceeds max_response_bytes (" +
+                                  std::to_string(opts.max_response_bytes) + " bytes)",
+                              /*retryable=*/false);
+    }
     if (read_ec) {
       // A failure before any response bytes means the reused connection went
       // away between requests (clean EOF on Linux, ECONNRESET on macOS) —
@@ -2191,6 +2199,7 @@ Outcome<std::shared_ptr<BeastHttpClient>> BeastHttpClient::FromConfig(const Clie
         options.tls_options = config.tls;
         options.request_timeout_ms = config.request_timeout_ms;
         options.max_idle_connections = config.max_idle_connections;
+        options.max_response_bytes = config.max_response_bytes;
         return std::make_shared<BeastHttpClient>(std::move(options));
       },
       [](const char* what) -> Outcome<std::shared_ptr<BeastHttpClient>> {

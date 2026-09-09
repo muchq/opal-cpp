@@ -31,6 +31,32 @@ Pick a timeout from your service's latency tail (a small multiple of p99),
 not a comfortable-sounding round number: with retries enabled the worst-case
 caller wait is roughly `max_attempts × timeout` plus backoff sleeps.
 
+## Response size
+
+`config.max_response_bytes` (default 64 MiB, the same budget the server
+side gives a request) bounds the body of one response. Responses are
+buffered whole before they are decoded, so this is the memory one call can
+make your process commit; without it a misbehaving or hostile upstream can
+answer with as much as it likes. A response over the budget fails the call
+with a non-retryable transport error that names the knob — on the declared
+`Content-Length`, before any of the body is read, when the server declares
+one — and the retry loop does not spend attempts on it, because the server
+would send the same body again.
+
+Both built-in transports honor it (`SocketHttpClient` from `Create()`, and
+`BeastHttpClient::FromConfig`); a transport you inject owns its own limit.
+Size it to the largest response the service can legitimately return, not
+to the machine: a client of an API that pages at 1000 items has no reason
+to accept 64 MiB.
+
+```cpp
+config.max_response_bytes = std::size_t{4} * 1024 * 1024;  // 4 MiB: this API pages
+```
+
+Bodies are still buffered, not streamed; a sink-based transport API is the
+follow-up if a consumer needs bounded memory for large downloads
+(`docs/research/client-third-party-api-gaps.md`, §6).
+
 ## Retries
 
 Every generated client sends through `opal::SendWithRetries`
@@ -646,9 +672,10 @@ by default.
 Every knob lives on the one `ClientConfig` (issue #49):
 `config.tls.ca_pem` / `config.tls.verify_peer` for trust,
 `config.max_idle_connections` for pooling, and the same
-`config.request_timeout_ms` the rest of this guide tunes.
-`BeastHttpClient::FromConfig` reads them all — endpoint, TLS, timeout, and
-pool size come from the config, so nothing is configured twice:
+`config.request_timeout_ms` and `config.max_response_bytes` the rest of
+this guide tunes. `BeastHttpClient::FromConfig` reads them all — endpoint,
+TLS, timeout, pool size, and response budget come from the config, so
+nothing is configured twice:
 
 ```cpp
 opal::ClientConfig config;

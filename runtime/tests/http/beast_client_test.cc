@@ -508,6 +508,44 @@ TEST(BeastClientTest, ConfigAndOptionsDefaultsAgree) {
   const BeastHttpClient::Options options;
   EXPECT_EQ(config.request_timeout_ms, options.request_timeout_ms);
   EXPECT_EQ(config.max_idle_connections, options.max_idle_connections);
+  EXPECT_EQ(config.max_response_bytes, options.max_response_bytes);
+}
+
+TEST(BeastClientTest, AResponseOverMaxResponseBytesFailsWithoutRetryAndTheClientSurvives) {
+  // Issue #189: the client caps what one response can make the process
+  // hold. The over-limit failure is not retryable (the peer would send the
+  // same body again), the connection it interrupted is dropped rather than
+  // pooled, and the next request on the same client is unaffected.
+  BeastServerTransport server({.port = 0, .threads = 1});
+  ASSERT_TRUE(server.Start(EchoHandler()).ok());
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = server.port(), .max_response_bytes = 16});
+  auto over = client.Send(PostRequest(std::string(17, 'x')));
+  ASSERT_FALSE(over.ok());
+  EXPECT_FALSE(over.error().retryable());
+  EXPECT_NE(over.error().message().find("max_response_bytes (16 bytes)"), std::string::npos)
+      << over.error().message();
+
+  auto at = client.Send(PostRequest(std::string(16, 'y')));
+  ASSERT_TRUE(at.ok()) << at.error().message();
+  EXPECT_EQ(at->body, std::string(16, 'y'));
+  server.Stop();
+}
+
+TEST(BeastClientTest, FromConfigHonorsMaxResponseBytes) {
+  BeastServerTransport server({.port = 0, .threads = 1});
+  ASSERT_TRUE(server.Start(EchoHandler()).ok());
+
+  ClientConfig config;
+  config.endpoint = "http://127.0.0.1:" + std::to_string(server.port());
+  config.max_response_bytes = 8;
+  auto client = BeastHttpClient::FromConfig(config);
+  ASSERT_TRUE(client.ok()) << client.error().message();
+  auto over = (*client)->Send(PostRequest("nine bytes"));
+  ASSERT_FALSE(over.ok());
+  EXPECT_FALSE(over.error().retryable());
+  EXPECT_NE(over.error().message().find("max_response_bytes (8 bytes)"), std::string::npos);
+  server.Stop();
 }
 
 TEST(BeastClientTest, RejectsTlsServerMisconfiguration) {

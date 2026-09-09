@@ -196,6 +196,43 @@ TEST(SocketTransportTest, HandlesSequentialRequestsAndLargeBodies) {
   server.Stop();
 }
 
+TEST(SocketTransportTest, AResponseOverMaxResponseBytesFailsWithoutRetry) {
+  // Issue #189: the client caps what one response can make the process
+  // hold. Declared or not, over the cap is a non-retryable transport error
+  // naming the knob; at the cap is fine.
+  SocketHttpServer server;
+  ASSERT_TRUE(
+      server.Start([](const HttpRequest& request) { return HttpResponse{200, {}, request.body}; })
+          .ok());
+  SocketHttpClient capped("127.0.0.1", server.port(), /*timeout_ms=*/30000,
+                          /*max_response_bytes=*/16);
+  HttpRequest request;
+  request.method = "POST";
+  request.target = "/echo";
+
+  request.body = std::string(17, 'x');
+  const auto over = capped.Send(request);
+  ASSERT_FALSE(over.ok());
+  EXPECT_FALSE(over.error().retryable());
+  EXPECT_NE(over.error().message().find("max_response_bytes (16 bytes)"), std::string::npos)
+      << over.error().message();
+
+  request.body = std::string(16, 'y');
+  const auto at = capped.Send(request);
+  ASSERT_TRUE(at.ok()) << at.error().message();
+  EXPECT_EQ(at->body, request.body);
+  server.Stop();
+
+  // A peer that declares no length: the body runs to EOF and is refused the
+  // moment it crosses the cap.
+  CannedPeer peer("HTTP/1.1 200 OK\r\n\r\n" + std::string(17, 'z'));
+  SocketHttpClient client("127.0.0.1", peer.port(), 30000, 16);
+  const auto undeclared = client.Send(HttpRequest{});
+  ASSERT_FALSE(undeclared.ok());
+  EXPECT_FALSE(undeclared.error().retryable());
+  EXPECT_NE(undeclared.error().message().find("max_response_bytes"), std::string::npos);
+}
+
 TEST(SocketTransportTest, StripsHandlerSetFramingHeaders) {
   // The transport is authoritative for framing (issue #46): it already strips
   // handler-set content-length/connection, but a handler-set
