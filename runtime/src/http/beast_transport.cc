@@ -2191,7 +2191,11 @@ struct BeastHttpClient::State {
       }
     }
 
-    std::array<char, 16 * 1024> scratch;
+    // The window each read fills before its piece goes to the sink (or into
+    // the buffered body): large enough that a megabyte is not a syscall
+    // storm, small enough to sit on the stack without a thought.
+    constexpr std::size_t kBodyWindowBytes = std::size_t{16} * 1024;
+    std::array<char, kBodyWindowBytes> scratch;
     while (!parser.is_done()) {
       parser.get().body().data = scratch.data();
       parser.get().body().size = scratch.size();
