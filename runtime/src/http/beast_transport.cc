@@ -1966,6 +1966,18 @@ std::string SetupClientTlsContext(asio::ssl::context& ssl_context, const TlsOpti
   return "";
 }
 
+// The message's fields as Headers. Called twice per response: once after the
+// header, for the sink's accept() decision, and once after the body, because
+// Beast folds chunked trailer fields into the same message as it reads.
+template <typename Message>
+Headers FieldsOf(const Message& message) {
+  Headers headers;
+  for (const auto& field : message) {
+    headers.Add(std::string(field.name_string()), std::string(field.value()));
+  }
+  return headers;
+}
+
 // One dialed connection. Beast's stream timeouts only apply to asynchronous
 // operations, so Send() runs async chains and drives the connection's own
 // io_context to completion — which also makes concurrent Send() calls
@@ -2011,6 +2023,13 @@ struct BeastHttpClient::State {
 
   std::chrono::milliseconds Timeout() const {
     return std::chrono::milliseconds(std::max(opts.request_timeout_ms, 1));
+  }
+
+  // Not retryable: the peer would send the same body again.
+  Error OverResponseCap() const {
+    return Error::Transport("beast client: response body exceeds max_response_bytes (" +
+                                std::to_string(opts.max_response_bytes) + " bytes)",
+                            /*retryable=*/false);
   }
 
   std::unique_ptr<ClientConnection> TakeIdle() {
@@ -2111,11 +2130,17 @@ struct BeastHttpClient::State {
   // One request/response over the connection. `stale` reports failures that
   // look like a dead keep-alive connection (safe to retry on a fresh dial);
   // `keep_alive` reports whether the response permits reusing the connection.
+  // A `sink` that accepts the response takes its body instead of the body
+  // being buffered (issue #213). `sink_took_bytes` reports whether any piece
+  // actually reached it — not merely that it accepted — because that is the
+  // point after which no failure can be retried.
   Outcome<HttpResponse> RoundTrip(ClientConnection& connection,
                                   const bhttp::request<bhttp::string_body>& wire, bool* stale,
-                                  bool* keep_alive) const {
+                                  bool* keep_alive, const BodySink* sink,
+                                  bool* sink_took_bytes) const {
     *stale = false;
     *keep_alive = false;
+    *sink_took_bytes = false;
     connection.lowest().expires_after(Timeout());
     beast::error_code write_ec;
     auto write_handler = [&write_ec](beast::error_code ec, std::size_t) { write_ec = ec; };
@@ -2131,31 +2156,32 @@ struct BeastHttpClient::State {
       return Error::Transport("beast client: write failed: " + write_ec.message());
     }
 
+    // buffer_body hands the body over in pieces, which is what lets an
+    // accepted sink see it without this process ever holding it whole. The
+    // size budget moves with it: Beast's own body_limit counts what it
+    // buffers, and below, nothing accepted is buffered at all.
     beast::flat_buffer buffer;
-    bhttp::response_parser<bhttp::string_body> parser;
-    parser.body_limit(opts.max_response_bytes);
+    bhttp::response_parser<bhttp::buffer_body> parser;
+    parser.body_limit(boost::none);
     // A HEAD response carries the Content-Length the equivalent GET would
     // and no octets (RFC 9110 §9.3.2), so the parser has to be told the
     // message ends at the headers. Without this it waits for a body that is
     // required not to arrive, and the request only ends at the timeout.
     parser.skip(wire.method_string() == "HEAD");
-    connection.lowest().expires_after(Timeout());
+    // One deadline for the whole response rather than one per read.
+    // Re-arming the timer before each window would turn request_timeout_ms
+    // into an idle timeout, and a peer that drips a byte before every reset
+    // could hold this synchronous call — and its thread — open indefinitely.
+    const auto response_deadline = std::chrono::steady_clock::now() + Timeout();
+    connection.lowest().expires_at(response_deadline);
     beast::error_code read_ec;
     auto read_handler = [&read_ec](beast::error_code ec, std::size_t) { read_ec = ec; };
     if (connection.tls != nullptr) {
-      bhttp::async_read(*connection.tls, buffer, parser, read_handler);
+      bhttp::async_read_header(*connection.tls, buffer, parser, read_handler);
     } else {
-      bhttp::async_read(*connection.plain, buffer, parser, read_handler);
+      bhttp::async_read_header(*connection.plain, buffer, parser, read_handler);
     }
     connection.Run();
-    if (read_ec == bhttp::error::body_limit) {
-      // Over ClientConfig::max_response_bytes (issue #189). The connection is
-      // mid-body and unusable; the caller drops it. Not retryable: the peer
-      // would send the same body again.
-      return Error::Transport("beast client: response body exceeds max_response_bytes (" +
-                                  std::to_string(opts.max_response_bytes) + " bytes)",
-                              /*retryable=*/false);
-    }
     if (read_ec) {
       // A failure before any response bytes means the reused connection went
       // away between requests (clean EOF on Linux, ECONNRESET on macOS) —
@@ -2165,14 +2191,80 @@ struct BeastHttpClient::State {
       return Error::Transport("beast client: read failed: " + read_ec.message());
     }
 
-    const auto& wire_response = parser.get();
     HttpResponse response;
-    response.status = static_cast<int>(wire_response.result_int());
-    for (const auto& field : wire_response) {
-      response.headers.Add(std::string(field.name_string()), std::string(field.value()));
+    response.status = static_cast<int>(parser.get().result_int());
+    // What has actually arrived at this point. Trailers come with the body,
+    // so the headers the response finally carries are rebuilt after the loop.
+    const Headers header_fields = FieldsOf(parser.get());
+    // The status and headers are in hand, which is the only moment a sink can
+    // be asked: early enough to keep the body out of memory, late enough to
+    // know what the body is.
+    const bool stream = sink != nullptr && sink->accept != nullptr && sink->write != nullptr &&
+                        sink->accept(response.status, header_fields);
+    if (!stream) {
+      // Refused on the declaration, before a byte of it is read (issue #189).
+      const auto declared = parser.content_length();
+      if (declared.has_value() && *declared > opts.max_response_bytes) {
+        return OverResponseCap();
+      }
     }
-    response.body = wire_response.body();
-    *keep_alive = wire_response.keep_alive();
+
+    // The window each read fills before its piece goes to the sink (or into
+    // the buffered body): large enough that a megabyte is not a syscall
+    // storm, small enough to sit on the stack without a thought.
+    constexpr std::size_t kBodyWindowBytes = std::size_t{16} * 1024;
+    std::array<char, kBodyWindowBytes> scratch;
+    while (!parser.is_done()) {
+      parser.get().body().data = scratch.data();
+      parser.get().body().size = scratch.size();
+      connection.lowest().expires_at(response_deadline);
+      read_ec = {};
+      if (connection.tls != nullptr) {
+        bhttp::async_read_some(*connection.tls, buffer, parser, read_handler);
+      } else {
+        bhttp::async_read_some(*connection.plain, buffer, parser, read_handler);
+      }
+      connection.Run();
+      // need_buffer is Beast saying "your buffer is full", not a failure.
+      if (read_ec == bhttp::error::need_buffer) {
+        read_ec = {};
+      }
+      if (read_ec) {
+        // Mid-body, so never a stale pooled connection — and never retryable
+        // once a sink has taken bytes, because a second attempt would hand it
+        // the start of the body twice with no way to take the first back. A
+        // sink that accepted but has been handed nothing yet (headers, then a
+        // peer that vanished) has nothing to take back, so that stays
+        // retryable.
+        return Error::Transport("beast client: read failed: " + read_ec.message(),
+                                /*retryable=*/!*sink_took_bytes);
+      }
+      const std::size_t produced = scratch.size() - parser.get().body().size;
+      if (produced == 0) {
+        continue;
+      }
+      const std::string_view piece(scratch.data(), produced);
+      if (stream) {
+        if (!sink->write(piece)) {
+          return Error::Transport("beast client: the response body sink aborted the transfer",
+                                  /*retryable=*/false);
+        }
+        *sink_took_bytes = true;
+        continue;
+      }
+      // Buffered: max_response_bytes is the budget for what this process
+      // holds, so it bounds this branch and only this branch.
+      if (response.body.size() + produced > opts.max_response_bytes) {
+        return OverResponseCap();
+      }
+      response.body.append(piece);
+    }
+
+    // From the finished message, not the header phase: Beast folds chunked
+    // trailer fields in as the body is read, and a Digest trailer on a
+    // streamed download is exactly the kind of thing a caller needs.
+    response.headers = FieldsOf(parser.get());
+    *keep_alive = parser.get().keep_alive();
     return response;
   }
 };
@@ -2214,14 +2306,28 @@ Outcome<HttpResponse> BeastHttpClient::Send(const HttpRequest& request) {
   // from the sync drive under memory pressure; Contain turns it into a
   // transport Error instead of unwinding into the caller.
   return opal::internal::Contain(
-      [&]() -> Outcome<HttpResponse> { return SendContained(request); },
+      [&]() -> Outcome<HttpResponse> { return SendContained(request, nullptr); },
       [](const char* what) -> Outcome<HttpResponse> {
         return Error::Transport(std::string("beast client: send failed: ") +
                                 (what != nullptr ? what : "unknown exception"));
       });
 }
 
-Outcome<HttpResponse> BeastHttpClient::SendContained(const HttpRequest& request) {
+Outcome<HttpResponse> BeastHttpClient::SendStreaming(const HttpRequest& request,
+                                                     const BodySink& sink) {
+  // Contained for the same reason Send() is — and a sink callback that throws
+  // is contained here too rather than unwinding through the io drive.
+  return opal::internal::Contain(
+      [&]() -> Outcome<HttpResponse> { return SendContained(request, &sink); },
+      [](const char* what) -> Outcome<HttpResponse> {
+        return Error::Transport(std::string("beast client: send failed: ") +
+                                    (what != nullptr ? what : "unknown exception"),
+                                /*retryable=*/false);
+      });
+}
+
+Outcome<HttpResponse> BeastHttpClient::SendContained(const HttpRequest& request,
+                                                     const BodySink* sink) {
   if (state_->opts.host.empty()) {
     return Error::Validation("beast client: options need a host");
   }
@@ -2258,15 +2364,19 @@ Outcome<HttpResponse> BeastHttpClient::SendContained(const HttpRequest& request)
 
   bool stale = false;
   bool keep_alive = false;
-  auto outcome = state_->RoundTrip(*connection, wire, &stale, &keep_alive);
-  if (!outcome && reused && stale) {
+  bool sink_took_bytes = false;
+  auto outcome = state_->RoundTrip(*connection, wire, &stale, &keep_alive, sink, &sink_took_bytes);
+  // A stale connection is only ever diagnosed before the body, so no sink can
+  // have taken bytes here — the condition says so anyway, because the failure
+  // mode it rules out (handing a sink the body twice) is silent.
+  if (!outcome && reused && stale && !sink_took_bytes) {
     // The pooled connection died between requests; retry once on a fresh one.
     auto dialed = state_->Dial();
     if (!dialed) {
       return std::move(dialed).error();
     }
     connection = std::move(dialed).value();
-    outcome = state_->RoundTrip(*connection, wire, &stale, &keep_alive);
+    outcome = state_->RoundTrip(*connection, wire, &stale, &keep_alive, sink, &sink_took_bytes);
   }
   if (!outcome) {
     return std::move(outcome).error();

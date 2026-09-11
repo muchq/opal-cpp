@@ -82,6 +82,24 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Added
 
+- **A response body sink: `HttpClient::SendStreaming`** (#213, slice 1 of
+  `@streaming` blob support). A caller that does not want a response body
+  buffered passes an `opal::http::BodySink` — an `accept(status, headers)`
+  asked once per response, and a `write(piece)` given the body in order as it
+  arrives — and gets back the status and headers with an empty body. It is
+  what `max_response_bytes` cannot be: that cap bounds what this process
+  holds, and a download whose size the service does not bound needs the
+  process not to hold it. `BeastHttpClient` streams for real and never
+  assembles an accepted body; every other transport inherits a default that
+  buffers and then hands the body over in one piece, so the contract holds
+  everywhere and the memory bound follows the transport. Deciding per response
+  is deliberate: a sink that takes 200s leaves a modeled error's document in
+  `response.body` where the generated client already reads it. `SendWithRetries`
+  gains an overload taking a sink, and withholds retryable statuses from it
+  while retries are enabled — streaming a 503's error document and then
+  retrying would hand the sink two bodies' worth of bytes with no way to take
+  the first back. Generated clients do not expose a sink yet; a `@streaming`
+  blob member still generates a buffered `opal::Blob` (#213 slice 2).
 - **A dependency-free Prometheus `/metrics` endpoint** (#91, first work
   item). `opal::server::MetricsRegistry` aggregates the existing `Observe`
   hooks into the five `http_server_*` families labeled by `service_name`,

@@ -25,6 +25,12 @@ class Interceptor {
   // Runs after each attempt with the request as sent and the transport
   // outcome (a response of any status, or a transport error). Observe only:
   // logging, metrics, tracing.
+  //
+  // On a call whose body went to a BodySink (opal/http/transport.h), the
+  // response carries its status and headers and an empty body — the bytes
+  // went to the sink and were never assembled anywhere for a hook to read.
+  // An interceptor that logs response bodies sees nothing there rather than
+  // something truncated.
   virtual void ReadAfterTransmit(const http::HttpRequest& request,
                                  const Outcome<http::HttpResponse>& outcome, int attempt) {
     (void)request;

@@ -50,6 +50,27 @@ inline Outcome<http::HttpResponse> SendWithRetries(http::HttpClient& transport,
   return SendWithRetries(transport, request, policy, {});
 }
 
+// The same, with the response body streamed to `sink` rather than buffered
+// (issue #213). Retries and streaming disagree about one thing, and this
+// settles it: while retries are enabled, a retryable status (429/5xx) is
+// buffered into HttpResponse::body and never offered to the sink. Streaming a
+// 503's error document and then retrying would leave the sink holding that
+// body followed by the real one, with nothing able to take the first back.
+//
+// The rule is the same on the last attempt as on the first, deliberately: a
+// sink takes payloads, never a transient failure's error document, and which
+// attempt produced a 503 is not something a caller should have to reason
+// about. Nothing is lost either way — such a body is small, and it arrives
+// where every other error document already does. With retries disabled
+// (max_attempts = 1) no response can be discarded, so the caller's accept()
+// stands unaltered for every status.
+//
+// A failure after the sink has taken bytes is not retryable, so the loop ends
+// there whatever the policy says.
+Outcome<http::HttpResponse> SendWithRetries(
+    http::HttpClient& transport, const http::HttpRequest& request, const RetryPolicy& policy,
+    const std::vector<std::shared_ptr<Interceptor>>& interceptors, const http::BodySink& sink);
+
 }  // namespace opal
 
 #endif  // OPAL_CLIENT_RETRY_H_
