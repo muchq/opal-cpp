@@ -9,6 +9,7 @@
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -106,6 +107,34 @@ TEST(BodySinkTest, ASinkThatAbortsFailsTheCallAndIsNotRetryable) {
   ASSERT_FALSE(response.ok());
   EXPECT_FALSE(response.error().retryable());
   EXPECT_NE(response.error().message().find("sink aborted"), std::string::npos)
+      << response.error().message();
+}
+
+TEST(BodySinkTest, AThrowingSinkIsContainedRatherThanUnwound) {
+  // Sink callbacks are caller code the runtime invokes on its completion
+  // path, so ADR-0003 applies: an exception from one becomes a failed call,
+  // never something that crosses the Outcome boundary. The fallback has to
+  // contain them for the same reason BeastHttpClient does — otherwise which
+  // transport is underneath decides whether a throwing sink is a failure or
+  // a crash.
+  Loopback transport = Echoing("payload");
+
+  const BodySink throwing_accept{
+      .accept = [](int, const Headers&) -> bool { throw std::runtime_error("accept blew up"); },
+      .write = [](std::string_view) { return true; }};
+  auto response = transport.SendStreaming(HttpRequest{}, throwing_accept);
+  ASSERT_FALSE(response.ok());
+  EXPECT_FALSE(response.error().retryable());
+  EXPECT_NE(response.error().message().find("accept blew up"), std::string::npos)
+      << response.error().message();
+
+  const BodySink throwing_write{
+      .accept = [](int, const Headers&) { return true; },
+      .write = [](std::string_view) -> bool { throw std::runtime_error("write blew up"); }};
+  response = transport.SendStreaming(HttpRequest{}, throwing_write);
+  ASSERT_FALSE(response.ok());
+  EXPECT_FALSE(response.error().retryable());
+  EXPECT_NE(response.error().message().find("write blew up"), std::string::npos)
       << response.error().message();
 }
 

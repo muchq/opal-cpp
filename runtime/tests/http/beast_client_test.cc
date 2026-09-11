@@ -73,6 +73,52 @@ BeastServerTransport::Options TlsServerOptions(int threads = 1) {
           .tls_private_key_pem = kTestPrivateKeyPem};
 }
 
+// A raw loopback peer that answers one request with scripted writes, for the
+// wire shapes BeastServerTransport does not produce: chunked framing with
+// trailers, a body that arrives one drip at a time, or headers followed by a
+// peer that vanishes. It stops early when a write fails, so a client that
+// gave up does not leave the test waiting out the script.
+class ScriptedPeer {
+ public:
+  explicit ScriptedPeer(std::vector<std::string> writes,
+                        std::chrono::milliseconds gap = std::chrono::milliseconds(0))
+      : acceptor_(io_,
+                  boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 0)) {
+    port_ = acceptor_.local_endpoint().port();
+    thread_ = std::thread([this, writes = std::move(writes), gap] {
+      boost::system::error_code ec;
+      boost::asio::ip::tcp::socket socket(io_);
+      acceptor_.accept(socket, ec);
+      if (ec) return;
+      std::array<char, 4096> scratch{};
+      (void)socket.read_some(boost::asio::buffer(scratch), ec);
+      for (const auto& piece : writes) {
+        boost::asio::write(socket, boost::asio::buffer(piece), ec);
+        if (ec) return;  // the client hung up; nothing left to script
+        if (gap.count() > 0) std::this_thread::sleep_for(gap);
+      }
+      socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    });
+  }
+
+  ~ScriptedPeer() {
+    boost::system::error_code ec;
+    acceptor_.close(ec);
+    if (thread_.joinable()) thread_.join();
+  }
+
+  ScriptedPeer(const ScriptedPeer&) = delete;
+  ScriptedPeer& operator=(const ScriptedPeer&) = delete;
+
+  int port() const { return port_; }
+
+ private:
+  boost::asio::io_context io_;
+  boost::asio::ip::tcp::acceptor acceptor_;
+  int port_ = 0;
+  std::thread thread_;
+};
+
 TEST(BeastClientTest, PlaintextRoundTripsAndReusesConnections) {
   BeastServerTransport server({.port = 0, .threads = 2});
   ASSERT_TRUE(server.Start(EchoHandler()).ok());
@@ -650,6 +696,75 @@ TEST(BeastClientTest, AStreamedResponseKeepsTheConnectionPooledForTheNextRequest
     EXPECT_EQ(received, body);
   }
   server.Stop();
+}
+
+TEST(BeastClientTest, ASlowDripCannotHoldTheCallPastTheResponseDeadline) {
+  // request_timeout_ms is a deadline for the response, not an idle timeout.
+  // Reading the body in windows means several reads where there was one, and
+  // re-arming the timer for each would let a peer that sends a byte before
+  // every reset keep this synchronous call — and its thread — alive for as
+  // long as it cares to. The script here drips for six seconds; the call must
+  // not.
+  std::vector<std::string> script{"HTTP/1.1 200 OK\r\ncontent-length: 100000\r\n\r\n"};
+  script.insert(script.end(), 100, "x");
+  ScriptedPeer peer(std::move(script), std::chrono::milliseconds(60));
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = peer.port(), .request_timeout_ms = 400});
+  const auto start = std::chrono::steady_clock::now();
+  const auto response = client.Send(PostRequest("go"));
+  const auto elapsed = std::chrono::steady_clock::now() - start;
+
+  ASSERT_FALSE(response.ok()) << "a body that never finishes arriving is not a success";
+  EXPECT_LT(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count(), 2000)
+      << "the deadline moved with the drips instead of standing still";
+}
+
+TEST(BeastClientTest, ChunkedTrailersSurviveIntoTheResponseHeaders) {
+  // Trailers arrive after the body, so headers copied at the header phase
+  // would lose them — and a Digest trailer is exactly what a caller streaming
+  // a download needs to check what it just wrote.
+  ScriptedPeer peer({
+      "HTTP/1.1 200 OK\r\n"
+      "content-type: text/plain\r\n"
+      "transfer-encoding: chunked\r\n"
+      "trailer: digest\r\n"
+      "\r\n"
+      "5\r\nhello\r\n"
+      "0\r\n"
+      "digest: sha-256=abc123\r\n"
+      "\r\n",
+  });
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = peer.port()});
+  const auto response = client.Send(PostRequest("go"));
+  ASSERT_TRUE(response.ok()) << response.error().message();
+  EXPECT_EQ(response->body, "hello");
+  EXPECT_EQ(response->headers.Get("content-type").value_or(""), "text/plain");
+  EXPECT_EQ(response->headers.Get("digest").value_or(""), "sha-256=abc123")
+      << "the trailer was dropped with the header-phase copy";
+}
+
+TEST(BeastClientTest, AcceptingASinkDoesNotByItselfMakeAFailureUnretryable) {
+  // Accepting is not taking. A peer that sends headers and then vanishes has
+  // handed the sink nothing, so there is nothing a second attempt could
+  // duplicate and the failure stays retryable — only bytes actually written
+  // close that door.
+  ScriptedPeer peer({"HTTP/1.1 200 OK\r\ncontent-length: 16\r\n\r\n"});
+
+  int pieces = 0;
+  const BodySink sink{.accept = [](int, const Headers&) { return true; },
+                      .write =
+                          [&](std::string_view) {
+                            ++pieces;
+                            return true;
+                          }};
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = peer.port()});
+  const auto response = client.SendStreaming(PostRequest("go"), sink);
+  ASSERT_FALSE(response.ok());
+  EXPECT_EQ(pieces, 0) << "the sink was handed something after all";
+  EXPECT_TRUE(response.error().retryable())
+      << "a safe retry was suppressed: " << response.error().message();
 }
 
 TEST(BeastClientTest, FromConfigHonorsMaxResponseBytes) {

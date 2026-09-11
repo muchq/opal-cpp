@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "opal/core/exception_guard.h"
 #include "opal/core/outcome.h"
 #include "opal/http/message.h"
 
@@ -75,15 +76,28 @@ class HttpClient {
     if (!outcome || sink.accept == nullptr || sink.write == nullptr) {
       return outcome;
     }
-    if (!sink.accept(outcome->status, outcome->headers)) {
-      return outcome;
-    }
-    if (!outcome->body.empty() && !sink.write(outcome->body)) {
-      return Error::Transport("http: the response body sink aborted the transfer",
-                              /*retryable=*/false);
-    }
-    outcome->body.clear();
-    return outcome;
+    // A sink callback is caller code running on the runtime's completion
+    // path, so an exception from one is contained rather than let across the
+    // Outcome boundary (ADR-0003, opal/core/exception_guard.h) — the same
+    // containment BeastHttpClient::SendStreaming gives it, so a throwing sink
+    // fails a call identically whichever transport is underneath.
+    return opal::internal::Contain(
+        [&]() -> Outcome<HttpResponse> {
+          if (!sink.accept(outcome->status, outcome->headers)) {
+            return outcome;
+          }
+          if (!outcome->body.empty() && !sink.write(outcome->body)) {
+            return Error::Transport("http: the response body sink aborted the transfer",
+                                    /*retryable=*/false);
+          }
+          outcome->body.clear();
+          return outcome;
+        },
+        [](const char* what) -> Outcome<HttpResponse> {
+          return Error::Transport(std::string("http: the response body sink threw: ") +
+                                      (what != nullptr ? what : "unknown exception"),
+                                  /*retryable=*/false);
+        });
   }
 
   // Async convenience; transports with real event loops should override.
