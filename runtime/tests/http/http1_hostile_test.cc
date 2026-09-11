@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -81,6 +82,49 @@ TEST(Http1HostileTest, RejectsHostileContentLengths) {
   for (const auto& c : bank) {
     EXPECT_FALSE(Parse(c.wire).ok()) << c.why;
   }
+}
+
+TEST(Http1HostileTest, TheBodyCapIsTheCallersAndRefusesDeclaredLengthsUnread) {
+  // A declared Content-Length over the cap is refused on the declaration:
+  // the reader must not ask for another byte once the headers are in.
+  const std::string headers = "HTTP/1.1 200 OK\r\ncontent-length: 5\r\n\r\n";
+  std::size_t reads_after_headers = 0;
+  auto counting = [&, offset = std::size_t{0}](char* buffer, std::size_t capacity) mutable -> long {
+    if (offset >= headers.size()) {
+      ++reads_after_headers;
+      return 0;
+    }
+    const std::size_t take = std::min(capacity, headers.size() - offset);
+    headers.copy(buffer, take, offset);
+    offset += take;
+    return static_cast<long>(take);
+  };
+  auto over = ReadHttp1Message(counting, /*body_until_eof=*/true, /*has_body=*/true,
+                               /*max_body_bytes=*/4);
+  ASSERT_FALSE(over.ok());
+  EXPECT_FALSE(over.error().retryable()) << "the peer would send the same body again";
+  EXPECT_NE(over.error().message().find("max_response_bytes (4 bytes)"), std::string::npos)
+      << over.error().message();
+  EXPECT_EQ(reads_after_headers, 0u) << "read past the headers before refusing the length";
+
+  // Exactly at the cap is fine, declared or not.
+  auto at = ReadHttp1Message(FromString(headers + "abcde"), true, true, 5);
+  ASSERT_TRUE(at.ok()) << at.error().message();
+  EXPECT_EQ(at->body, "abcde");
+  auto at_eof = ReadHttp1Message(FromString("HTTP/1.1 200 OK\r\n\r\nabcde"), true, true, 5);
+  ASSERT_TRUE(at_eof.ok()) << at_eof.error().message();
+  EXPECT_EQ(at_eof->body, "abcde");
+
+  // An undeclared body is refused the moment it crosses the cap, however
+  // small the reads are.
+  auto over_eof =
+      ReadHttp1Message(FromString("HTTP/1.1 200 OK\r\n\r\nabcdef", /*chunk=*/1), true, true, 5);
+  ASSERT_FALSE(over_eof.ok());
+  EXPECT_FALSE(over_eof.error().retryable());
+  EXPECT_NE(over_eof.error().message().find("max_response_bytes"), std::string::npos);
+
+  // The default is the 64 MiB the bank above pins ("one over the 64 MiB cap").
+  EXPECT_EQ(kDefaultMaxBodyBytes, std::size_t{64} * 1024 * 1024);
 }
 
 TEST(Http1HostileTest, RejectsMalformedHeaderBlocks) {

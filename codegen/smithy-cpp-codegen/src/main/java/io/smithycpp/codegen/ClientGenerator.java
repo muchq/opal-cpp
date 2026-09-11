@@ -377,7 +377,7 @@ final class ClientGenerator {
     w.closeBlock("}");
     w.write(
         "transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, "
-            + "endpoint->port, config.request_timeout_ms);");
+            + "endpoint->port, config.request_timeout_ms, config.max_response_bytes);");
     w.closeBlock("}");
     w.closeBlock("}");
     w.openBlock("if (transport == nullptr) {");

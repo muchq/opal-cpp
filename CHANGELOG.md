@@ -8,6 +8,18 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Breaking
 
+- **Client responses are capped at `ClientConfig::max_response_bytes`**,
+  default 64 MiB (issue #189). Responses are buffered whole before decoding,
+  so the cap is the memory one call can make a process commit; the Beast
+  client previously accepted responses of any size (the socket client already
+  stopped at 64 MiB, now under the same knob). A response over the cap fails
+  the call with a non-retryable transport error naming the knob — on the
+  declared `Content-Length`, before the body is read, when there is one —
+  and the retry loop does not spend attempts on it. Both built-in transports
+  honor it: the socket client `Create()` builds, and
+  `BeastHttpClient::FromConfig`. A client that legitimately receives more
+  than 64 MiB in one response sets `config.max_response_bytes` higher; an
+  injected transport is unaffected and owns its own limit.
 - **The default client `User-Agent` is `opal-cpp/<version>`**, formerly
   `smithy-cpp/<version>`, following the repository's rename to
   [`muchq/opal-cpp`](https://github.com/muchq/opal-cpp) (ADR-0024 addendum).

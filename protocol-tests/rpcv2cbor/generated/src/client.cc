@@ -140,7 +140,7 @@ opal::Outcome<RpcV2ProtocolClient> RpcV2ProtocolClient::Create(opal::ClientConfi
       if (endpoint->tls()) {
         return opal::Error::Validation("RpcV2ProtocolClient: https endpoints need a TLS-capable transport (set config.http_client, e.g. opal::http::BeastHttpClient::FromConfig)");
       }
-      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms);
+      transport = std::make_shared<opal::http::SocketHttpClient>(endpoint->host, endpoint->port, config.request_timeout_ms, config.max_response_bytes);
     }
   }
   if (transport == nullptr) {

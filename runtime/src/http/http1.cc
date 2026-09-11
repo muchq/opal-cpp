@@ -11,12 +11,18 @@ namespace opal::http {
 namespace {
 
 constexpr std::size_t kMaxHeaderBytes = std::size_t{64} * 1024;
-constexpr std::size_t kMaxBodyBytes = std::size_t{64} * 1024 * 1024;
 
 }  // namespace
 
-Outcome<Http1Message> ReadHttp1Message(const Http1ReadFn& read, bool body_until_eof,
-                                       bool has_body) {
+Error BodyTooLarge(std::size_t max_body_bytes) {
+  // Not retryable: the peer would send the same body again.
+  return Error::Transport("http: response body exceeds max_response_bytes (" +
+                              std::to_string(max_body_bytes) + " bytes)",
+                          /*retryable=*/false);
+}
+
+Outcome<Http1Message> ReadHttp1Message(const Http1ReadFn& read, bool body_until_eof, bool has_body,
+                                       std::size_t max_body_bytes) {
   std::string buffer;
   std::size_t header_end = std::string::npos;
   std::array<char, 8192> chunk{};
@@ -83,8 +89,12 @@ Outcome<Http1Message> ReadHttp1Message(const Http1ReadFn& read, bool body_until_
     }
     char* end = nullptr;
     const unsigned long long length = std::strtoull(length_text->c_str(), &end, 10);
-    if (end != length_text->c_str() + length_text->size() || length > kMaxBodyBytes) {
+    if (end != length_text->c_str() + length_text->size()) {
       return Error::Transport("http: invalid content-length");
+    }
+    if (length > max_body_bytes) {
+      // Refused on the declaration, before any of it is read.
+      return BodyTooLarge(max_body_bytes);
     }
     while (message.body.size() < length) {
       const long received = read(chunk.data(), chunk.size());
@@ -94,7 +104,9 @@ Outcome<Http1Message> ReadHttp1Message(const Http1ReadFn& read, bool body_until_
     if (message.body.size() != length) return Error::Transport("http: excess body bytes");
   } else if (body_until_eof) {
     while (true) {
-      if (message.body.size() > kMaxBodyBytes) return Error::Transport("http: body too large");
+      // Checked before each read, not after each append: the header read may
+      // already have pulled the whole body into the buffer.
+      if (message.body.size() > max_body_bytes) return BodyTooLarge(max_body_bytes);
       const long received = read(chunk.data(), chunk.size());
       if (received < 0) return Error::Transport("http: read failed");
       if (received == 0) break;
