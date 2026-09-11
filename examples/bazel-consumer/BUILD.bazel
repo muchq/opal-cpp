@@ -125,6 +125,24 @@ cc_test(
     ],
 )
 
+# Acceptance for the response body sink (issue #213): a consumer pulling a
+# blob payload off a generated server without the body landing in a response
+# object, and leaving a modeled error's document where the client looks for it.
+cc_test(
+    name = "response_sink_acceptance_test",
+    size = "small",
+    srcs = ["response_sink_acceptance_test.cc"],
+    copts = OPAL_COPTS,
+    deps = [
+        ":redirector_client",
+        ":redirector_server",
+        "@googletest//:gtest_main",
+        "@opal_cpp//runtime:core",
+        "@opal_cpp//runtime:http",
+        "@opal_cpp//runtime:server",
+    ],
+)
+
 # Acceptance for ClientConfig::max_response_bytes (issue #189): the
 # generated client, built from an endpoint alone, refuses a blob payload
 # over the budget without retrying and delivers one at the budget whole.

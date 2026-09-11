@@ -53,9 +53,51 @@ to accept 64 MiB.
 config.max_response_bytes = std::size_t{4} * 1024 * 1024;  // 4 MiB: this API pages
 ```
 
-Bodies are still buffered, not streamed; a sink-based transport API is the
-follow-up if a consumer needs bounded memory for large downloads
-(`docs/research/client-third-party-api-gaps.md`, §6).
+## Streaming a response body
+
+The cap above bounds a buffered body. A download whose size the service does
+not bound needs the other thing: not holding it at all. `SendStreaming` takes
+an `opal::http::BodySink` and hands the body over in pieces as it arrives.
+
+```cpp
+std::ofstream out("export.pgn", std::ios::binary);
+const opal::http::BodySink to_file{
+    .accept = [](int status, const opal::http::Headers&) { return status == 200; },
+    .write = [&](std::string_view piece) { return out.write(piece.data(), piece.size()).good(); },
+};
+auto response = transport->SendStreaming(request, to_file);
+```
+
+- **`accept` is asked once per response**, after the status and headers and
+  before any body byte. True streams the body; false buffers it into
+  `response.body` exactly as `Send` would. Deciding per response is what lets
+  a caller take the payload and leave a 404's error document where the rest
+  of the client already knows to read it.
+- **`write` gets each piece in order**, never empty, valid only for the call.
+  Returning false aborts the transfer: the send fails with a non-retryable
+  error and the connection is dropped rather than reused.
+- **On a streamed response `max_response_bytes` does not apply.** The cap
+  bounds what this process holds, and a sink holds nothing here. A declined
+  response is buffered and capped as always.
+- **`BeastHttpClient` is the transport that actually streams.** Every other
+  transport inherits a default that buffers and then hands the body over in
+  one piece: same delivery, same empty `response.body`, no memory bound. So
+  the API works everywhere and pays off where it matters.
+- **Interceptors see a streamed response without its body** — status and
+  headers, and nothing under them, because nothing was ever assembled.
+
+With retries enabled, a retryable status (429/5xx) is never offered to the
+sink, on any attempt: streaming a 503's error document and then retrying
+would leave the sink holding it followed by the real body, with no way to
+take the first back. Such a body arrives in `response.body` instead, where
+error documents already go. `opal::SendWithRetries` has an overload that
+takes a sink and applies this rule.
+
+Generated clients do not expose a sink yet — a `@streaming` blob member still
+generates a fully buffered `opal::Blob`. That is
+[#213](https://github.com/muchq/opal-cpp/issues/213) slice 2; today a caller
+that needs this drives the transport directly, as
+`examples/bazel-consumer/response_sink_acceptance_test.cc` does.
 
 ## Retries
 

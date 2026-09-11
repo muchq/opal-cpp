@@ -191,14 +191,24 @@ JSON/blob downloads.
 **6a** for the initial third-party JSON client. Revisit **6b/6d** when a
 concrete multi-MB concurrency budget appears. Do not block 1–4 on **6c**.
 
-**Status (2026-09-09):** 6a, plus the bound it was missing:
-`ClientConfig::max_response_bytes` (default 64 MiB) caps what one buffered
-response can make the process hold, on both built-in transports. Before it
-the Beast client accepted responses of any size. 6b (a transport body sink,
-streaming only for non-retryable statuses so the retry loop stays
-transparent) is the next slice when a consumer has a blob download to make;
-6c waits for a model with a `@streaming` blob, and its upload half needs
-chunked transfer-encoding, which the http1 codec refuses by design.
+**Status (2026-09-11):** 6a and 6b are in; 6c is
+[#213](https://github.com/muchq/opal-cpp/issues/213).
+
+- **6a + the bound it was missing:** `ClientConfig::max_response_bytes`
+  (default 64 MiB) caps what one buffered response can make the process hold,
+  on both built-in transports. Before it the Beast client accepted responses
+  of any size.
+- **6b:** `HttpClient::SendStreaming` takes an `opal::http::BodySink` and
+  hands an accepted body over in pieces; `BeastHttpClient` never holds one,
+  and every other transport inherits a buffering default that honors the same
+  contract. A retryable status is never offered to the sink while retries are
+  enabled, so the retry loop stays transparent. `max_response_bytes` bounds
+  the buffered path only — the cap is about what this process holds.
+- **6c** (a `@streaming` blob behind a generated method) is the remaining
+  work, driven by
+  [MoonBase#1527](https://github.com/muchq/MoonBase/issues/1527). Its upload
+  half needs chunked transfer-encoding, which the http1 codec refuses by
+  design, and is not part of it.
 
 ---
 

@@ -28,26 +28,46 @@ bool RetryableStatus(int status) {
   return status == 429 || status == 500 || status == 502 || status == 503 || status == 504;
 }
 
-Outcome<http::HttpResponse> SendWithRetries(
+namespace {
+
+Outcome<http::HttpResponse> SendWithRetriesImpl(
     http::HttpClient& transport, const http::HttpRequest& request, const RetryPolicy& policy,
-    const std::vector<std::shared_ptr<Interceptor>>& interceptors) {
+    const std::vector<std::shared_ptr<Interceptor>>& interceptors, const http::BodySink* sink) {
   const auto sleep = policy.sleep != nullptr ? policy.sleep : [](std::chrono::milliseconds d) {
     std::this_thread::sleep_for(d);
   };
   const auto jitter = policy.jitter != nullptr ? policy.jitter : UniformJitter;
   const int attempts = std::max(policy.max_attempts, 1);
 
+  // With retries enabled, a retryable status is kept away from the sink (see
+  // the header): accept() is never even consulted for one, on any attempt, so
+  // a sink takes payloads and never a transient failure's error document.
+  // With retries disabled nothing can be discarded, and the caller's own
+  // decision stands unaltered.
+  http::BodySink guarded;
+  if (sink != nullptr) {
+    guarded = *sink;
+    if (attempts > 1 && guarded.accept != nullptr) {
+      guarded.accept = [accept = guarded.accept](int status, const http::Headers& headers) {
+        return !RetryableStatus(status) && accept(status, headers);
+      };
+    }
+  }
+  const auto send = [&](const http::HttpRequest& outgoing) {
+    return sink != nullptr ? transport.SendStreaming(outgoing, guarded) : transport.Send(outgoing);
+  };
+
   // Each attempt mutates a fresh copy, so interceptor edits never accumulate
   // across retries.
   const auto attempt_send = [&](int attempt) -> Outcome<http::HttpResponse> {
     if (interceptors.empty()) {
-      return transport.Send(request);  // skip the request copy
+      return send(request);  // skip the request copy
     }
     http::HttpRequest attempt_request = request;
     for (const auto& interceptor : interceptors) {
       interceptor->ModifyBeforeTransmit(attempt_request, attempt);
     }
-    Outcome<http::HttpResponse> outcome = transport.Send(attempt_request);
+    Outcome<http::HttpResponse> outcome = send(attempt_request);
     for (const auto& interceptor : interceptors) {
       interceptor->ReadAfterTransmit(attempt_request, outcome, attempt);
     }
@@ -65,6 +85,20 @@ Outcome<http::HttpResponse> SendWithRetries(
     outcome = attempt_send(retry + 1);
   }
   return outcome;
+}
+
+}  // namespace
+
+Outcome<http::HttpResponse> SendWithRetries(
+    http::HttpClient& transport, const http::HttpRequest& request, const RetryPolicy& policy,
+    const std::vector<std::shared_ptr<Interceptor>>& interceptors) {
+  return SendWithRetriesImpl(transport, request, policy, interceptors, nullptr);
+}
+
+Outcome<http::HttpResponse> SendWithRetries(
+    http::HttpClient& transport, const http::HttpRequest& request, const RetryPolicy& policy,
+    const std::vector<std::shared_ptr<Interceptor>>& interceptors, const http::BodySink& sink) {
+  return SendWithRetriesImpl(transport, request, policy, interceptors, &sink);
 }
 
 }  // namespace opal

@@ -532,6 +532,126 @@ TEST(BeastClientTest, AResponseOverMaxResponseBytesFailsWithoutRetryAndTheClient
   server.Stop();
 }
 
+TEST(BeastClientTest, AnAcceptedResponseBodyArrivesInPiecesAndIsNeverBuffered) {
+  // Issue #213. The pieces are the whole point: the default SendStreaming
+  // buffers and hands the body over in one, so more than one piece is the
+  // observable difference between streaming a body and having streamed
+  // nothing. A megabyte through a 16 KiB read buffer is many.
+  BeastServerTransport server({.port = 0, .threads = 1});
+  ASSERT_TRUE(server.Start(EchoHandler()).ok());
+
+  const std::string body(1024 * 1024, 'p');
+  std::string received;
+  int pieces = 0;
+  const BodySink sink{
+      .accept = [](int status, const Headers&) { return status == 200; },
+      .write =
+          [&](std::string_view piece) {
+            ++pieces;
+            received.append(piece);
+            return true;
+          },
+  };
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = server.port()});
+  const auto response = client.SendStreaming(PostRequest(body), sink);
+  ASSERT_TRUE(response.ok()) << response.error().message();
+  EXPECT_EQ(response->status, 200);
+  EXPECT_EQ(received, body);
+  EXPECT_TRUE(response->body.empty());
+  EXPECT_GT(pieces, 1) << "the body arrived whole, which is not streaming";
+  server.Stop();
+}
+
+TEST(BeastClientTest, AnAcceptedResponseIsNotBoundByMaxResponseBytes) {
+  // The cap bounds what this process holds (#189). A sink holds it instead,
+  // so a body far over the cap streams through without complaint — that is
+  // the capability the cap alone could not provide, and the reason #213
+  // exists.
+  BeastServerTransport server({.port = 0, .threads = 1});
+  ASSERT_TRUE(server.Start(EchoHandler()).ok());
+
+  const std::string body(64 * 1024, 'q');
+  std::size_t received = 0;
+  const BodySink sink{
+      .accept = [](int, const Headers&) { return true; },
+      .write =
+          [&](std::string_view piece) {
+            received += piece.size();
+            return true;
+          },
+  };
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = server.port(), .max_response_bytes = 16});
+  const auto streamed = client.SendStreaming(PostRequest(body), sink);
+  ASSERT_TRUE(streamed.ok()) << streamed.error().message();
+  EXPECT_EQ(received, body.size());
+
+  // Declined, the same response on the same client is buffered — and capped.
+  const BodySink declining{.accept = [](int, const Headers&) { return false; },
+                           .write = [](std::string_view) { return true; }};
+  const auto buffered = client.SendStreaming(PostRequest(body), declining);
+  ASSERT_FALSE(buffered.ok());
+  EXPECT_FALSE(buffered.error().retryable());
+  EXPECT_NE(buffered.error().message().find("max_response_bytes (16 bytes)"), std::string::npos)
+      << buffered.error().message();
+  server.Stop();
+}
+
+TEST(BeastClientTest, ASinkThatAbortsFailsTheCallAndTheClientStaysUsable) {
+  // The connection is abandoned mid-body, so it must not go back in the pool
+  // with a half-read response on it; the next request proves it did not.
+  BeastServerTransport server({.port = 0, .threads = 1});
+  ASSERT_TRUE(server.Start(EchoHandler()).ok());
+
+  int pieces = 0;
+  const BodySink giving_up{
+      .accept = [](int, const Headers&) { return true; },
+      .write =
+          [&](std::string_view) {
+            ++pieces;
+            return false;  // the caller's own budget, hit on the first piece
+          },
+  };
+
+  BeastHttpClient client({.host = "127.0.0.1", .port = server.port()});
+  const auto aborted = client.SendStreaming(PostRequest(std::string(1024 * 1024, 'z')), giving_up);
+  ASSERT_FALSE(aborted.ok());
+  EXPECT_FALSE(aborted.error().retryable());
+  EXPECT_NE(aborted.error().message().find("sink aborted"), std::string::npos)
+      << aborted.error().message();
+  EXPECT_EQ(pieces, 1) << "reading continued after the sink said stop";
+
+  const auto after = client.Send(PostRequest("still fine"));
+  ASSERT_TRUE(after.ok()) << after.error().message();
+  EXPECT_EQ(after->body, "still fine");
+  server.Stop();
+}
+
+TEST(BeastClientTest, AStreamedResponseKeepsTheConnectionPooledForTheNextRequest) {
+  // Streaming reads the body to completion like any other send, so the
+  // connection is still in a reusable state afterwards.
+  BeastServerTransport server({.port = 0, .threads = 1});
+  ASSERT_TRUE(server.Start(EchoHandler()).ok());
+
+  std::string received;
+  const BodySink sink{.accept = [](int, const Headers&) { return true; },
+                      .write =
+                          [&](std::string_view piece) {
+                            received.append(piece);
+                            return true;
+                          }};
+  BeastHttpClient client({.host = "127.0.0.1", .port = server.port()});
+  for (int i = 0; i < 3; ++i) {
+    received.clear();
+    const std::string body = "round " + std::to_string(i);
+    const auto response = client.SendStreaming(PostRequest(body), sink);
+    ASSERT_TRUE(response.ok()) << response.error().message();
+    EXPECT_EQ(received, body);
+  }
+  server.Stop();
+}
+
 TEST(BeastClientTest, FromConfigHonorsMaxResponseBytes) {
   BeastServerTransport server({.port = 0, .threads = 1});
   ASSERT_TRUE(server.Start(EchoHandler()).ok());

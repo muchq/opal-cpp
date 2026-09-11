@@ -276,12 +276,19 @@ class BeastHttpClient : public HttpClient {
 
   Outcome<HttpResponse> Send(const HttpRequest& request) override;
 
+  // Streams an accepted response body to the sink and never holds it whole
+  // (issue #213), which is what max_response_bytes cannot do for a download
+  // whose size the model does not bound. A declined response is buffered and
+  // capped exactly as Send() buffers and caps it.
+  Outcome<HttpResponse> SendStreaming(const HttpRequest& request, const BodySink& sink) override;
+
  private:
   struct State;  // Hides boost headers from this public header.
 
-  // Send()'s body; Send() wraps it so no exception (a bad_alloc from the sync
-  // drive) crosses the Outcome boundary (ADR-0003).
-  Outcome<HttpResponse> SendContained(const HttpRequest& request);
+  // Both public sends' body (`sink` null for Send()); they wrap it so no
+  // exception (a bad_alloc from the sync drive, or a throwing sink callback)
+  // crosses the Outcome boundary (ADR-0003).
+  Outcome<HttpResponse> SendContained(const HttpRequest& request, const BodySink* sink);
 
   std::shared_ptr<State> state_;
 };
