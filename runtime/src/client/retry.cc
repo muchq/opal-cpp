@@ -1,7 +1,13 @@
 #include "opal/client/retry.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <optional>
 #include <random>
+#include <string>
 #include <thread>
 
 namespace opal {
@@ -24,11 +30,68 @@ std::chrono::milliseconds RetryDelay(const RetryPolicy& policy, int retry, doubl
       static_cast<std::int64_t>(static_cast<double>(ceiling.count()) * jitter01));
 }
 
+std::optional<std::chrono::milliseconds> RetryAfterDelay(const http::Headers& headers,
+                                                         Timestamp now) {
+  const auto value = headers.Get("retry-after");
+  if (!value.has_value() || value->empty()) {
+    return std::nullopt;
+  }
+
+  // delta-seconds. RFC 9110 §10.2.3 spells it as digits and nothing else:
+  // strtoull on its own would also take "+30", " 30" and the "3.5" of a
+  // client that guessed, so the shape is checked before the value is read.
+  if (value->find_first_not_of("0123456789") == std::string::npos) {
+    const unsigned long long seconds = std::strtoull(value->c_str(), nullptr, 10);
+    // However many digits a peer sends, the result must not wrap into a
+    // small — or negative — duration on its way to the cap that makes it
+    // harmless.
+    constexpr std::int64_t kMaxSeconds = std::numeric_limits<std::int64_t>::max() / 1000;
+    if (seconds > static_cast<unsigned long long>(kMaxSeconds)) {
+      return std::chrono::milliseconds::max();
+    }
+    return std::chrono::seconds(static_cast<std::int64_t>(seconds));
+  }
+
+  // The other form: an absolute HTTP-date, read with the runtime's own
+  // IMF-fixdate parser rather than a second one written here.
+  const auto when = Timestamp::Parse(*value, TimestampFormat::kHttpDate);
+  if (!when) {
+    return std::nullopt;
+  }
+  const std::int64_t delta = when->epoch_milliseconds() - now.epoch_milliseconds();
+  // A date already past asks for nothing, not for negative time.
+  return std::chrono::milliseconds(std::max<std::int64_t>(delta, 0));
+}
+
 bool RetryableStatus(int status) {
   return status == 429 || status == 500 || status == 502 || status == 503 || status == 504;
 }
 
 namespace {
+
+Timestamp Now() {
+  return Timestamp::FromEpochMilliseconds(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                              std::chrono::system_clock::now().time_since_epoch())
+                                              .count());
+}
+
+// The wait before the next attempt: this client's own backoff, raised to
+// whatever the response asked for and clamped to what the policy will trust.
+// Raised, never lowered — Retry-After is a minimum (RFC 9110 §10.2.3), and
+// coming back sooner than the backoff is the thing the backoff exists to
+// prevent.
+std::chrono::milliseconds DelayBefore(const RetryPolicy& policy, int retry, double jitter01,
+                                      const Outcome<http::HttpResponse>& outcome) {
+  const auto backoff = RetryDelay(policy, retry, jitter01);
+  if (!outcome.ok()) {
+    return backoff;  // a transport error has no headers to ask with
+  }
+  const auto asked = RetryAfterDelay(outcome->headers, Now());
+  if (!asked.has_value()) {
+    return backoff;
+  }
+  return std::max(backoff, std::min(*asked, policy.retry_after_cap));
+}
 
 Outcome<http::HttpResponse> SendWithRetriesImpl(
     http::HttpClient& transport, const http::HttpRequest& request, const RetryPolicy& policy,
@@ -81,7 +144,7 @@ Outcome<http::HttpResponse> SendWithRetriesImpl(
     if (!retryable) {
       return outcome;
     }
-    sleep(RetryDelay(policy, retry, jitter()));
+    sleep(DelayBefore(policy, retry, jitter(), outcome));
     outcome = attempt_send(retry + 1);
   }
   return outcome;

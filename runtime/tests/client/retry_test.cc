@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "opal/core/error.h"
+#include "opal/core/timestamp.h"
+#include "opal/http/headers.h"
 
 namespace opal {
 namespace {
@@ -55,6 +57,138 @@ TEST(RetryableStatusTest, TransientStatusesOnly) {
   for (int status : {200, 201, 204, 400, 403, 404, 501}) {
     EXPECT_FALSE(RetryableStatus(status)) << status;
   }
+}
+
+// A response carrying the server's own idea of when to come back.
+http::HttpResponse Throttled(int status, const std::string& retry_after) {
+  http::HttpResponse response;
+  response.status = status;
+  if (!retry_after.empty()) response.headers.Set("retry-after", retry_after);
+  response.body = "slow down";
+  return response;
+}
+
+Timestamp At(const char* http_date) {
+  auto parsed = Timestamp::Parse(http_date, TimestampFormat::kHttpDate);
+  return parsed.ok() ? *parsed : Timestamp{};
+}
+
+TEST(RetryAfterDelayTest, ReadsDeltaSeconds) {
+  http::Headers headers;
+  headers.Set("retry-after", "30");
+  EXPECT_EQ(RetryAfterDelay(headers, Timestamp{}), milliseconds(30000));
+
+  headers.Set("retry-after", "0");
+  EXPECT_EQ(RetryAfterDelay(headers, Timestamp{}), milliseconds(0));
+}
+
+TEST(RetryAfterDelayTest, ReadsAnHttpDateAgainstNow) {
+  const Timestamp now = At("Fri, 31 Dec 1999 23:59:00 GMT");
+  http::Headers headers;
+  headers.Set("retry-after", "Fri, 31 Dec 1999 23:59:30 GMT");
+  EXPECT_EQ(RetryAfterDelay(headers, now), milliseconds(30000));
+
+  // Already past: the server is asking for nothing, not for negative time.
+  headers.Set("retry-after", "Fri, 31 Dec 1999 23:58:00 GMT");
+  EXPECT_EQ(RetryAfterDelay(headers, now), milliseconds(0));
+}
+
+TEST(RetryAfterDelayTest, AbsentOrMalformedAsksForNothing) {
+  const http::Headers none;
+  EXPECT_EQ(RetryAfterDelay(none, Timestamp{}), std::nullopt);
+
+  // A peer's malformed hint is not worth failing a call over; ordinary
+  // backoff is the safe answer. Note "30s" and "+30": near-misses that a lax
+  // parser would accept and RFC 9110 does not.
+  for (const char* value : {"", "soon", "-5", "30s", "+30", "0x10", " 30", "30 ", "3.5"}) {
+    http::Headers headers;
+    headers.Set("retry-after", value);
+    EXPECT_EQ(RetryAfterDelay(headers, Timestamp{}), std::nullopt) << "value: " << value;
+  }
+}
+
+TEST(RetryAfterDelayTest, AnAbsurdDelaySaturatesRatherThanOverflowing) {
+  // Digits are syntactically fine however many there are. The cap is what
+  // makes this harmless, so the parse must not wrap into a small or negative
+  // duration on the way there.
+  http::Headers headers;
+  headers.Set("retry-after", "999999999999999999999");
+  const auto delay = RetryAfterDelay(headers, Timestamp{});
+  ASSERT_TRUE(delay.has_value());
+  EXPECT_GT(*delay, milliseconds(0));
+  EXPECT_GE(*delay, milliseconds(86400000));
+}
+
+TEST(SendWithRetriesTest, RetryAfterRaisesTheBackoffItDoesNotLowerIt) {
+  // The header is a floor under this client's own backoff, per RFC 9110:
+  // the server may ask it to wait longer, never to come back sooner.
+  ScriptedTransport transport;
+  transport.script = {Throttled(429, "2"), http::HttpResponse{200, {}, "ok"}};
+  std::vector<milliseconds> slept;
+  const auto outcome = SendWithRetries(transport, {}, InstantPolicy(&slept));
+  ASSERT_TRUE(outcome.ok()) << outcome.error().message();
+  ASSERT_EQ(slept.size(), 1u);
+  EXPECT_EQ(slept[0], milliseconds(2000)) << "the server asked for 2s and got the 100ms backoff";
+
+  // Asking for less than the backoff changes nothing: the backoff is already
+  // the longer of the two, and coming back early is what it exists to stop.
+  ScriptedTransport impatient;
+  impatient.script = {Throttled(503, "0"), http::HttpResponse{200, {}, "ok"}};
+  std::vector<milliseconds> impatient_slept;
+  ASSERT_TRUE(SendWithRetries(impatient, {}, InstantPolicy(&impatient_slept)).ok());
+  ASSERT_EQ(impatient_slept.size(), 1u);
+  EXPECT_EQ(impatient_slept[0], milliseconds(100));
+}
+
+TEST(SendWithRetriesTest, ClampsRetryAfterToItsOwnCap) {
+  // How far this client will trust a number the peer sent. An hour is not
+  // an offer a caller has to accept.
+  ScriptedTransport transport;
+  transport.script = {Throttled(429, "3600"), http::HttpResponse{200, {}, "ok"}};
+  std::vector<milliseconds> slept;
+  RetryPolicy policy = InstantPolicy(&slept);
+  policy.retry_after_cap = milliseconds(5000);
+  ASSERT_TRUE(SendWithRetries(transport, {}, policy).ok());
+  ASSERT_EQ(slept.size(), 1u);
+  EXPECT_EQ(slept[0], milliseconds(5000));
+}
+
+TEST(SendWithRetriesTest, AMalformedOrAbsentRetryAfterLeavesTheBackoffAlone) {
+  ScriptedTransport transport;
+  transport.script = {Throttled(429, "whenever"), Throttled(503, ""),
+                      http::HttpResponse{200, {}, "ok"}};
+  std::vector<milliseconds> slept;
+  ASSERT_TRUE(SendWithRetries(transport, {}, InstantPolicy(&slept)).ok());
+  EXPECT_EQ(slept, (std::vector<milliseconds>{milliseconds(100), milliseconds(200)}));
+}
+
+TEST(SendWithRetriesTest, ATransportErrorHasNoHeaderToHonor) {
+  ScriptedTransport transport;
+  transport.script = {Error::Transport("refused"), http::HttpResponse{200, {}, "ok"}};
+  std::vector<milliseconds> slept;
+  ASSERT_TRUE(SendWithRetries(transport, {}, InstantPolicy(&slept)).ok());
+  EXPECT_EQ(slept, std::vector<milliseconds>{milliseconds(100)});
+}
+
+TEST(SendWithRetriesTest, AnHttpDateRetryAfterIsMeasuredAgainstTheRealClock) {
+  // The loop reads the date form against the wall clock, which the pure
+  // parser tests above cannot pin because they supply `now` themselves.
+  const auto in_two_seconds =
+      Timestamp::FromEpochMilliseconds(std::chrono::duration_cast<milliseconds>(
+                                           std::chrono::system_clock::now().time_since_epoch())
+                                           .count() +
+                                       2000)
+          .Format(TimestampFormat::kHttpDate);
+
+  ScriptedTransport transport;
+  transport.script = {Throttled(429, in_two_seconds), http::HttpResponse{200, {}, "ok"}};
+  std::vector<milliseconds> slept;
+  ASSERT_TRUE(SendWithRetries(transport, {}, InstantPolicy(&slept)).ok());
+  ASSERT_EQ(slept.size(), 1u);
+  // A second of slack either way: the date has whole-second resolution and
+  // the clock moves between building the header and reading it.
+  EXPECT_GE(slept[0], milliseconds(500));
+  EXPECT_LE(slept[0], milliseconds(3000));
 }
 
 TEST(SendWithRetriesTest, RetriesTransportErrorsThenSucceeds) {

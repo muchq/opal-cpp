@@ -16,7 +16,7 @@ side: ADR-0005 (dep-light transports), ADR-0007 (Beast + BoringSSL TLS),
 | 1 | Boost-free TLS | **A.** `//runtime:http_tls` — socket + BoringSSL (already a direct dep) | New transport target; keep Beast for server/WS |
 | 2 | Proxy + CA add | Env + explicit proxy on that transport; **`ca_pem` append mode** | CONNECT is the hard part; CA fix is small |
 | 3 | Response decompress | Client-layer gunzip via existing `GzipDecompress` + `accept_encoding` | Plumbing only; no new deps |
-| 4 | `Retry-After` | Floor under delay with separate `retry_after_cap` | Local `retry.cc` change |
+| 4 | `Retry-After` | **Done** — floor under delay with separate `retry_after_cap` | Local `retry.cc` change |
 | 5 | First-class 304 | Document `@httpResponseCode` now; optional `http_status` on `Error` later | Mostly model/docs; small Error API |
 | 6 | Streaming bodies | Defer for unary JSON; sink/spill later for blobs | Large if full codegen streaming |
 | 7 | Overall deadline | `ClientConfig::overall_timeout_ms` in `SendWithRetries` | Small config + retry loop |
