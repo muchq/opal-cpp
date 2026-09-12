@@ -1,6 +1,8 @@
 package io.smithycpp.codegen;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,25 +31,36 @@ class RetryableStatusMirrorTest {
   private static final Path RETRY_CC =
       Paths.get(System.getProperty("smithycpp.repoRoot"), "runtime/src/client/retry.cc");
 
-  /** The status literals in RetryableStatus's one-line body. */
+  /** RetryableStatus's one-line body. */
   private static final Pattern BODY =
       Pattern.compile("bool RetryableStatus\\(int status\\) \\{\\s*return([^}]*)\\}");
+
+  /** One status literal compared against `status` inside that body. */
+  private static final Pattern STATUS = Pattern.compile("status == (\\d{3})");
 
   @Test
   void theGeneratorsRetryableStatusesAreTheRuntimes() throws IOException {
     String text = Files.readString(RETRY_CC);
     Matcher matcher = BODY.matcher(text);
-    org.junit.jupiter.api.Assertions.assertTrue(
-        matcher.find(), "RetryableStatus(int status) not found in " + RETRY_CC);
+    assertTrue(matcher.find(), "RetryableStatus(int status) not found in " + RETRY_CC);
 
-    Set<Integer> runtime = new TreeSet<>();
-    Matcher statuses = Pattern.compile("status == (\\d{3})").matcher(matcher.group(1));
+    // Compared as the digit tokens both sides are written with, rather than as
+    // parsed ints: the comparison is exact either way, and there is no parse to
+    // fail on input the pattern has already constrained to three digits.
+    Set<String> runtime = new TreeSet<>();
+    Matcher statuses = STATUS.matcher(matcher.group(1));
     while (statuses.find()) {
-      runtime.add(Integer.parseInt(statuses.group(1)));
+      runtime.add(statuses.group(1));
+    }
+    assertFalse(runtime.isEmpty(), "no status literals found in RetryableStatus in " + RETRY_CC);
+
+    Set<String> generator = new TreeSet<>();
+    for (Integer status : HttpBindingCodeGen.RETRYABLE_STATUSES) {
+      generator.add(String.valueOf(status));
     }
 
     assertEquals(
-        new TreeSet<>(HttpBindingCodeGen.RETRYABLE_STATUSES),
+        generator,
         runtime,
         "HttpBindingCodeGen.RETRYABLE_STATUSES has drifted from opal::RetryableStatus in "
             + RETRY_CC);
