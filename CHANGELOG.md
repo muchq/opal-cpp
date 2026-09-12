@@ -110,9 +110,11 @@ policy in [docs/versioning.md](docs/versioning.md).
   member and adding `@streaming` to a model breaks no caller. The member stays
   on the output structure — Smithy requires `@required` or `@default` on a
   streaming member, so it is a plain `opal::Blob`, and the server half (which
-  still returns the whole payload) is unchanged. Only an `@httpPayload` blob
-  on an HTTP-binding protocol streams: elsewhere the blob is base64 inside a
-  document that has to be parsed whole, so it stays buffered as before.
+  still returns the whole payload) is unchanged. Only a response payload on an
+  HTTP-binding protocol streams — Smithy already forces the `@httpPayload`
+  binding there, so there is no in-between case — while on the RPC protocols,
+  which carry every member in one document, and in a request payload, the blob
+  stays a buffered `opal::Blob` exactly as before.
 
 - **A response body sink: `HttpClient::SendStreaming`** (#213, slice 1 of
   `@streaming` blob support). A caller that does not want a response body

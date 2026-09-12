@@ -138,10 +138,13 @@ auto downloaded = client.Download(DownloadInput{.slug = "big"}, [&](std::string_
 - **A writer returning false fails the call, not retryably** — the bytes it
   refused are gone, and a retry would only deliver them again.
 
-Only an `@httpPayload` blob streams. A `@streaming` blob bound anywhere else
-is base64 inside a JSON document that has to be parsed whole before the member
-exists, so it stays buffered — as it does on the RPC protocols, which carry
-every member in one document.
+Only a response payload streams, and only on the HTTP-binding protocols.
+Smithy already forces the `@httpPayload` binding on a streaming blob whenever
+the protocol supports it, so there is no in-between case there; on the RPC
+protocols, which carry every member in one document, a `@streaming` blob is
+base64 inside that document and stays a buffered `opal::Blob`. So does a
+request payload — writing one needs chunked request framing, which the http1
+codec refuses on purpose.
 
 `examples/bazel-consumer/response_sink_acceptance_test.cc` is the out-of-tree
 acceptance for both levels.

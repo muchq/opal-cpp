@@ -395,12 +395,13 @@ class GeneratedCodeShapeTest {
 
   @Test
   void streamingBlobsStayPlainBufferedBlobs() {
-    // The README's "Current limitations": @streaming BLOBS remain unmodeled —
-    // a streaming blob payload generates as an ordinary, fully buffered
-    // opal::Blob with the plain unary operation around it. Event-stream
-    // unions became real in Phase 8 slice 3 (ADR-0016; the flipped pin is
-    // eventStreamOperationsGenerateStreamingSignatures below), which is why
-    // this pin is now blob-specific.
+    // A @streaming blob in the *request* payload is still an ordinary, fully
+    // buffered opal::Blob with the plain unary operation around it: writing
+    // one needs chunked request framing, which the http1 codec refuses on
+    // purpose. Only the response half streams (#213 slice 2, the two tests
+    // above). Event-stream unions became real in Phase 8 slice 3 (ADR-0016;
+    // the flipped pin is eventStreamOperationsGenerateStreamingSignatures
+    // below), which is why this pin is blob-specific.
     String model =
         """
         $version: "2.0"
@@ -491,6 +492,10 @@ class GeneratedCodeShapeTest {
         source);
     assertTrue(source.contains(".write = write,"), source);
     assertTrue(source.contains("auto response = Send(std::move(request), payload_sink);"), source);
+    // The gate and the status check below it are the same predicate. If they
+    // ever diverge, either a status the client rejects was streamed (leaving
+    // the error path an empty body) or one it accepts was buffered.
+    assertTrue(source.contains("if (response->status != 200) return"), source);
 
     // A null writer has to reach the buffered path, or omitting the argument
     // would turn every such call into an empty-sink streaming send.
@@ -503,6 +508,52 @@ class GeneratedCodeShapeTest {
     // the bytes went to the writer instead.)
     String types = manifest.expectFileString("/include/test/shape/types.h");
     assertTrue(types.contains("opal::Blob content"), types);
+  }
+
+  @Test
+  void anRpcProtocolLeavesAStreamingBlobResponseBuffered() {
+    // The protocol gate (#213 slice 2). jsonRpc2 carries every member inside
+    // one envelope, so there is no standalone response body to hand over
+    // piecewise — the blob stays a buffered opal::Blob and the operation
+    // keeps its plain signature. Pinned because the README and
+    // production-guide both promise it, and because the alternative is a
+    // writer parameter that silently never fires.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use smithy.cpp.protocols#jsonRpc2
+
+        @jsonRpc2
+        service Svc { version: "1", operations: [Download] }
+
+        operation Download {
+            input := {
+                @required
+                id: String
+            }
+            output := {
+                @required
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    String client = manifest.expectFileString("/include/test/shape/client.h");
+    assertTrue(
+        client.contains(
+            "opal::Outcome<DownloadOutput> Download(const DownloadInput& input) const;"),
+        client);
+    assertFalse(client.contains("BodyWriter"), client);
+    // The Send helper stays one-argument too: no service here streams, so
+    // every RPC client is byte-identical to what it was.
+    assertFalse(client.contains("BodySink"), client);
+    String source = manifest.expectFileString("/src/client.cc");
+    assertFalse(source.contains("payload_sink"), source);
   }
 
   @Test
