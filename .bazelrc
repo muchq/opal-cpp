@@ -18,21 +18,18 @@ test --test_output=errors
 # Hermetic LLVM toolchain with libc++ (dev-only; see MODULE.bazel): the linux
 # clang+libc++ matrix cell. libc++-only divergences — vector<bool>'s proxy
 # std::hash (#84), C++20-removed traits like std::result_of — otherwise
-# surface only on the macOS runners or in consumers' toolchains_llvm builds.
-build:llvm --extra_toolchains=@llvm_toolchain//:all
-# toolchains_llvm 1.8's builtin-libc++ mode pairs -stdlib=libc++ with explicit
-# libc++ system-include paths, so clang reports the flag unused on every
-# compile — driver noise from the toolchain's own flag set, which
-# --config=werror would otherwise promote to an error.
-build:llvm --copt=-Wno-unused-command-line-argument
-# boost.context's BCR BUILD opts itself into parse_headers, and 1.8 is the
-# first toolchains_llvm that registers the tool for it — so its headers now
-# compile standalone, where the pre-C++17 std::result_of polyfill meets
-# C++20 libc++ (which removed the trait) and fails hard. Its own actions
-# compile as C++17 (this trailing per-file flag outranks the global
-# -std=c++20); every first-party TU stays C++20, and the other legs never
-# parse external headers (libstdc++ keeps the trait; Apple's toolchain has
-# no parse_headers tool).
+# surface only on the macOS runners or in consumers' hermetic-LLVM builds.
+# The toolchains stay unregistered in MODULE.bazel and are selected here, so
+# an ordinary build keeps the autodetected host toolchain.
+build:llvm --extra_toolchains=@llvm//toolchain:all
+# boost.context's BCR BUILD opts itself into parse_headers, and this toolchain
+# registers the tool for it — so its headers compile standalone, where the
+# pre-C++17 std::result_of polyfill meets C++20 libc++ (which removed the
+# trait) and fails hard. Its own actions compile as C++17 (this trailing
+# per-file flag outranks both the toolchain's own default -std=c++17 and the
+# global -std=c++20 that overrides it); every first-party TU stays C++20, and
+# the other legs never parse external headers (libstdc++ keeps the trait;
+# Apple's toolchain has no parse_headers tool).
 build:llvm --per_file_copt=external/boost.context@-std=c++17
 
 # AddressSanitizer: bazel test //... --config=asan

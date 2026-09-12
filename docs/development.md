@@ -75,11 +75,14 @@ the latter breaks consumers who run `--process_headers_in_dependencies`;
 see the quickstart's header-validation section for the consumer-side story).
 
 CI's `linux-llvm-libcxx` job runs the whole suite on the hermetic
-`toolchains_llvm` toolchain (`--config=llvm`) — the only **linux libc++**
-cell, and the toolchain serious Bazel consumers use. Do not use
-`--config=llvm` behind a download-blocking proxy: it fetches an LLVM release
-from GitHub (unmirrored); libc++-divergence checking stays a CI concern,
-like the Beast targets. Note the
+[hermetic-llvm](https://github.com/hermeticbuild/hermetic-llvm) toolchain
+(`--config=llvm`) — the only **linux libc++** cell, and the toolchain serious
+Bazel consumers use. It is zero-sysroot: clang, libc++, compiler-rt, and the
+glibc/kernel headers are all Bazel-supplied, so the cell never reads the
+runner's `/usr/include`. Do not use `--config=llvm` behind a download-blocking
+proxy: it fetches LLVM and runtime archives from GitHub (unmirrored), and on a
+macOS target the SDK from Apple's CDN; libc++-divergence checking stays a CI
+concern, like the Beast targets. Note the
 sweep's blind spot: local clang still uses libstdc++, while the macOS CI jobs
 use libc++ — standard-library divergences (classically `vector<bool>`'s proxy
 reference, whose libc++ form has no `std::hash`) only surface there, so

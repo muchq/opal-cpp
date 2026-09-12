@@ -1,6 +1,6 @@
 # Header self-containment: every header this repo ships (runtime and
 # generated goldens alike) must compile standalone — consumers with
-# parse_headers-enabled toolchains (e.g. toolchains_llvm) compile them that
+# parse_headers-enabled toolchains (e.g. hermetic-llvm) compile them that
 # way. Scoped here rather than via --features so third-party repos' headers
 # are never validated (boost/zlib headers are not self-contained and never
 # will be; see docs/development.md).

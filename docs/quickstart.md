@@ -414,8 +414,8 @@ If the action fails with **no** `cpp-codegen:` line, you have found a generator 
 
 opal-cpp's own headers — the runtime's and every generated one — are validated as
 self-contained (each compiles standalone) in upstream CI, and the repo ships that guarantee via
-`REPO.bazel`'s `parse_headers` feature, so toolchains that parse headers (e.g. `toolchains_llvm`
-with `--features=parse_headers`) can build them without surprises.
+`REPO.bazel`'s `parse_headers` feature, so toolchains that parse headers (e.g. hermetic-llvm
+or `toolchains_llvm` with `--features=parse_headers`) can build them without surprises.
 
 Do **not** extend header parsing into dependency closures, though:
 `--process_headers_in_dependencies` compiles *third-party* headers standalone too, and several

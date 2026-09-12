@@ -29,18 +29,16 @@ bazel_dep(name = "rules_testing", version = "0.9.0", dev_dependency = True)
 
 # Hermetic LLVM toolchain with libc++ — the linux clang+libc++ matrix cell
 # (CI's --config=llvm job) and the setup serious Bazel consumers run
-# (toolchains_llvm + parse_headers is exactly the environment that caught the
+# (a hermetic clang + parse_headers is exactly the environment that caught the
 # boost.context std::result_of gap). Dev-only and unregistered by default:
 # the CI job selects it with --extra_toolchains, so ordinary builds keep the
-# autodetected toolchain. libc++ is toolchains_llvm's default stdlib.
-bazel_dep(name = "toolchains_llvm", version = "1.9.0", dev_dependency = True)
-
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
-llvm.toolchain(
-    name = "llvm_toolchain",
-    llvm_version = "19.1.7",
-)
-use_repo(llvm, "llvm_toolchain")
+# autodetected toolchain. libc++ is this toolchain's default stdlib.
+#
+# hermetic-llvm (BCR module "llvm") rather than toolchains_llvm: it is
+# zero-sysroot, so the cell compiles against Bazel-supplied glibc/kernel
+# headers and libc++ instead of the runner's /usr/include, and the LLVM
+# version rides the module rather than a pinned release tarball.
+bazel_dep(name = "llvm", version = "0.8.19", dev_dependency = True)
 
 # The code generator runs inside the build graph as a hermetic Java action
 # (bazel/defs.bzl); rules_jvm_external pins its Smithy dependencies.

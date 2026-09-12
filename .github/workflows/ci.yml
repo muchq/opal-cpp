@@ -29,7 +29,7 @@ jobs:
             os: ubuntu-24.04
             cc: clang
             cxx: clang++
-          # Hermetic toolchains_llvm with libc++: the only linux libc++ cell,
+          # Hermetic zero-sysroot LLVM with libc++: the only linux libc++ cell,
           # and the toolchain serious Bazel consumers run (its parse_headers
           # validation of our REPO.bazel-shipped feature included).
           - name: linux-llvm-libcxx
