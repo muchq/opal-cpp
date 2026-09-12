@@ -31,6 +31,8 @@
 
 namespace {
 
+using acme::redirect::DownloadInput;
+using acme::redirect::DownloadOutput;
 using acme::redirect::FetchInput;
 using acme::redirect::FetchOutput;
 using acme::redirect::NoSuchSlug;
@@ -69,6 +71,14 @@ class ProbeHandler final : public RedirectorHandler {
                                    const opal::server::RequestContext&) override {
     if (input.slug != "abc") return NotFound(input.slug);
     return FetchOutput{.status = 200, .etag = kEtag, .content = opal::Blob::FromString(kContent)};
+  }
+
+  // The streaming sibling of Fetch (#213). Not this file's subject; it
+  // answers the same resource so the files cannot drift on what is served.
+  opal::Outcome<DownloadOutput> Download(const DownloadInput& input,
+                                         const opal::server::RequestContext&) override {
+    if (input.slug != "abc") return NotFound(input.slug);
+    return DownloadOutput{.etag = kEtag, .content = opal::Blob::FromString(kContent)};
   }
 
   opal::Outcome<ResolveOutput> Resolve(const ResolveInput& input,

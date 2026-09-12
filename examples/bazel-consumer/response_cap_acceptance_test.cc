@@ -24,6 +24,8 @@
 
 namespace {
 
+using acme::redirect::DownloadInput;
+using acme::redirect::DownloadOutput;
 using acme::redirect::FetchInput;
 using acme::redirect::FetchOutput;
 using acme::redirect::NoSuchSlug;
@@ -53,6 +55,15 @@ class LargePayloadHandler final : public RedirectorHandler {
     return ProbeOutput{.etag = "\"big\"",
                        .content = opal::Blob::FromString(std::string(kPayloadBytes, 'p'))};
   }
+  // The streaming sibling of Fetch (#213). Not this file's subject; it
+  // answers the same resource so the files cannot drift on what is served.
+  opal::Outcome<DownloadOutput> Download(const DownloadInput& input,
+                                         const opal::server::RequestContext&) override {
+    (void)input;
+    return DownloadOutput{.etag = "\"big\"",
+                          .content = opal::Blob::FromString(std::string(kPayloadBytes, 'p'))};
+  }
+
   opal::Outcome<ResolveOutput> Resolve(const ResolveInput& input,
                                        const opal::server::RequestContext&) override {
     return NotFound(input.slug);

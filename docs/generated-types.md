@@ -22,7 +22,7 @@ compatibility contract: changes to it are breaking for consumers of generated co
 | `intEnum` | `enum class X : std::int32_t` | Wire values outside int32 fail the parse; unknown in-range values are preserved (servers additionally validate membership) |
 | `smithy.api#Unit` | `opal::Unit` | Never declared; maps to the runtime type |
 | `bigInteger` / `bigDecimal` | — | Rejected with a clear error (planned) |
-| `@streaming` blob member | trait ignored | Generates as a fully buffered `opal::Blob`; see the README's [Current limitations](../README.md#current-limitations) |
+| `@streaming` blob member | `opal::Blob` + a response writer | Always generates as an `opal::Blob` (Smithy requires `@required`/`@default` on it). When it is the *response* `@httpPayload` of an HTTP-binding operation, the client method also takes a defaulted `const opal::http::BodyWriter&`: pass one and the bytes stream to it with the member left empty, omit it and the payload buffers into the member. Request payloads and non-`@httpPayload` bindings stay buffered — see [production-guide.md](production-guide.md#through-a-generated-client) |
 | `@streaming` union member | typed event stream (ADR-0016) | The operation generates `opal::eventstream::EventStream` signatures (client and server) instead of carrying the union in the body; the union itself still generates as a normal union type |
 | recursive structures | `opal::Boxed<T>` member indirection | Deep copy/equality; list cycles ride `std::vector` directly. Cycles through union members or map values are still rejected with a clear error |
 

@@ -93,11 +93,55 @@ take the first back. Such a body arrives in `response.body` instead, where
 error documents already go. `opal::SendWithRetries` has an overload that
 takes a sink and applies this rule.
 
-Generated clients do not expose a sink yet — a `@streaming` blob member still
-generates a fully buffered `opal::Blob`. That is
-[#213](https://github.com/muchq/opal-cpp/issues/213) slice 2; today a caller
-that needs this drives the transport directly, as
-`examples/bazel-consumer/response_sink_acceptance_test.cc` does.
+### Through a generated client
+
+A model that marks the response payload `@streaming` does not need any of the
+above. The operation takes an `opal::http::BodyWriter` and the generated code
+assembles the sink:
+
+```smithy
+@readonly
+@http(method: "GET", uri: "/s/{slug}")
+operation Download {
+    input := { @required @httpLabel slug: String }
+    output := {
+        @httpHeader("ETag") etag: String
+        @required @httpPayload content: StreamingBlob
+    }
+}
+
+@streaming
+blob StreamingBlob
+```
+
+```cpp
+std::ofstream out("export.pgn", std::ios::binary);
+auto downloaded = client.Download(DownloadInput{.slug = "big"}, [&](std::string_view piece) {
+  return out.write(piece.data(), piece.size()).good();
+});
+// downloaded->etag is deserialized as usual; downloaded->content is empty —
+// the bytes went to the writer.
+```
+
+- **The accept gate is the generator's, and it is 2xx.** A sink takes
+  payloads, never an error document: a modeled error still deserializes into
+  the typed `<Operation>Errors` listing because its body was buffered.
+- **The writer is defaulted.** `client.Download(input)` with no writer buffers
+  the payload into the member, exactly as an operation without `@streaming`
+  does, so adding the trait breaks no caller.
+- **The member stays on the output structure.** Smithy requires `@required`
+  (or `@default`) on a streaming member, so it is a plain `opal::Blob` — left
+  empty when the bytes went to the writer. The server half still returns it.
+- **A writer returning false fails the call, not retryably** — the bytes it
+  refused are gone, and a retry would only deliver them again.
+
+Only an `@httpPayload` blob streams. A `@streaming` blob bound anywhere else
+is base64 inside a JSON document that has to be parsed whole before the member
+exists, so it stays buffered — as it does on the RPC protocols, which carry
+every member in one document.
+
+`examples/bazel-consumer/response_sink_acceptance_test.cc` is the out-of-tree
+acceptance for both levels.
 
 ## Retries
 

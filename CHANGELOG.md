@@ -95,6 +95,21 @@ policy in [docs/versioning.md](docs/versioning.md).
   `max_backoff` because that one bounds a guess this client made rather than
   a number it was sent. `opal::RetryAfterDelay` is public for callers driving
   their own retry loop.
+- **Generated clients stream a `@streaming` blob response payload** (#213,
+  slice 2). An operation whose response `@httpPayload` targets a `@streaming`
+  blob takes an `opal::http::BodyWriter` alongside its input: the bytes go to
+  the writer as they arrive and the member is left empty. The generated code
+  owns the sink's accept gate and keys it on 2xx, so a modeled error still
+  deserializes into the typed `<Operation>Errors` listing from a buffered
+  body rather than arriving in the caller's writer as an unexplained payload.
+  The writer is defaulted, so `client.Download(input)` still buffers into the
+  member and adding `@streaming` to a model breaks no caller. The member stays
+  on the output structure — Smithy requires `@required` or `@default` on a
+  streaming member, so it is a plain `opal::Blob`, and the server half (which
+  still returns the whole payload) is unchanged. Only an `@httpPayload` blob
+  on an HTTP-binding protocol streams: elsewhere the blob is base64 inside a
+  document that has to be parsed whole, so it stays buffered as before.
+
 - **A response body sink: `HttpClient::SendStreaming`** (#213, slice 1 of
   `@streaming` blob support). A caller that does not want a response body
   buffered passes an `opal::http::BodySink` — an `accept(status, headers)`
@@ -111,8 +126,7 @@ policy in [docs/versioning.md](docs/versioning.md).
   gains an overload taking a sink, and withholds retryable statuses from it
   while retries are enabled — streaming a 503's error document and then
   retrying would hand the sink two bodies' worth of bytes with no way to take
-  the first back. Generated clients do not expose a sink yet; a `@streaming`
-  blob member still generates a buffered `opal::Blob` (#213 slice 2).
+  the first back.
 - **A dependency-free Prometheus `/metrics` endpoint** (#91, first work
   item). `opal::server::MetricsRegistry` aggregates the existing `Observe`
   hooks into the five `http_server_*` families labeled by `service_name`,

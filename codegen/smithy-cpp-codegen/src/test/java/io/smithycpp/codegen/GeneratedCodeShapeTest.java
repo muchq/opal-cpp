@@ -434,6 +434,78 @@ class GeneratedCodeShapeTest {
   }
 
   @Test
+  void streamingBlobOutputsTakeAWriterAndAreGatedOnSuccess() {
+    // #213 slice 2. A @streaming blob in the *response* streams to a writer
+    // the caller supplies rather than materializing in the output. Requests
+    // keep the pin above: writing one needs chunked request framing, which
+    // the http1 codec refuses on purpose.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @http(method: "GET", uri: "/download/{id}")
+        operation Download {
+            input := {
+                @required
+                @httpLabel
+                id: String
+            }
+            output := {
+                @httpHeader("ETag")
+                etag: String
+
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    // The writer is defaulted, so an operation that was callable before still
+    // is, and omitting it buffers exactly as it used to.
+    String client = manifest.expectFileString("/include/test/shape/client.h");
+    assertTrue(
+        client.contains(
+            "opal::Outcome<DownloadOutput> Download(const DownloadInput& input, "
+                + "const opal::http::BodyWriter& write = nullptr) const;"),
+        client);
+
+    // The accept gate belongs to the generated code, keyed on 2xx: a caller
+    // that could accept a 404 would starve the error deserializer of the body
+    // it needs, and a 3xx body is not the payload either.
+    String source = manifest.expectFileString("/src/client.cc");
+    assertTrue(
+        source.contains(
+            ".accept = [](int status, const opal::http::Headers&) "
+                + "{ return status / 100 == 2; },"),
+        source);
+    assertTrue(source.contains(".write = write,"), source);
+    assertTrue(source.contains("auto response = Send(std::move(request), payload_sink);"), source);
+
+    // A null writer has to reach the buffered path, or omitting the argument
+    // would turn every such call into an empty-sink streaming send.
+    assertTrue(source.contains("if (sink.write == nullptr) {"), source);
+
+    // The member stays on the output struct. It is shared with the server
+    // generator, which still returns the payload; removing it would drag the
+    // deferred server half into this change. (Smithy requires @required or
+    // @default on a streaming member, so it is a plain Blob — left empty when
+    // the bytes went to the writer instead.)
+    String types = manifest.expectFileString("/include/test/shape/types.h");
+    assertTrue(types.contains("opal::Blob content"), types);
+  }
+
+  @Test
   void eventStreamOperationsGenerateStreamingSignatures() {
     // The flip of the old "@streaming is ignored" pin (ADR-0016): an
     // event-stream union on an operation now generates the typed-session

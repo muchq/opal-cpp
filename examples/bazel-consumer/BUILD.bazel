@@ -125,9 +125,9 @@ cc_test(
     ],
 )
 
-# Acceptance for the response body sink (issue #213): a consumer pulling a
-# blob payload off a generated server without the body landing in a response
-# object, and leaving a modeled error's document where the client looks for it.
+# Acceptance for the response body sink (issue #213), both levels: the
+# transport-level BodySink a consumer drives itself, and the BodyWriter the
+# generator puts on an operation whose payload the model marks @streaming.
 cc_test(
     name = "response_sink_acceptance_test",
     size = "small",
@@ -137,6 +137,7 @@ cc_test(
         ":redirector_client",
         ":redirector_server",
         "@googletest//:gtest_main",
+        "@opal_cpp//runtime:client",
         "@opal_cpp//runtime:core",
         "@opal_cpp//runtime:http",
         "@opal_cpp//runtime:server",

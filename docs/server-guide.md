@@ -537,6 +537,7 @@ serialization error) — see [production-guide.md](production-guide.md).
 
 Nested `@required` absences as `fieldList` entries and a server-strict serde variant (clients
 must skip null dense-map values and accept UTC-offset timestamps in responses; servers share
-that serde today), and `@streaming` blob payloads (see
-[Current limitations](../README.md#current-limitations)). Event-stream operations generate
+that serde today), and the server half of `@streaming` blob payloads — a handler still
+returns the whole payload in its output, and only the *client* streams it (see
+[production-guide.md](production-guide.md#through-a-generated-client)). Event-stream operations generate
 streaming handlers and a `StreamRouter()` (ADR-0016).

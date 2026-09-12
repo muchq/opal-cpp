@@ -11,8 +11,10 @@ import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeType;
+import software.amazon.smithy.model.traits.HttpTrait;
 import software.amazon.smithy.model.traits.JsonNameTrait;
 import software.amazon.smithy.model.traits.MediaTypeTrait;
+import software.amazon.smithy.model.traits.StreamingTrait;
 
 /**
  * HTTP-binding emission shared by the client and server halves of the HTTP+JSON protocol (companion
@@ -39,6 +41,31 @@ final class HttpBindingCodeGen {
         .getTrait(JsonNameTrait.class)
         .map(JsonNameTrait::getValue)
         .orElse(member.getMemberName());
+  }
+
+  /**
+   * The operation's response @httpPayload member when it targets a @streaming blob, else null
+   * (issue #213 slice 2). Such a member is the whole response body and the model puts no bound on
+   * its size, so the generated operation takes an {@code opal::http::BodyWriter} and hands the
+   * bytes to it instead of materializing the member.
+   *
+   * <p>Only an @httpPayload blob qualifies. A @streaming blob bound anywhere else is base64 inside
+   * a JSON document — the document has to be parsed whole before the member exists, so there is
+   * nothing to stream — and it stays a buffered {@code opal::Blob}, exactly as it was.
+   */
+  static MemberShape streamingResponsePayload(CppContext context, OperationShape operation) {
+    if (!operation.hasTrait(HttpTrait.class)) {
+      return null;
+    }
+    HttpBinding payload =
+        ResponseBindings.of(HttpBindingIndex.of(context.model()), operation).payload();
+    if (payload == null) {
+      return null;
+    }
+    Shape target = context.model().expectShape(payload.getMember().getTarget());
+    return target.isBlobShape() && target.hasTrait(StreamingTrait.class)
+        ? payload.getMember()
+        : null;
   }
 
   /** An operation's request bindings partitioned by location (maps sorted by location name). */
