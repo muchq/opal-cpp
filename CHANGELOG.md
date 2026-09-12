@@ -114,7 +114,12 @@ policy in [docs/versioning.md](docs/versioning.md).
   HTTP-binding protocol streams — Smithy already forces the `@httpPayload`
   binding there, so there is no in-between case — while on the RPC protocols,
   which carry every member in one document, and in a request payload, the blob
-  stays a buffered `opal::Blob` exactly as before.
+  stays a buffered `opal::Blob` exactly as before. A model whose streaming
+  payload rides a modeled success status the retry layer treats as transient
+  (`@http(code: 503)` and the `HttpResponseCodeSemantics` suppression) fails
+  generation with a diagnostic naming the operation and the fix: the retry
+  loop withholds such a status from the sink on every attempt, so a writer
+  emitted for it could never fire.
 
 - **A response body sink: `HttpClient::SendStreaming`** (#213, slice 1 of
   `@streaming` blob support). A caller that does not want a response body

@@ -137,6 +137,15 @@ auto downloaded = client.Download(DownloadInput{.slug = "big"}, [&](std::string_
   empty when the bytes went to the writer. The server half still returns it.
 - **A writer returning false fails the call, not retryably** — the bytes it
   refused are gone, and a retry would only deliver them again.
+- **A modeled success status the retry layer retries is refused at generation
+  time.** `@http(code: 503)` with the `HttpResponseCodeSemantics` suppression
+  makes 503 this operation's success, but `SendWithRetries` classifies it as
+  transient and withholds it from the sink on every attempt — the writer could
+  never fire. The generator names the operation and the fix rather than
+  emitting a method that cannot keep its contract; bind the status with
+  `@httpResponseCode` instead. Only a static modeled code can collide:
+  under `@httpResponseCode` success is 2xx/3xx, which shares nothing with the
+  retryable set (429, 500, 502, 503, 504).
 
 Only a response payload streams, and only on the HTTP-binding protocols.
 Smithy already forces the `@httpPayload` binding on a streaming blob whenever

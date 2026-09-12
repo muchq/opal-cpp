@@ -1,9 +1,11 @@
 package io.smithycpp.codegen;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import software.amazon.smithy.codegen.core.CodegenException;
 
 /**
  * Exactly-once / absence pins for "generator emitted redundant/dead code" fixes with no
@@ -508,6 +510,95 @@ class GeneratedCodeShapeTest {
     // the bytes went to the writer instead.)
     String types = manifest.expectFileString("/include/test/shape/types.h");
     assertTrue(types.contains("opal::Blob content"), types);
+  }
+
+  @Test
+  void aStreamingPayloadOnARetryableSuccessStatusIsRefused() {
+    // #213 slice 2, second cursor finding on PR 216. A model may declare a
+    // modeled success status that the retry layer classifies as transient —
+    // @http(code: 503) with the HttpResponseCodeSemantics suppression the
+    // redirect fixture already uses for 302. The two layers then disagree
+    // irreconcilably: the generated gate and status check both call 503 a
+    // success, while SendWithRetries retries it and withholds it from the sink
+    // on every attempt, so the call returns success with the payload buffered
+    // into the member and the caller's writer never invoked.
+    //
+    // Teaching the retry layer this operation's success predicate is a change
+    // to a public runtime API and to every client's retry behavior, so this
+    // slice refuses the model by name instead of honoring it wrongly. The
+    // generator has no third option: emitting a writer that cannot fire is
+    // exactly the silent failure this diagnostic exists to prevent.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @suppress(["HttpResponseCodeSemantics"])
+        @http(method: "GET", uri: "/download", code: 503)
+        operation Download {
+            output := {
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+
+    CodegenException thrown =
+        assertThrows(
+            CodegenException.class,
+            () -> PluginTestHarness.generate(model, "test.shape#Svc", "test::shape"));
+    String message = thrown.getMessage();
+    assertTrue(message.startsWith("cpp-codegen: "), message);
+    assertTrue(message.contains("test.shape#Download"), message);
+    assertTrue(message.contains("503"), message);
+    // The diagnostic has to name the way out, not just the problem.
+    assertTrue(message.contains("@httpResponseCode"), message);
+  }
+
+  @Test
+  void aNonRetryableModeledSuccessStatusStillStreams() {
+    // The refusal is scoped to the statuses the retry layer treats as
+    // transient. A modeled 302 — the redirect fixture's own case — is not one
+    // of them, so it streams on exactly that status.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @suppress(["HttpResponseCodeSemantics"])
+        @http(method: "GET", uri: "/download", code: 302)
+        operation Download {
+            output := {
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    String source = manifest.expectFileString("/src/client.cc");
+    assertTrue(
+        source.contains(
+            ".accept = [](int status, const opal::http::Headers&) { return status == 302; },"),
+        source);
   }
 
   @Test

@@ -63,6 +63,9 @@ public final class DirectedCppCodegen
         // Event-stream scope checks (ADR-0016) fail generation with a named
         // diagnostic before any streaming code is emitted.
         EventStreamCodeGen.validate(directive.context(), service, protocol, operations);
+        // The streaming-payload scope check (#213 slice 2), same posture: a
+        // named diagnostic before any client is emitted.
+        HttpBindingCodeGen.validateStreamingPayloads(directive.context(), protocol, operations);
         if (directive.settings().generateClient()) {
           clientGenerator.run();
           hasClient = true;

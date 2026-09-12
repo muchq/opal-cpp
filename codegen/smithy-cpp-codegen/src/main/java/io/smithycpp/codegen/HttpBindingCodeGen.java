@@ -3,6 +3,7 @@ package io.smithycpp.codegen;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import software.amazon.smithy.codegen.core.CodegenException;
 import software.amazon.smithy.model.knowledge.HttpBinding;
@@ -41,6 +42,59 @@ final class HttpBindingCodeGen {
         .getTrait(JsonNameTrait.class)
         .map(JsonNameTrait::getValue)
         .orElse(member.getMemberName());
+  }
+
+  /**
+   * The HTTP statuses the retry layer treats as transient. A mirror of {@code
+   * opal::RetryableStatus} (runtime/src/client/retry.cc), which is the source of truth — the
+   * generator cannot call into C++, and {@link RetryableStatusMirrorTest} fails when the two drift.
+   * Used only by {@link #validateStreamingPayloads}: a modeled success status in this set is a
+   * model the streaming payload cannot be honored on.
+   */
+  static final Set<Integer> RETRYABLE_STATUSES = Set.of(429, 500, 502, 503, 504);
+
+  /**
+   * Fails generation for a @streaming response payload whose modeled success status is one the
+   * retry layer retries (issue #213 slice 2). The two layers cannot both be obeyed: the generated
+   * code calls that status a success and streams on it, while {@code SendWithRetries} classifies it
+   * as transient, retries it, and withholds it from the sink on every attempt — so the call would
+   * return success with the payload buffered into the member and the caller's writer never invoked.
+   * Refusing by name beats emitting a writer that cannot fire.
+   *
+   * <p>Only the static-code arm can collide. Under @httpResponseCode success is 2xx/3xx, which
+   * shares nothing with the retryable set, and the RPC protocols do not stream at all.
+   *
+   * <p>The way out is in the diagnostic: @httpResponseCode carries the status at runtime, so the
+   * operation stops modeling a transient code as its success.
+   */
+  static void validateStreamingPayloads(
+      CppContext context, ProtocolGenerator protocol, List<OperationShape> operations) {
+    if (!protocol.supportsStreamingBlobPayloads()) {
+      return;
+    }
+    HttpBindingIndex index = HttpBindingIndex.of(context.model());
+    for (OperationShape operation : operations) {
+      MemberShape streamed = streamingResponsePayload(context, operation);
+      if (streamed == null || ResponseBindings.of(index, operation).responseCode() != null) {
+        continue;
+      }
+      int code = operation.expectTrait(HttpTrait.class).getCode();
+      if (!RETRYABLE_STATUSES.contains(code)) {
+        continue;
+      }
+      throw new CodegenException(
+          "cpp-codegen: operation "
+              + operation.getId()
+              + " streams its @streaming response payload '"
+              + streamed.getMemberName()
+              + "' on modeled status "
+              + code
+              + ", which the retry layer treats as transient (opal::RetryableStatus): it would be"
+              + " retried and withheld from the body sink on every attempt, so the writer could"
+              + " never be invoked. Bind the status with @httpResponseCode so it is chosen at"
+              + " runtime rather than modeled as this operation's success, or drop @streaming"
+              + " from the payload");
+    }
   }
 
   /**
