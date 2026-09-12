@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -91,6 +93,40 @@ TEST(RetryAfterDelayTest, ReadsAnHttpDateAgainstNow) {
   // Already past: the server is asking for nothing, not for negative time.
   headers.Set("retry-after", "Fri, 31 Dec 1999 23:58:00 GMT");
   EXPECT_EQ(RetryAfterDelay(headers, now), milliseconds(0));
+}
+
+TEST(RetryAfterDelayTest, ReadsTheObsoleteHttpDateFormatsToo) {
+  // RFC 9110 §5.6.7 requires a recipient to accept all three HTTP-date
+  // formats, and Retry-After's HTTP-date alternative inherits that. Ignoring
+  // the obsolete two means coming back earlier than a server asked, silently
+  // — the bug this whole change exists to fix, just for older servers.
+  const Timestamp now = At("Sun, 06 Nov 1994 08:49:00 GMT");
+  for (const char* value : {"Sun, 06 Nov 1994 08:49:37 GMT", "Sunday, 06-Nov-94 08:49:37 GMT",
+                            "Sun Nov  6 08:49:37 1994"}) {
+    http::Headers headers;
+    headers.Set("retry-after", value);
+    EXPECT_EQ(RetryAfterDelay(headers, now), milliseconds(37000)) << "value: " << value;
+  }
+}
+
+TEST(RetryAfterDelayTest, AnExtremeReferenceDoesNotOverflowTheSubtraction) {
+  // The function is public, and Timestamp::FromEpochMilliseconds is an
+  // unchecked factory, so the difference of two legal Timestamps can exceed
+  // int64. Signed overflow is undefined behavior, not a large number.
+  http::Headers headers;
+  headers.Set("retry-after", "Fri, 31 Dec 9999 23:59:59 GMT");
+  const auto delay = RetryAfterDelay(
+      headers, Timestamp::FromEpochMilliseconds(std::numeric_limits<int64_t>::min()));
+  ASSERT_TRUE(delay.has_value());
+  EXPECT_GT(*delay, milliseconds(0)) << "a far-future date read as no delay at all";
+  EXPECT_GE(*delay, milliseconds(86400000));
+
+  // The mirror image: a far-past date against a far-future reference is zero,
+  // not a wrapped positive.
+  headers.Set("retry-after", "Thu, 01 Jan 1970 00:00:00 GMT");
+  EXPECT_EQ(RetryAfterDelay(headers,
+                            Timestamp::FromEpochMilliseconds(std::numeric_limits<int64_t>::max())),
+            milliseconds(0));
 }
 
 TEST(RetryAfterDelayTest, AbsentOrMalformedAsksForNothing) {

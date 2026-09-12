@@ -52,15 +52,27 @@ std::optional<std::chrono::milliseconds> RetryAfterDelay(const http::Headers& he
     return std::chrono::seconds(static_cast<std::int64_t>(seconds));
   }
 
-  // The other form: an absolute HTTP-date, read with the runtime's own
-  // IMF-fixdate parser rather than a second one written here.
-  const auto when = Timestamp::Parse(*value, TimestampFormat::kHttpDate);
-  if (!when) {
+  // The other form: an absolute HTTP-date, in any of the three spellings a
+  // recipient must accept (RFC 9110 §5.6.7). `now` resolves the obsolete
+  // two-digit year, which is the only thing it is used for there.
+  const auto when = http::ParseHttpDate(*value, now);
+  if (!when.has_value()) {
     return std::nullopt;
   }
-  const std::int64_t delta = when->epoch_milliseconds() - now.epoch_milliseconds();
-  // A date already past asks for nothing, not for negative time.
-  return std::chrono::milliseconds(std::max<std::int64_t>(delta, 0));
+  // A date already past asks for nothing, not for negative time. The ordering
+  // is checked before the subtraction rather than after it: this function is
+  // public and Timestamp's unchecked factory can build instants whose
+  // difference exceeds int64, where a signed subtraction is undefined rather
+  // than merely large. Once the pair is ordered, the unsigned difference is
+  // exact for any two int64 instants.
+  if (*when <= now) {
+    return std::chrono::milliseconds(0);
+  }
+  const std::uint64_t ahead = static_cast<std::uint64_t>(when->epoch_milliseconds()) -
+                              static_cast<std::uint64_t>(now.epoch_milliseconds());
+  constexpr auto kRepresentable =
+      static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
+  return std::chrono::milliseconds(static_cast<std::int64_t>(std::min(ahead, kRepresentable)));
 }
 
 bool RetryableStatus(int status) {

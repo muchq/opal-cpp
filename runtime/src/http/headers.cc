@@ -1,7 +1,12 @@
 #include "opal/http/headers.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <charconv>
+#include <optional>
+#include <string>
+#include <system_error>
 
 namespace opal::http {
 namespace {
@@ -47,6 +52,131 @@ bool HeaderNameStartsWith(std::string_view name, std::string_view prefix) {
   return name.size() >= prefix.size() &&
          std::equal(prefix.begin(), prefix.end(), name.begin(),
                     [](char x, char y) { return AsciiLower(x) == AsciiLower(y); });
+}
+
+namespace {
+
+constexpr std::array<std::string_view, 7> kAbbreviatedDays = {"Sun", "Mon", "Tue", "Wed",
+                                                              "Thu", "Fri", "Sat"};
+constexpr std::array<std::string_view, 7> kFullDays = {"Sunday",   "Monday", "Tuesday", "Wednesday",
+                                                       "Thursday", "Friday", "Saturday"};
+
+bool AllDigits(std::string_view text) {
+  return !text.empty() && text.find_first_not_of("0123456789") == std::string_view::npos;
+}
+
+// The whole of `text` as an int, or nullopt. from_chars rather than stoi:
+// this library builds under -fno-exceptions too, and a conversion that
+// reports failure in its return value has nothing to throw.
+std::optional<int> ParseInt(std::string_view text) {
+  int value = 0;
+  const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+  if (ec != std::errc{} || end != text.data() + text.size()) {
+    return std::nullopt;
+  }
+  return value;
+}
+
+// The reference's civil year, via the format the runtime already tests, so no
+// second civil decomposition exists to disagree with the first. Negative when
+// the instant falls outside the representable window, where a two-digit year
+// cannot be resolved against anything.
+int ReferenceYear(Timestamp reference) {
+  const std::string rendered = reference.Format(TimestampFormat::kDateTime);
+  if (rendered.size() < 4) {
+    return -1;
+  }
+  // AllDigits before the conversion because from_chars would take a leading
+  // '-', and a negative year here is garbage rather than an instant.
+  const std::string_view year = std::string_view(rendered).substr(0, 4);
+  return AllDigits(year) ? ParseInt(year).value_or(-1) : -1;
+}
+
+// RFC 9110 §5.6.7: a two-digit year more than fifty years ahead of the
+// reference is the most recent past year ending in those digits. Without it a
+// 1994 timestamp reads as 2094, and a delay in the past becomes seventy years
+// in the future.
+std::string ResolveTwoDigitYear(int two_digits, int reference_year) {
+  const int century = (reference_year / 100) * 100;
+  int year = century + two_digits;
+  if (year > reference_year + 50) {
+    year -= 100;
+  }
+  std::string text = std::to_string(year);
+  return std::string(4 - text.size(), '0') + text;
+}
+
+// "Sunday, 06-Nov-94 08:49:37 GMT" as IMF-fixdate, or empty when it is not
+// that shape. The weekday is carried across rather than recomputed, so the
+// IMF-fixdate parser's own weekday check still has something to check.
+std::string Rfc850AsFixdate(std::string_view text, Timestamp reference) {
+  const auto comma = text.find(',');
+  if (comma == std::string_view::npos) return {};
+  std::size_t day = 0;
+  while (day < kFullDays.size() && kFullDays[day] != text.substr(0, comma)) ++day;
+  if (day == kFullDays.size()) return {};
+
+  // " 06-Nov-94 08:49:37 GMT" is fixed-width once the day name is off.
+  const std::string_view rest = text.substr(comma + 1);
+  if (rest.size() != 23 || rest[0] != ' ' || rest[3] != '-' || rest[7] != '-' || rest[10] != ' ' ||
+      rest.substr(19) != " GMT") {
+    return {};
+  }
+  const std::string_view day_of_month = rest.substr(1, 2);
+  const std::string_view month = rest.substr(4, 3);
+  const std::string_view two_digit_year = rest.substr(8, 2);
+  const std::string_view time_of_day = rest.substr(11, 8);
+  if (!AllDigits(day_of_month) || !AllDigits(two_digit_year)) return {};
+  const int reference_year = ReferenceYear(reference);
+  const auto year_digits = ParseInt(two_digit_year);
+  if (reference_year < 0 || !year_digits.has_value()) return {};
+
+  return std::string(kAbbreviatedDays[day]) + ", " + std::string(day_of_month) + " " +
+         std::string(month) + " " + ResolveTwoDigitYear(*year_digits, reference_year) + " " +
+         std::string(time_of_day) + " GMT";
+}
+
+// "Sun Nov  6 08:49:37 1994" as IMF-fixdate, or empty. Fixed-width, with the
+// day of the month space-padded rather than zero-padded.
+std::string AsctimeAsFixdate(std::string_view text) {
+  if (text.size() != 24 || text[3] != ' ' || text[7] != ' ' || text[10] != ' ' || text[19] != ' ') {
+    return {};
+  }
+  std::size_t day = 0;
+  while (day < kAbbreviatedDays.size() && kAbbreviatedDays[day] != text.substr(0, 3)) ++day;
+  if (day == kAbbreviatedDays.size()) return {};
+
+  const std::string_view month = text.substr(4, 3);
+  const std::string_view time_of_day = text.substr(11, 8);
+  const std::string_view year = text.substr(20, 4);
+  const std::string day_of_month =
+      text[8] == ' ' ? "0" + std::string(text.substr(9, 1)) : std::string(text.substr(8, 2));
+  if (!AllDigits(day_of_month) || !AllDigits(year)) return {};
+
+  return std::string(kAbbreviatedDays[day]) + ", " + day_of_month + " " + std::string(month) + " " +
+         std::string(year) + " " + std::string(time_of_day) + " GMT";
+}
+
+}  // namespace
+
+std::optional<Timestamp> ParseHttpDate(std::string_view text, Timestamp reference) {
+  // IMF-fixdate first: the only form a sender is allowed to produce, and so
+  // the only one worth trying before the two kept alive for old peers.
+  if (const auto fixdate = Timestamp::Parse(text, TimestampFormat::kHttpDate); fixdate.ok()) {
+    return *fixdate;
+  }
+  std::string normalized = Rfc850AsFixdate(text, reference);
+  if (normalized.empty()) {
+    normalized = AsctimeAsFixdate(text);
+  }
+  if (normalized.empty()) {
+    return std::nullopt;
+  }
+  const auto parsed = Timestamp::Parse(normalized, TimestampFormat::kHttpDate);
+  if (!parsed.ok()) {
+    return std::nullopt;
+  }
+  return *parsed;
 }
 
 bool HeaderNameEquals(std::string_view a, std::string_view b) {

@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include "opal/core/timestamp.h"
+
 namespace opal::http {
 
 // HTTP header collection: case-insensitive names, repeated names preserved in
@@ -51,6 +53,28 @@ std::vector<std::string> SplitHeaderListValues(std::string_view value);
 // whitespace stripped, lowercased ("Application/JSON; charset=utf-8" ->
 // "application/json").
 std::string MediaTypeOf(std::string_view content_type);
+
+// An HTTP field timestamp, in any of the three formats RFC 9110 §5.6.7
+// requires a recipient to accept:
+//
+//   Sun, 06 Nov 1994 08:49:37 GMT    IMF-fixdate, the only one a sender may emit
+//   Sunday, 06-Nov-94 08:49:37 GMT   obsolete RFC 850
+//   Sun Nov  6 08:49:37 1994         obsolete ANSI C asctime()
+//
+// nullopt when the text is none of them. All three are GMT by definition; a
+// zone other than GMT on the first two is a rejection rather than an offset.
+//
+// `reference` resolves rfc850's two-digit year, and nothing else: per §5.6.7 a
+// year that would land more than fifty years ahead of the reference is read as
+// the most recent past year with those digits, which is what keeps a 1994
+// timestamp from reading as 2094.
+//
+// Deliberately not Timestamp::Parse(kHttpDate): that one is Smithy's
+// @timestampFormat http-date, strict IMF-fixdate, and the protocol
+// conformance suites pin it that way. Wire-format strictness for a modeled
+// member and recipient leniency for an HTTP field are different rules that
+// happen to share a spelling.
+std::optional<Timestamp> ParseHttpDate(std::string_view text, Timestamp reference);
 
 // Splits a list-valued header of HTTP-dates, which themselves contain one
 // comma ("Mon, 16 Dec 2019 23:48:18 GMT, Tue, 17 Dec ..."): consecutive

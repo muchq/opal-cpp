@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "opal/core/timestamp.h"
 #include "opal/http/headers.h"
 #include "opal/http/loopback.h"
 #include "opal/http/message.h"
@@ -285,6 +286,60 @@ TEST(HeadersTest, RequestLineFieldPredicateRejectsSpaceAndControls) {
   EXPECT_FALSE(ValidRequestLineField("/x\x7f"));                    // DEL
   EXPECT_FALSE(ValidRequestLineField("/x\x0b"));                    // VT
   EXPECT_FALSE(ValidRequestLineField("/x\x0c"));                    // FF
+}
+
+}  // namespace
+}  // namespace opal::http
+
+namespace opal::http {
+namespace {
+
+// RFC 9110 §5.6.7's own example: three spellings of one instant.
+constexpr char kImfFixdate[] = "Sun, 06 Nov 1994 08:49:37 GMT";
+constexpr char kRfc850[] = "Sunday, 06-Nov-94 08:49:37 GMT";
+constexpr char kAsctime[] = "Sun Nov  6 08:49:37 1994";
+
+Timestamp In(const char* date_time) {
+  auto parsed = Timestamp::Parse(date_time, TimestampFormat::kDateTime);
+  return parsed.ok() ? *parsed : Timestamp{};
+}
+
+TEST(ParseHttpDateTest, AcceptsAllThreeFormatsAsTheSameInstant) {
+  // A recipient MUST accept all three (§5.6.7), obsolete or not: a server
+  // still emitting rfc850 is exactly the server whose Retry-After a client
+  // would otherwise ignore and come back too early.
+  const Timestamp reference = In("2026-09-12T00:00:00Z");
+  const Timestamp expected = In("1994-11-06T08:49:37Z");
+
+  EXPECT_EQ(ParseHttpDate(kImfFixdate, reference), expected);
+  EXPECT_EQ(ParseHttpDate(kRfc850, reference), expected);
+  EXPECT_EQ(ParseHttpDate(kAsctime, reference), expected);
+}
+
+TEST(ParseHttpDateTest, ResolvesTheObsoleteTwoDigitYearAgainstTheReference) {
+  // "94" read naively as 2094 would turn a long-past timestamp into a
+  // seventy-year delay. §5.6.7: more than fifty years ahead means it is the
+  // most recent past year with those digits.
+  EXPECT_EQ(ParseHttpDate(kRfc850, In("2026-09-12T00:00:00Z")), In("1994-11-06T08:49:37Z"));
+
+  // Within fifty years it is the future year it appears to be. The weekday
+  // is Wednesday because 2030-11-06 is one: the IMF-fixdate parser checks the
+  // weekday against the date, which caught this test carrying 1994's Sunday
+  // over to a 2030 date.
+  EXPECT_EQ(ParseHttpDate("Wednesday, 06-Nov-30 08:49:37 GMT", In("2026-09-12T00:00:00Z")),
+            In("2030-11-06T08:49:37Z"));
+
+  // The rule is relative to the reference, not to a hardcoded century.
+  EXPECT_EQ(ParseHttpDate(kRfc850, In("1996-01-01T00:00:00Z")), In("1994-11-06T08:49:37Z"));
+}
+
+TEST(ParseHttpDateTest, RejectsWhatIsNoneOfTheThree) {
+  const Timestamp reference = In("2026-09-12T00:00:00Z");
+  for (const char* text : {"", "soon", "1994-11-06T08:49:37Z", "Sun, 06 Nov 1994 08:49:37",
+                           "Sun, 06 Nov 1994 08:49:37 PST", "Sun, 32 Nov 1994 08:49:37 GMT",
+                           "Sun, 06 Xxx 1994 08:49:37 GMT", "Sun Nov  6 08:49:37"}) {
+    EXPECT_EQ(ParseHttpDate(text, reference), std::nullopt) << "text: " << text;
+  }
 }
 
 }  // namespace
