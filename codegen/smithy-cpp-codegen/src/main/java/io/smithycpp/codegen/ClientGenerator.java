@@ -1,6 +1,7 @@
 package io.smithycpp.codegen;
 
 import java.util.List;
+import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.ServiceShape;
 import software.amazon.smithy.model.shapes.StructureShape;
@@ -26,6 +27,22 @@ final class ClientGenerator {
   /** The event-streaming subset (ADR-0016); empty for unary-only services. */
   private List<OperationShape> streamingOperations() {
     return EventStreamCodeGen.streamingOperations(context.model(), operations());
+  }
+
+  /**
+   * The operation's @streaming blob response payload, or null (issue #213): the member whose bytes
+   * the caller's writer takes instead of the output structure. Protocol-gated — the RPC protocols
+   * have no standalone response body to hand over.
+   */
+  private MemberShape streamedPayload(OperationShape operation) {
+    return protocol.supportsStreamingBlobPayloads()
+        ? HttpBindingCodeGen.streamingResponsePayload(context, operation)
+        : null;
+  }
+
+  /** Whether any operation streams its response payload — what puts a sink on the Send helper. */
+  private boolean streamsAnyPayload() {
+    return operations().stream().anyMatch(op -> streamedPayload(op) != null);
   }
 
   private String clientName() {
@@ -116,12 +133,33 @@ final class ClientGenerator {
             defaulted);
         continue;
       }
-      w.write(
-          "opal::Outcome<$L> $L(const $L& input$L) const;",
-          outputType,
-          CppReservedWords.escape(operation.getId().getName()),
-          inputType,
-          defaulted);
+      MemberShape streamed = streamedPayload(operation);
+      if (streamed != null) {
+        if (documented) {
+          w.write("///"); // blank separator: model docs above, boilerplate below
+        }
+        w.write(
+            "/// The @streaming response payload '$L' is handed to `write` in",
+            streamed.getMemberName());
+        w.write("/// pieces as it arrives rather than buffered (issue #213), and the");
+        w.write("/// member is left empty. `write` returning false aborts the transfer");
+        w.write("/// and fails the call. Omitting it buffers the payload into the");
+        w.write("/// member as every other operation does.");
+        w.write(
+            "opal::Outcome<$L> $L(const $L& input$L, "
+                + "const opal::http::BodyWriter& write = nullptr) const;",
+            outputType,
+            CppReservedWords.escape(operation.getId().getName()),
+            inputType,
+            defaulted);
+      } else {
+        w.write(
+            "opal::Outcome<$L> $L(const $L& input$L) const;",
+            outputType,
+            CppReservedWords.escape(operation.getId().getName()),
+            inputType,
+            defaulted);
+      }
       if (pagination(operation).isPresent()) {
         w.write(
             "/// Pages $L until the service stops returning a next token (@paginated).",
@@ -140,9 +178,16 @@ final class ClientGenerator {
         "$L(opal::ClientConfig config, std::shared_ptr<opal::http::HttpClient> "
             + "transport, std::string path_prefix);",
         name);
-    w.write(
-        "opal::Outcome<opal::http::HttpResponse> "
-            + "Send(opal::http::HttpRequest request) const;");
+    if (streamsAnyPayload()) {
+      w.write(
+          "opal::Outcome<opal::http::HttpResponse> "
+              + "Send(opal::http::HttpRequest request, "
+              + "const opal::http::BodySink& sink = {}) const;");
+    } else {
+      w.write(
+          "opal::Outcome<opal::http::HttpResponse> "
+              + "Send(opal::http::HttpRequest request) const;");
+    }
     w.write("");
     w.write("opal::ClientConfig config_;");
     w.write("std::shared_ptr<opal::http::HttpClient> transport_;");
@@ -400,10 +445,18 @@ final class ClientGenerator {
     w.dedent();
     w.write("");
 
-    w.openBlock(
-        "opal::Outcome<opal::http::HttpResponse> $L::Send("
-            + "opal::http::HttpRequest request) const {",
-        name);
+    boolean sinkOnSend = streamsAnyPayload();
+    if (sinkOnSend) {
+      w.openBlock(
+          "opal::Outcome<opal::http::HttpResponse> $L::Send("
+              + "opal::http::HttpRequest request, const opal::http::BodySink& sink) const {",
+          name);
+    } else {
+      w.openBlock(
+          "opal::Outcome<opal::http::HttpResponse> $L::Send("
+              + "opal::http::HttpRequest request) const {",
+          name);
+    }
     w.write("// Operations with a non-document response payload set their own accept.");
     w.write(
         "if (!request.headers.Get(\"accept\").has_value()) "
@@ -414,9 +467,22 @@ final class ClientGenerator {
     w.openBlock("if (!request.body.empty()) {");
     w.write("request.headers.Set(\"content-length\", std::to_string(request.body.size()));");
     w.closeBlock("}");
-    w.write(
-        "return opal::SendWithRetries(*transport_, request, config_.retry, "
-            + "config_.interceptors);");
+    if (sinkOnSend) {
+      w.write("// A sink with no writer is the caller declining to stream (#213):");
+      w.write("// the response buffers on the same path every other operation takes.");
+      w.openBlock("if (sink.write == nullptr) {");
+      w.write(
+          "return opal::SendWithRetries(*transport_, request, config_.retry, "
+              + "config_.interceptors);");
+      w.closeBlock("}");
+      w.write(
+          "return opal::SendWithRetries(*transport_, request, config_.retry, "
+              + "config_.interceptors, sink);");
+    } else {
+      w.write(
+          "return opal::SendWithRetries(*transport_, request, config_.retry, "
+              + "config_.interceptors);");
+    }
     w.closeBlock("}");
     w.write("");
 
@@ -431,12 +497,22 @@ final class ClientGenerator {
                   .cppSymbols()
                   .toSymbol(ProtocolSupport.outputShape(context, operation))
                   .getName();
-      w.openBlock(
-          "opal::Outcome<$L> $L::$L(const $L& input) const {",
-          outputType,
-          name,
-          CppReservedWords.escape(operation.getId().getName()),
-          inputType);
+      if (streamedPayload(operation) != null) {
+        w.openBlock(
+            "opal::Outcome<$L> $L::$L(const $L& input, "
+                + "const opal::http::BodyWriter& write) const {",
+            outputType,
+            name,
+            CppReservedWords.escape(operation.getId().getName()),
+            inputType);
+      } else {
+        w.openBlock(
+            "opal::Outcome<$L> $L::$L(const $L& input) const {",
+            outputType,
+            name,
+            CppReservedWords.escape(operation.getId().getName()),
+            inputType);
+      }
       if (input.members().isEmpty()) {
         w.write("(void)input;");
       }

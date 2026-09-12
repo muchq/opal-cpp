@@ -59,6 +59,16 @@ interface ProtocolGenerator {
   default void writeErrorDocPatches(
       CppWriter w, CppContext context, software.amazon.smithy.model.shapes.StructureShape error) {}
 
+  /**
+   * Whether a @streaming blob bound as the response @httpPayload streams to a caller-supplied
+   * writer (issue #213): true for the HTTP binding protocols, where the payload is the whole
+   * response body. The RPC protocols put every member inside one document, so there is no body to
+   * hand over piecewise and their @streaming blobs stay buffered, as they always were.
+   */
+  default boolean supportsStreamingBlobPayloads() {
+    return false;
+  }
+
   /** Emits the body of one operation method (inside the function braces). */
   void writeOperationBody(
       CppWriter w, CppContext context, ServiceShape service, OperationShape operation);

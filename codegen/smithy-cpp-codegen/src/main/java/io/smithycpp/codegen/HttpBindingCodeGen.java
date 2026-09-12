@@ -3,6 +3,7 @@ package io.smithycpp.codegen;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import software.amazon.smithy.codegen.core.CodegenException;
 import software.amazon.smithy.model.knowledge.HttpBinding;
@@ -11,8 +12,10 @@ import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeType;
+import software.amazon.smithy.model.traits.HttpTrait;
 import software.amazon.smithy.model.traits.JsonNameTrait;
 import software.amazon.smithy.model.traits.MediaTypeTrait;
+import software.amazon.smithy.model.traits.StreamingTrait;
 
 /**
  * HTTP-binding emission shared by the client and server halves of the HTTP+JSON protocol (companion
@@ -39,6 +42,84 @@ final class HttpBindingCodeGen {
         .getTrait(JsonNameTrait.class)
         .map(JsonNameTrait::getValue)
         .orElse(member.getMemberName());
+  }
+
+  /**
+   * The HTTP statuses the retry layer treats as transient. A mirror of {@code
+   * opal::RetryableStatus} (runtime/src/client/retry.cc), which is the source of truth — the
+   * generator cannot call into C++, and {@link RetryableStatusMirrorTest} fails when the two drift.
+   * Used only by {@link #validateStreamingPayloads}: a modeled success status in this set is a
+   * model the streaming payload cannot be honored on.
+   */
+  static final Set<Integer> RETRYABLE_STATUSES = Set.of(429, 500, 502, 503, 504);
+
+  /**
+   * Fails generation for a @streaming response payload whose modeled success status is one the
+   * retry layer retries (issue #213 slice 2). The two layers cannot both be obeyed: the generated
+   * code calls that status a success and streams on it, while {@code SendWithRetries} classifies it
+   * as transient, retries it, and withholds it from the sink on every attempt — so the call would
+   * return success with the payload buffered into the member and the caller's writer never invoked.
+   * Refusing by name beats emitting a writer that cannot fire.
+   *
+   * <p>Only the static-code arm can collide. Under @httpResponseCode success is 2xx/3xx, which
+   * shares nothing with the retryable set, and the RPC protocols do not stream at all.
+   *
+   * <p>The way out is in the diagnostic: @httpResponseCode carries the status at runtime, so the
+   * operation stops modeling a transient code as its success.
+   */
+  static void validateStreamingPayloads(
+      CppContext context, ProtocolGenerator protocol, List<OperationShape> operations) {
+    if (!protocol.supportsStreamingBlobPayloads()) {
+      return;
+    }
+    HttpBindingIndex index = HttpBindingIndex.of(context.model());
+    for (OperationShape operation : operations) {
+      MemberShape streamed = streamingResponsePayload(context, operation);
+      if (streamed == null || ResponseBindings.of(index, operation).responseCode() != null) {
+        continue;
+      }
+      int code = operation.expectTrait(HttpTrait.class).getCode();
+      if (!RETRYABLE_STATUSES.contains(code)) {
+        continue;
+      }
+      throw new CodegenException(
+          "cpp-codegen: operation "
+              + operation.getId()
+              + " streams its @streaming response payload '"
+              + streamed.getMemberName()
+              + "' on modeled status "
+              + code
+              + ", which the retry layer treats as transient (opal::RetryableStatus): it would be"
+              + " retried and withheld from the body sink on every attempt, so the writer could"
+              + " never be invoked. Bind the status with @httpResponseCode so it is chosen at"
+              + " runtime rather than modeled as this operation's success, or drop @streaming"
+              + " from the payload");
+    }
+  }
+
+  /**
+   * The operation's response @httpPayload member when it targets a @streaming blob, else null
+   * (issue #213 slice 2). Such a member is the whole response body and the model puts no bound on
+   * its size, so the generated operation takes an {@code opal::http::BodyWriter} and hands the
+   * bytes to it instead of materializing the member.
+   *
+   * <p>Only an @httpPayload blob qualifies. A @streaming blob bound anywhere else is base64 inside
+   * a JSON document — the document has to be parsed whole before the member exists, so there is
+   * nothing to stream — and it stays a buffered {@code opal::Blob}, exactly as it was.
+   */
+  static MemberShape streamingResponsePayload(CppContext context, OperationShape operation) {
+    if (!operation.hasTrait(HttpTrait.class)) {
+      return null;
+    }
+    HttpBinding payload =
+        ResponseBindings.of(HttpBindingIndex.of(context.model()), operation).payload();
+    if (payload == null) {
+      return null;
+    }
+    Shape target = context.model().expectShape(payload.getMember().getTarget());
+    return target.isBlobShape() && target.hasTrait(StreamingTrait.class)
+        ? payload.getMember()
+        : null;
   }
 
   /** An operation's request bindings partitioned by location (maps sorted by location name). */

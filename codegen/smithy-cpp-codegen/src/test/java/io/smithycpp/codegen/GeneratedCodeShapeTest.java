@@ -1,9 +1,11 @@
 package io.smithycpp.codegen;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import software.amazon.smithy.codegen.core.CodegenException;
 
 /**
  * Exactly-once / absence pins for "generator emitted redundant/dead code" fixes with no
@@ -395,12 +397,13 @@ class GeneratedCodeShapeTest {
 
   @Test
   void streamingBlobsStayPlainBufferedBlobs() {
-    // The README's "Current limitations": @streaming BLOBS remain unmodeled —
-    // a streaming blob payload generates as an ordinary, fully buffered
-    // opal::Blob with the plain unary operation around it. Event-stream
-    // unions became real in Phase 8 slice 3 (ADR-0016; the flipped pin is
-    // eventStreamOperationsGenerateStreamingSignatures below), which is why
-    // this pin is now blob-specific.
+    // A @streaming blob in the *request* payload is still an ordinary, fully
+    // buffered opal::Blob with the plain unary operation around it: writing
+    // one needs chunked request framing, which the http1 codec refuses on
+    // purpose. Only the response half streams (#213 slice 2, the two tests
+    // above). Event-stream unions became real in Phase 8 slice 3 (ADR-0016;
+    // the flipped pin is eventStreamOperationsGenerateStreamingSignatures
+    // below), which is why this pin is blob-specific.
     String model =
         """
         $version: "2.0"
@@ -431,6 +434,269 @@ class GeneratedCodeShapeTest {
         client.contains("opal::Outcome<UploadOutput> Upload(const UploadInput& input) const;"),
         client);
     assertFalse(client.contains("EventStream"), client);
+  }
+
+  @Test
+  void streamingBlobOutputsTakeAWriterAndAreGatedOnSuccess() {
+    // #213 slice 2. A @streaming blob in the *response* streams to a writer
+    // the caller supplies rather than materializing in the output. Requests
+    // keep the pin above: writing one needs chunked request framing, which
+    // the http1 codec refuses on purpose.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @http(method: "GET", uri: "/download/{id}")
+        operation Download {
+            input := {
+                @required
+                @httpLabel
+                id: String
+            }
+            output := {
+                @httpHeader("ETag")
+                etag: String
+
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    // The writer is defaulted, so an operation that was callable before still
+    // is, and omitting it buffers exactly as it used to.
+    String client = manifest.expectFileString("/include/test/shape/client.h");
+    assertTrue(
+        client.contains(
+            "opal::Outcome<DownloadOutput> Download(const DownloadInput& input, "
+                + "const opal::http::BodyWriter& write = nullptr) const;"),
+        client);
+
+    // The accept gate belongs to the generated code, and it is the operation's
+    // own success condition spelled once more: a modeled code here, so exactly
+    // that code streams. A wider gate would stream a status the client is
+    // about to reject, leaving the error path an empty body to parse.
+    String source = manifest.expectFileString("/src/client.cc");
+    assertTrue(
+        source.contains(
+            ".accept = [](int status, const opal::http::Headers&) " + "{ return status == 200; },"),
+        source);
+    assertTrue(source.contains(".write = write,"), source);
+    assertTrue(source.contains("auto response = Send(std::move(request), payload_sink);"), source);
+    // The gate and the status check below it are the same predicate. If they
+    // ever diverge, either a status the client rejects was streamed (leaving
+    // the error path an empty body) or one it accepts was buffered.
+    assertTrue(source.contains("if (response->status != 200) return"), source);
+
+    // A null writer has to reach the buffered path, or omitting the argument
+    // would turn every such call into an empty-sink streaming send.
+    assertTrue(source.contains("if (sink.write == nullptr) {"), source);
+
+    // The member stays on the output struct. It is shared with the server
+    // generator, which still returns the payload; removing it would drag the
+    // deferred server half into this change. (Smithy requires @required or
+    // @default on a streaming member, so it is a plain Blob — left empty when
+    // the bytes went to the writer instead.)
+    String types = manifest.expectFileString("/include/test/shape/types.h");
+    assertTrue(types.contains("opal::Blob content"), types);
+  }
+
+  @Test
+  void aStreamingPayloadOnARetryableSuccessStatusIsRefused() {
+    // #213 slice 2, second cursor finding on PR 216. A model may declare a
+    // modeled success status that the retry layer classifies as transient —
+    // @http(code: 503) with the HttpResponseCodeSemantics suppression the
+    // redirect fixture already uses for 302. The two layers then disagree
+    // irreconcilably: the generated gate and status check both call 503 a
+    // success, while SendWithRetries retries it and withholds it from the sink
+    // on every attempt, so the call returns success with the payload buffered
+    // into the member and the caller's writer never invoked.
+    //
+    // Teaching the retry layer this operation's success predicate is a change
+    // to a public runtime API and to every client's retry behavior, so this
+    // slice refuses the model by name instead of honoring it wrongly. The
+    // generator has no third option: emitting a writer that cannot fire is
+    // exactly the silent failure this diagnostic exists to prevent.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @suppress(["HttpResponseCodeSemantics"])
+        @http(method: "GET", uri: "/download", code: 503)
+        operation Download {
+            output := {
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+
+    CodegenException thrown =
+        assertThrows(
+            CodegenException.class,
+            () -> PluginTestHarness.generate(model, "test.shape#Svc", "test::shape"));
+    String message = thrown.getMessage();
+    assertTrue(message.startsWith("cpp-codegen: "), message);
+    assertTrue(message.contains("test.shape#Download"), message);
+    assertTrue(message.contains("503"), message);
+    // The diagnostic has to name the way out, not just the problem.
+    assertTrue(message.contains("@httpResponseCode"), message);
+  }
+
+  @Test
+  void aNonRetryableModeledSuccessStatusStillStreams() {
+    // The refusal is scoped to the statuses the retry layer treats as
+    // transient. A modeled 302 — the redirect fixture's own case — is not one
+    // of them, so it streams on exactly that status.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @suppress(["HttpResponseCodeSemantics"])
+        @http(method: "GET", uri: "/download", code: 302)
+        operation Download {
+            output := {
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    String source = manifest.expectFileString("/src/client.cc");
+    assertTrue(
+        source.contains(
+            ".accept = [](int status, const opal::http::Headers&) { return status == 302; },"),
+        source);
+  }
+
+  @Test
+  void anRpcProtocolLeavesAStreamingBlobResponseBuffered() {
+    // The protocol gate (#213 slice 2). jsonRpc2 carries every member inside
+    // one envelope, so there is no standalone response body to hand over
+    // piecewise — the blob stays a buffered opal::Blob and the operation
+    // keeps its plain signature. Pinned because the README and
+    // production-guide both promise it, and because the alternative is a
+    // writer parameter that silently never fires.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use smithy.cpp.protocols#jsonRpc2
+
+        @jsonRpc2
+        service Svc { version: "1", operations: [Download] }
+
+        operation Download {
+            input := {
+                @required
+                id: String
+            }
+            output := {
+                @required
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    String client = manifest.expectFileString("/include/test/shape/client.h");
+    assertTrue(
+        client.contains(
+            "opal::Outcome<DownloadOutput> Download(const DownloadInput& input) const;"),
+        client);
+    assertFalse(client.contains("BodyWriter"), client);
+    // The Send helper stays one-argument too: no service here streams, so
+    // every RPC client is byte-identical to what it was.
+    assertFalse(client.contains("BodySink"), client);
+    String source = manifest.expectFileString("/src/client.cc");
+    assertFalse(source.contains("payload_sink"), source);
+  }
+
+  @Test
+  void aStreamingPayloadUnderHttpResponseCodeStreamsEverySuccessStatus() {
+    // The other success rule (#213 slice 2, cursor review on PR 216). With
+    // @httpResponseCode the service picks the status, so success is 2xx or
+    // 3xx — a modeled redirect that carries a payload is a success, and a gate
+    // keyed on 2xx would silently buffer it into the member while still
+    // returning success, which is not what the caller asked for.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @http(method: "GET", uri: "/download/{id}")
+        operation Download {
+            input := {
+                @required
+                @httpLabel
+                id: String
+            }
+            output := {
+                @required
+                @httpResponseCode
+                status: Integer
+
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    String source = manifest.expectFileString("/src/client.cc");
+    assertTrue(
+        source.contains(
+            ".accept = [](int status, const opal::http::Headers&) "
+                + "{ return status >= 200 && status < 400; },"),
+        source);
+    // The gate and the check below it are the same predicate; if they ever
+    // disagree, one of the two states above is unreachable or wrong.
+    assertTrue(
+        source.contains("if (response->status < 200 || response->status >= 400) return"), source);
   }
 
   @Test

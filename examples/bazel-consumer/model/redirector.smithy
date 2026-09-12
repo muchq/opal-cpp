@@ -12,7 +12,7 @@ namespace acme.redirect
 /// generator, and only one of them used to work.
 service Redirector {
     version: "2026-01-01"
-    operations: [Resolve, ResolveDynamic, Fetch, Probe]
+    operations: [Resolve, ResolveDynamic, Fetch, Probe, Download, DownloadDynamic]
 }
 
 /// The status is fixed, so it rides the @http trait.
@@ -132,4 +132,72 @@ operation Probe {
 structure NoSuchSlug {
     @required
     message: String
+}
+
+/// The case the response sink exists for (issue #213): a payload whose size
+/// the model does not bound. @streaming on the blob is the client's cue to
+/// hand the bytes to a caller-supplied writer as they arrive rather than
+/// build an output structure holding all of them at once.
+///
+/// Deliberately a sibling of Fetch rather than a change to it: the two differ
+/// only in that trait, so the acceptance test can put the streamed and the
+/// buffered spelling of one download side by side.
+///
+/// The status is fixed here, so the generated client streams exactly it —
+/// DownloadDynamic below is the other branch.
+@readonly
+@http(method: "GET", uri: "/s/{slug}")
+operation Download {
+    input := {
+        @required
+        @httpLabel
+        slug: String
+    }
+
+    output := {
+        @httpHeader("ETag")
+        etag: String
+
+        @required
+        @httpPayload
+        content: StreamingBlob
+    }
+
+    errors: [NoSuchSlug]
+}
+
+/// Smithy requires @required or @default on a member targeting a streaming
+/// blob, so the member is a plain opal::Blob — left empty when the client
+/// streamed the bytes to a writer instead of buffering them.
+@streaming
+blob StreamingBlob
+
+/// Download with the status chosen per request, the same split Resolve and
+/// ResolveDynamic are: a modeled 3xx is a success under @httpResponseCode, so
+/// a client gating the payload on 2xx would quietly buffer it into the member
+/// and still return success. Both spellings are here because they take
+/// different branches through the generator.
+@readonly
+@http(method: "GET", uri: "/sd/{slug}")
+operation DownloadDynamic {
+    input := {
+        @required
+        @httpLabel
+        slug: String
+    }
+
+    output := {
+        @required
+        @httpResponseCode
+        status: Integer
+
+        @httpHeader("ETag")
+        etag: String
+
+        @required
+        @httpPayload
+        content: StreamingBlob
+    }
+
+    errors: [NoSuchSlug]
 }

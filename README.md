@@ -37,8 +37,14 @@ experience assumed. Day 2 (evolving the model) is
 
 Consolidated in one place — if your API depends on any of these, check here before adopting:
 
-- **`@streaming` blobs are not modeled yet.** A streaming blob payload generates as an
-  ordinary `opal::Blob`, fully buffered in memory. Event streams, by contrast, are real
+- **`@streaming` blobs stream on the client only.** A `@streaming` blob bound as an
+  operation's *response* `@httpPayload` puts a defaulted `opal::http::BodyWriter` on the
+  generated client method: the bytes go to the writer as they arrive and the member is
+  left empty ([production-guide](docs/production-guide.md#through-a-generated-client)).
+  Everywhere else the blob is still an ordinary `opal::Blob`, fully buffered in memory:
+  request payloads (writing one needs chunked request framing), the RPC protocols (every
+  member rides one document), and the whole server half. Event streams, by contrast, are
+  real
   ([ADR-0016](docs/adr/0016-generated-event-streams.md)): a `@streaming` union operation
   generates a typed `opal::eventstream::EventStream` session over WebSocket for all
   three protocols — `simpleRestJson` and `rpcv2Cbor` ride the event-stream framing codec

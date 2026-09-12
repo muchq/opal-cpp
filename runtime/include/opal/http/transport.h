@@ -25,6 +25,12 @@ struct TlsOptions {
   std::string ca_pem{};
 };
 
+// The write half of a BodySink, named because callers pass one on its own:
+// a generated operation with a @streaming blob response takes a BodyWriter and
+// builds the sink around it (issue #213), so the caller never spells out an
+// accept() the protocol already decides.
+using BodyWriter = std::function<bool(std::string_view piece)>;
+
 // Where a response body goes when the caller does not want it buffered
 // (issue #213). Send() holds a whole body in memory before anything decodes
 // it, which is the right default for a modeled JSON response and the wrong
@@ -49,7 +55,7 @@ struct BodySink {
   // Called with each piece as it arrives, in order, never empty. The view is
   // valid only for the duration of the call. False aborts the transfer: the
   // send fails and the connection is dropped rather than reused.
-  std::function<bool(std::string_view piece)> write;
+  BodyWriter write;
 };
 
 // Client-side transport. Implementations: SocketHttpClient (built-in HTTP/1.1

@@ -29,6 +29,10 @@
 
 namespace {
 
+using acme::redirect::DownloadDynamicInput;
+using acme::redirect::DownloadDynamicOutput;
+using acme::redirect::DownloadInput;
+using acme::redirect::DownloadOutput;
 using acme::redirect::FetchInput;
 using acme::redirect::FetchOutput;
 using acme::redirect::NoSuchSlug;
@@ -59,6 +63,23 @@ class SlugHandler final : public RedirectorHandler {
     targets_["abc"] = "https://example.com/live";
     targets_["retired"] = "https://example.com/moved";
     targets_["cached"] = "https://example.com/cached";
+  }
+
+  opal::Outcome<DownloadDynamicOutput> DownloadDynamic(
+      const DownloadDynamicInput& input, const opal::server::RequestContext&) override {
+    auto target = Lookup(input.slug);
+    if (!target) return std::move(target).error();
+    return DownloadDynamicOutput{
+        .status = kFound, .etag = kEtag, .content = opal::Blob::FromString(kContent)};
+  }
+
+  // The streaming sibling of Fetch (#213). Not this file's subject; it
+  // answers the same resource so the files cannot drift on what is served.
+  opal::Outcome<DownloadOutput> Download(const DownloadInput& input,
+                                         const opal::server::RequestContext&) override {
+    auto target = Lookup(input.slug);
+    if (!target) return std::move(target).error();
+    return DownloadOutput{.etag = kEtag, .content = opal::Blob::FromString(kContent)};
   }
 
   opal::Outcome<ResolveOutput> Resolve(const ResolveInput& input,

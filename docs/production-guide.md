@@ -93,11 +93,70 @@ take the first back. Such a body arrives in `response.body` instead, where
 error documents already go. `opal::SendWithRetries` has an overload that
 takes a sink and applies this rule.
 
-Generated clients do not expose a sink yet — a `@streaming` blob member still
-generates a fully buffered `opal::Blob`. That is
-[#213](https://github.com/muchq/opal-cpp/issues/213) slice 2; today a caller
-that needs this drives the transport directly, as
-`examples/bazel-consumer/response_sink_acceptance_test.cc` does.
+### Through a generated client
+
+A model that marks the response payload `@streaming` does not need any of the
+above. The operation takes an `opal::http::BodyWriter` and the generated code
+assembles the sink:
+
+```smithy
+@readonly
+@http(method: "GET", uri: "/s/{slug}")
+operation Download {
+    input := { @required @httpLabel slug: String }
+    output := {
+        @httpHeader("ETag") etag: String
+        @required @httpPayload content: StreamingBlob
+    }
+}
+
+@streaming
+blob StreamingBlob
+```
+
+```cpp
+std::ofstream out("export.pgn", std::ios::binary);
+auto downloaded = client.Download(DownloadInput{.slug = "big"}, [&](std::string_view piece) {
+  return out.write(piece.data(), piece.size()).good();
+});
+// downloaded->etag is deserialized as usual; downloaded->content is empty —
+// the bytes went to the writer.
+```
+
+- **The accept gate is the generator's, and it is the operation's own success
+  condition** — the modeled `@http` code, or `2xx`/`3xx` when the status comes
+  from `@httpResponseCode`. Success streams the payload; anything else stays
+  buffered, so a modeled error still deserializes into the typed
+  `<Operation>Errors` listing from its own body. A modeled 3xx that carries a
+  payload is a success, and streams.
+- **The writer is defaulted.** `client.Download(input)` with no writer buffers
+  the payload into the member, exactly as an operation without `@streaming`
+  does, so adding the trait breaks no caller.
+- **The member stays on the output structure.** Smithy requires `@required`
+  (or `@default`) on a streaming member, so it is a plain `opal::Blob` — left
+  empty when the bytes went to the writer. The server half still returns it.
+- **A writer returning false fails the call, not retryably** — the bytes it
+  refused are gone, and a retry would only deliver them again.
+- **A modeled success status the retry layer retries is refused at generation
+  time.** `@http(code: 503)` with the `HttpResponseCodeSemantics` suppression
+  makes 503 this operation's success, but `SendWithRetries` classifies it as
+  transient and withholds it from the sink on every attempt — the writer could
+  never fire. The generator names the operation and the fix rather than
+  emitting a method that cannot keep its contract; bind the status with
+  `@httpResponseCode` instead. Only a static modeled code can collide:
+  under `@httpResponseCode` success is 2xx/3xx, which shares nothing with the
+  retryable set (429, 500, 502, 503, 504).
+
+Only a response payload streams, and only on the HTTP-binding protocols.
+Smithy already forces the `@httpPayload` binding on a streaming blob whenever
+the protocol supports it, so there is no in-between case there; on the RPC
+protocols, which carry every member in one document, a `@streaming` blob is
+base64 inside that document and stays a buffered `opal::Blob`. So does a
+request payload — writing one needs chunked request framing, which the http1
+codec refuses on purpose.
+
+`examples/bazel-consumer/response_sink_acceptance_test.cc` is the out-of-tree
+acceptance for both levels.
 
 ## Retries
 

@@ -94,6 +94,11 @@ final class HttpJsonBindingProtocol implements ProtocolGenerator {
   }
 
   @Override
+  public boolean supportsStreamingBlobPayloads() {
+    return true;
+  }
+
+  @Override
   public void writeOperationBody(
       CppWriter w, CppContext context, ServiceShape service, OperationShape operation) {
     client.writeOperationBody(w, context, service, operation);

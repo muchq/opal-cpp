@@ -178,7 +178,26 @@ final class HttpJsonClientGenerator {
           HttpBindingCodeGen.payloadContentType(context, operation, false));
     }
     ProtocolSupport.writeRequestCompression(w, operation);
-    w.write("auto response = Send(std::move(request));");
+    if (HttpBindingCodeGen.streamingResponsePayload(context, operation) != null) {
+      // #213: the @streaming payload goes straight to the caller's writer. The
+      // gate is this operation's success condition and nothing else — the same
+      // predicate the status check below applies, so the two states line up:
+      // a success streamed the payload, and a failure left its body buffered
+      // for the error path to parse. A wider gate would stream a status the
+      // client then rejects, leaving that path an empty body; a narrower one
+      // would silently buffer a payload into the member on a status the client
+      // calls success (a modeled 3xx under @httpResponseCode). A null writer
+      // makes this an incomplete sink, which Send() reads as "buffer it".
+      w.openBlock("const opal::http::BodySink payload_sink{");
+      w.write(
+          ".accept = [](int status, const opal::http::Headers&) { return $L; },",
+          responseCode != null ? "status >= 200 && status < 400" : "status == " + http.getCode());
+      w.write(".write = write,");
+      w.closeBlock("};");
+      w.write("auto response = Send(std::move(request), payload_sink);");
+    } else {
+      w.write("auto response = Send(std::move(request));");
+    }
     w.write("if (!response) return std::move(response).error();");
     if (responseCode != null) {
       // The service chooses the status at runtime via @httpResponseCode, so
