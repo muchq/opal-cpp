@@ -119,7 +119,33 @@ hit by a synchronized thundering herd.
 config.retry.max_attempts = 3;                              // total tries; 1 disables retries
 config.retry.initial_backoff = std::chrono::milliseconds(100);
 config.retry.max_backoff = std::chrono::milliseconds(20000);
+config.retry.retry_after_cap = std::chrono::milliseconds(60000);
 ```
+
+### Retry-After
+
+When a retried response carries `Retry-After`, that delay becomes a **floor**
+under the backoff for that attempt (issue #189). Both RFC 9110 §10.2.3 forms
+are read: delta-seconds (`30`) and an HTTP-date
+(`Fri, 31 Dec 1999 23:59:59 GMT`), the second measured against the wall clock,
+with a date already past asking for nothing. A header that does not parse is
+ignored and ordinary backoff applies; a peer's malformed hint is not worth
+failing a call over.
+
+Floor, never ceiling. The server can ask this client to wait longer, never to
+come back sooner, so a `Retry-After: 0` does not shorten the backoff that
+exists to stop exactly that.
+
+`retry_after_cap` (default 60 s) bounds how far a number the peer sent is
+trusted, and is deliberately separate from `max_backoff`, which bounds a guess
+this client made. It defaults higher for a reason: a service documenting
+`Retry-After: 30` wants 30 seconds, and truncating that to `max_backoff` would
+spend an attempt arriving early to be refused again. Lower it when a slow retry
+is worse for you than a failed one.
+
+Total wall-clock across attempts is still `max_attempts` multiplied by what
+each sleep and timeout allow, with no ceiling of its own — an overall deadline
+is the remaining piece of #189.
 
 Guidance:
 
@@ -127,7 +153,10 @@ Guidance:
   `max_backoff` near your latency budget; a user-facing call gains nothing
   from a 20-second sleep.
 - **Batch/background paths:** raise `max_attempts` and let `max_backoff`
-  breathe; throttling (429) resolves on its own if you back off.
+  breathe; throttling (429) resolves on its own if you back off. Against an
+  API that documents its throttling (a published `Retry-After`), leave
+  `retry_after_cap` above the largest value the service advertises, or the
+  client will keep arriving early.
 - **Idempotency:** retries resend the same serialized request.
   `@idempotencyToken` members are generated once per call and reused across
   attempts, so the server can deduplicate. For non-idempotent operations

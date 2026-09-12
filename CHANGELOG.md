@@ -82,6 +82,19 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Added
 
+- **`Retry-After` is honored** (#189). When a retried response carries the
+  header, that delay becomes a floor under the backoff for that attempt: both
+  RFC 9110 §10.2.3 forms are read, delta-seconds and HTTP-date, with a date
+  already past asking for nothing and a malformed value ignored in favor of
+  ordinary backoff. Before this the retry loop was pure full-jitter
+  exponential, so a 429 saying `Retry-After: 30` was retried inside
+  `max_backoff`'s 20-second window, arriving early to be refused again. It is
+  a floor and never a ceiling, so `Retry-After: 0` cannot shorten the backoff
+  that exists to prevent exactly that. `RetryPolicy::retry_after_cap`
+  (default 60 s) bounds how far a peer's number is trusted, separate from
+  `max_backoff` because that one bounds a guess this client made rather than
+  a number it was sent. `opal::RetryAfterDelay` is public for callers driving
+  their own retry loop.
 - **A response body sink: `HttpClient::SendStreaming`** (#213, slice 1 of
   `@streaming` blob support). A caller that does not want a response body
   buffered passes an `opal::http::BodySink` — an `accept(status, headers)`
