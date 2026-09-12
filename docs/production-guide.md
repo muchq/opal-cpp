@@ -123,9 +123,12 @@ auto downloaded = client.Download(DownloadInput{.slug = "big"}, [&](std::string_
 // the bytes went to the writer.
 ```
 
-- **The accept gate is the generator's, and it is 2xx.** A sink takes
-  payloads, never an error document: a modeled error still deserializes into
-  the typed `<Operation>Errors` listing because its body was buffered.
+- **The accept gate is the generator's, and it is the operation's own success
+  condition** — the modeled `@http` code, or `2xx`/`3xx` when the status comes
+  from `@httpResponseCode`. Success streams the payload; anything else stays
+  buffered, so a modeled error still deserializes into the typed
+  `<Operation>Errors` listing from its own body. A modeled 3xx that carries a
+  payload is a success, and streams.
 - **The writer is defaulted.** `client.Download(input)` with no writer buffers
   the payload into the member, exactly as an operation without `@streaming`
   does, so adding the trait breaks no caller.

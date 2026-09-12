@@ -480,14 +480,14 @@ class GeneratedCodeShapeTest {
                 + "const opal::http::BodyWriter& write = nullptr) const;"),
         client);
 
-    // The accept gate belongs to the generated code, keyed on 2xx: a caller
-    // that could accept a 404 would starve the error deserializer of the body
-    // it needs, and a 3xx body is not the payload either.
+    // The accept gate belongs to the generated code, and it is the operation's
+    // own success condition spelled once more: a modeled code here, so exactly
+    // that code streams. A wider gate would stream a status the client is
+    // about to reject, leaving the error path an empty body to parse.
     String source = manifest.expectFileString("/src/client.cc");
     assertTrue(
         source.contains(
-            ".accept = [](int status, const opal::http::Headers&) "
-                + "{ return status / 100 == 2; },"),
+            ".accept = [](int status, const opal::http::Headers&) " + "{ return status == 200; },"),
         source);
     assertTrue(source.contains(".write = write,"), source);
     assertTrue(source.contains("auto response = Send(std::move(request), payload_sink);"), source);
@@ -503,6 +503,58 @@ class GeneratedCodeShapeTest {
     // the bytes went to the writer instead.)
     String types = manifest.expectFileString("/include/test/shape/types.h");
     assertTrue(types.contains("opal::Blob content"), types);
+  }
+
+  @Test
+  void aStreamingPayloadUnderHttpResponseCodeStreamsEverySuccessStatus() {
+    // The other success rule (#213 slice 2, cursor review on PR 216). With
+    // @httpResponseCode the service picks the status, so success is 2xx or
+    // 3xx — a modeled redirect that carries a payload is a success, and a gate
+    // keyed on 2xx would silently buffer it into the member while still
+    // returning success, which is not what the caller asked for.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Download] }
+
+        @readonly
+        @http(method: "GET", uri: "/download/{id}")
+        operation Download {
+            input := {
+                @required
+                @httpLabel
+                id: String
+            }
+            output := {
+                @required
+                @httpResponseCode
+                status: Integer
+
+                @required
+                @httpPayload
+                content: StreamingBlob
+            }
+        }
+
+        @streaming
+        blob StreamingBlob
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+
+    String source = manifest.expectFileString("/src/client.cc");
+    assertTrue(
+        source.contains(
+            ".accept = [](int status, const opal::http::Headers&) "
+                + "{ return status >= 200 && status < 400; },"),
+        source);
+    // The gate and the check below it are the same predicate; if they ever
+    // disagree, one of the two states above is unreachable or wrong.
+    assertTrue(
+        source.contains("if (response->status < 200 || response->status >= 400) return"), source);
   }
 
   @Test

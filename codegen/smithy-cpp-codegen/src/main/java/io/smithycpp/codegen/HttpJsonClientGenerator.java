@@ -180,14 +180,18 @@ final class HttpJsonClientGenerator {
     ProtocolSupport.writeRequestCompression(w, operation);
     if (HttpBindingCodeGen.streamingResponsePayload(context, operation) != null) {
       // #213: the @streaming payload goes straight to the caller's writer. The
-      // gate is 2xx rather than the operation's own code because a sink takes
-      // payloads and nothing else — an error document has to stay buffered for
-      // the error path below, and a 3xx body is not the payload either. A null
-      // writer makes this an incomplete sink, which Send() reads as "buffer it".
+      // gate is this operation's success condition and nothing else — the same
+      // predicate the status check below applies, so the two states line up:
+      // a success streamed the payload, and a failure left its body buffered
+      // for the error path to parse. A wider gate would stream a status the
+      // client then rejects, leaving that path an empty body; a narrower one
+      // would silently buffer a payload into the member on a status the client
+      // calls success (a modeled 3xx under @httpResponseCode). A null writer
+      // makes this an incomplete sink, which Send() reads as "buffer it".
       w.openBlock("const opal::http::BodySink payload_sink{");
       w.write(
-          ".accept = [](int status, const opal::http::Headers&) "
-              + "{ return status / 100 == 2; },");
+          ".accept = [](int status, const opal::http::Headers&) { return $L; },",
+          responseCode != null ? "status >= 200 && status < 400" : "status == " + http.getCode());
       w.write(".write = write,");
       w.closeBlock("};");
       w.write("auto response = Send(std::move(request), payload_sink);");

@@ -40,6 +40,8 @@
 
 namespace {
 
+using acme::redirect::DownloadDynamicInput;
+using acme::redirect::DownloadDynamicOutput;
 using acme::redirect::DownloadErrors;
 using acme::redirect::DownloadInput;
 using acme::redirect::DownloadOutput;
@@ -98,6 +100,21 @@ class DownloadHandler final : public RedirectorHandler {
                                          const opal::server::RequestContext&) override {
     if (input.slug != "big") return NotFound(input.slug);
     return DownloadOutput{.etag = "\"big\"", .content = opal::Blob::FromString(payload_)};
+  }
+  // The @httpResponseCode spelling: "moved" answers a modeled 302 that still
+  // carries the payload, which is a success the client must stream rather
+  // than quietly buffer.
+  opal::Outcome<DownloadDynamicOutput> DownloadDynamic(
+      const DownloadDynamicInput& input, const opal::server::RequestContext&) override {
+    if (input.slug == "big") {
+      return DownloadDynamicOutput{
+          .status = 200, .etag = "\"big\"", .content = opal::Blob::FromString(payload_)};
+    }
+    if (input.slug == "moved") {
+      return DownloadDynamicOutput{
+          .status = 302, .etag = "\"big\"", .content = opal::Blob::FromString(payload_)};
+    }
+    return NotFound(input.slug);
   }
   opal::Outcome<ResolveOutput> Resolve(const ResolveInput& input,
                                        const opal::server::RequestContext&) override {
@@ -284,6 +301,64 @@ TEST_F(StreamingPayloadAcceptanceTest, AWriterThatAbortsFailsTheCallWithoutRetry
   ASSERT_FALSE(downloaded.ok());
   EXPECT_FALSE(downloaded.error().retryable());
   EXPECT_EQ(sleeps, 0) << "the retry loop backed off for a body the caller refused";
+}
+
+TEST_F(StreamingPayloadAcceptanceTest, AModeledRedirectCarryingThePayloadStillStreamsIt) {
+  // Under @httpResponseCode the service picks the status and 3xx is a success
+  // the client returns — so the gate has to be the same predicate, not "2xx".
+  // With a 2xx gate this call still succeeds, which is what makes the bug
+  // quiet: the payload lands in the member and the writer is never called.
+  RedirectorClient client = Client();
+
+  std::size_t received = 0;
+  std::size_t digest = 0;
+  const auto downloaded =
+      client.DownloadDynamic(DownloadDynamicInput{.slug = "moved"}, [&](std::string_view piece) {
+        received += piece.size();
+        for (const char byte : piece) digest = digest * 31 + static_cast<unsigned char>(byte);
+        return true;
+      });
+
+  ASSERT_TRUE(downloaded.ok()) << downloaded.error().message();
+  EXPECT_EQ(downloaded->status, 302);
+  EXPECT_EQ(received, payload_.size());
+  EXPECT_EQ(digest, Digest(payload_));
+  EXPECT_TRUE(downloaded->content.empty()) << "a modeled 3xx payload was buffered, not streamed";
+}
+
+TEST_F(StreamingPayloadAcceptanceTest, TheDynamicStatusSpellingStreamsAnOrdinary200Too) {
+  RedirectorClient client = Client();
+
+  std::size_t received = 0;
+  const auto downloaded =
+      client.DownloadDynamic(DownloadDynamicInput{.slug = "big"}, [&](std::string_view piece) {
+        received += piece.size();
+        return true;
+      });
+
+  ASSERT_TRUE(downloaded.ok()) << downloaded.error().message();
+  EXPECT_EQ(downloaded->status, 200);
+  EXPECT_EQ(received, payload_.size());
+  EXPECT_TRUE(downloaded->content.empty());
+}
+
+TEST_F(StreamingPayloadAcceptanceTest, TheDynamicSpellingLeavesAModeledErrorBuffered) {
+  // The failure half of the same predicate: 404 is outside it, so the body
+  // stays where the typed-error path reads it.
+  RedirectorClient client = Client();
+
+  bool wrote = false;
+  const auto downloaded =
+      client.DownloadDynamic(DownloadDynamicInput{.slug = "missing"}, [&](std::string_view) {
+        wrote = true;
+        return true;
+      });
+
+  ASSERT_FALSE(downloaded.ok());
+  EXPECT_FALSE(wrote);
+  EXPECT_TRUE(
+      acme::redirect::DownloadDynamicErrors::FromError(downloaded.error()).is_no_such_slug())
+      << downloaded.error().message();
 }
 
 }  // namespace

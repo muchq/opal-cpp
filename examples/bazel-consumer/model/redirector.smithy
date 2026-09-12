@@ -12,7 +12,7 @@ namespace acme.redirect
 /// generator, and only one of them used to work.
 service Redirector {
     version: "2026-01-01"
-    operations: [Resolve, ResolveDynamic, Fetch, Probe, Download]
+    operations: [Resolve, ResolveDynamic, Fetch, Probe, Download, DownloadDynamic]
 }
 
 /// The status is fixed, so it rides the @http trait.
@@ -142,6 +142,9 @@ structure NoSuchSlug {
 /// Deliberately a sibling of Fetch rather than a change to it: the two differ
 /// only in that trait, so the acceptance test can put the streamed and the
 /// buffered spelling of one download side by side.
+///
+/// The status is fixed here, so the generated client streams exactly it —
+/// DownloadDynamic below is the other branch.
 @readonly
 @http(method: "GET", uri: "/s/{slug}")
 operation Download {
@@ -168,3 +171,33 @@ operation Download {
 /// streamed the bytes to a writer instead of buffering them.
 @streaming
 blob StreamingBlob
+
+/// Download with the status chosen per request, the same split Resolve and
+/// ResolveDynamic are: a modeled 3xx is a success under @httpResponseCode, so
+/// a client gating the payload on 2xx would quietly buffer it into the member
+/// and still return success. Both spellings are here because they take
+/// different branches through the generator.
+@readonly
+@http(method: "GET", uri: "/sd/{slug}")
+operation DownloadDynamic {
+    input := {
+        @required
+        @httpLabel
+        slug: String
+    }
+
+    output := {
+        @required
+        @httpResponseCode
+        status: Integer
+
+        @httpHeader("ETag")
+        etag: String
+
+        @required
+        @httpPayload
+        content: StreamingBlob
+    }
+
+    errors: [NoSuchSlug]
+}

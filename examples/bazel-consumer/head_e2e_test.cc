@@ -31,6 +31,8 @@
 
 namespace {
 
+using acme::redirect::DownloadDynamicInput;
+using acme::redirect::DownloadDynamicOutput;
 using acme::redirect::DownloadInput;
 using acme::redirect::DownloadOutput;
 using acme::redirect::FetchInput;
@@ -71,6 +73,13 @@ class ProbeHandler final : public RedirectorHandler {
                                    const opal::server::RequestContext&) override {
     if (input.slug != "abc") return NotFound(input.slug);
     return FetchOutput{.status = 200, .etag = kEtag, .content = opal::Blob::FromString(kContent)};
+  }
+
+  opal::Outcome<DownloadDynamicOutput> DownloadDynamic(
+      const DownloadDynamicInput& input, const opal::server::RequestContext&) override {
+    if (input.slug != "abc") return NotFound(input.slug);
+    return DownloadDynamicOutput{
+        .status = 200, .etag = kEtag, .content = opal::Blob::FromString(kContent)};
   }
 
   // The streaming sibling of Fetch (#213). Not this file's subject; it

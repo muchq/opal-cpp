@@ -99,9 +99,13 @@ policy in [docs/versioning.md](docs/versioning.md).
   slice 2). An operation whose response `@httpPayload` targets a `@streaming`
   blob takes an `opal::http::BodyWriter` alongside its input: the bytes go to
   the writer as they arrive and the member is left empty. The generated code
-  owns the sink's accept gate and keys it on 2xx, so a modeled error still
-  deserializes into the typed `<Operation>Errors` listing from a buffered
-  body rather than arriving in the caller's writer as an unexplained payload.
+  owns the sink's accept gate and keys it on the operation's own success
+  condition — the modeled `@http` code, or 2xx/3xx under `@httpResponseCode` —
+  so the streamed and buffered states line up with the success and failure
+  ones: a modeled error still deserializes into the typed `<Operation>Errors`
+  listing from its own body rather than arriving in the caller's writer as an
+  unexplained payload, and a modeled 3xx that carries a payload streams rather
+  than quietly buffering.
   The writer is defaulted, so `client.Download(input)` still buffers into the
   member and adding `@streaming` to a model breaks no caller. The member stays
   on the output structure — Smithy requires `@required` or `@default` on a
