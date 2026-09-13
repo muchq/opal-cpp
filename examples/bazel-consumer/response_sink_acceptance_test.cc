@@ -206,6 +206,65 @@ TEST_F(ResponseSinkAcceptanceTest, AModeledErrorIsLeftWhereTheClientLooksForIt) 
   EXPECT_NE(response->body.find("no slug: missing"), std::string::npos) << response->body;
 }
 
+// Records the request a generated client produced and answers with a canned
+// payload. The point is the request, not the response: what a caller cannot
+// see from the outside is which headers the client decided to send.
+class RecordingClient final : public opal::http::HttpClient {
+ public:
+  explicit RecordingClient(std::string payload) : payload_(std::move(payload)) {}
+
+  opal::Outcome<opal::http::HttpResponse> Send(const opal::http::HttpRequest& request) override {
+    seen = request;
+    opal::http::HttpResponse response;
+    response.status = 200;
+    response.headers.Set("content-type", "application/octet-stream");
+    response.headers.Set("etag", "\"big\"");
+    response.body = payload_;
+    return response;
+  }
+
+  opal::http::HttpRequest seen;
+
+ private:
+  std::string payload_;
+};
+
+TEST(ModeledAcceptHeaderTest, ACallersModeledAcceptIsNotReplacedByThePayloadContentType) {
+  // The bug this pins: the client emitted the response payload's content type
+  // as Accept with an unconditional Set, after writing the modeled @httpHeader
+  // member — so the member never reached the wire and a consumer had to put it
+  // back with an interceptor.
+  auto transport = std::make_shared<RecordingClient>("payload");
+  opal::ClientConfig config;
+  config.endpoint = "http://127.0.0.1:1";  // unused: the transport is injected
+  config.http_client = transport;
+  auto client = RedirectorClient::Create(config);
+  ASSERT_TRUE(client.ok()) << client.error().message();
+
+  const auto downloaded =
+      client->Download(DownloadInput{.slug = "big", .accept = "application/x-tar"});
+  ASSERT_TRUE(downloaded.ok()) << downloaded.error().message();
+  EXPECT_EQ(transport->seen.headers.Get("accept").value_or(""), "application/x-tar");
+  // Exactly one: Set replaces, but a future Add would send both and let the
+  // server pick, which is not what the model asked for either.
+  EXPECT_EQ(transport->seen.headers.GetAll("accept").size(), 1u);
+}
+
+TEST(ModeledAcceptHeaderTest, AnUnsetModeledAcceptLeavesThePayloadContentTypeInPlace) {
+  // The other half: the payload's content type is still the default, so
+  // guarding it did not simply delete the behavior.
+  auto transport = std::make_shared<RecordingClient>("payload");
+  opal::ClientConfig config;
+  config.endpoint = "http://127.0.0.1:1";
+  config.http_client = transport;
+  auto client = RedirectorClient::Create(config);
+  ASSERT_TRUE(client.ok()) << client.error().message();
+
+  const auto downloaded = client->Download(DownloadInput{.slug = "big"});
+  ASSERT_TRUE(downloaded.ok()) << downloaded.error().message();
+  EXPECT_EQ(transport->seen.headers.Get("accept").value_or(""), "application/octet-stream");
+}
+
 // The generated level (slice 2). The client is built from an endpoint alone —
 // no transport injected, no sink assembled by hand — which is the whole point:
 // a @streaming blob payload is streamed by the operation the generator wrote.

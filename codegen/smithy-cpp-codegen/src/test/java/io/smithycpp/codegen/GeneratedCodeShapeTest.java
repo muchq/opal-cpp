@@ -396,6 +396,63 @@ class GeneratedCodeShapeTest {
   }
 
   @Test
+  void aModeledAcceptHeaderSurvivesThePayloadContentType() {
+    // Found in use against a generated client. An operation with a response
+    // @httpPayload emits its payload's content type as the Accept header — but
+    // it did so with an unconditional Set, after the @httpHeader bindings had
+    // already written the caller's own modeled Accept. The modeled member was
+    // therefore dead on arrival: set, then overwritten, every call. The
+    // workaround a consumer is left with is an interceptor re-setting the
+    // header in ModifyBeforeTransmit, which is the client's own job.
+    //
+    // The generated Send helper has always guarded its document-response
+    // default the same way ("Operations with a non-document response payload
+    // set their own accept"); this is that rule applied one level down.
+    String model =
+        """
+        $version: "2.0"
+        namespace test.shape
+        use alloy#simpleRestJson
+
+        @simpleRestJson
+        service Svc { version: "1", operations: [Fetch] }
+
+        @readonly
+        @http(method: "GET", uri: "/fetch/{id}")
+        operation Fetch {
+            input := {
+                @required
+                @httpLabel
+                id: String
+
+                @httpHeader("Accept")
+                accept: String
+            }
+            output := {
+                @httpPayload
+                content: Blob
+            }
+        }
+        """;
+    var manifest = PluginTestHarness.generate(model, "test.shape#Svc", "test::shape");
+    String source = manifest.expectFileString("/src/client.cc");
+
+    assertTrue(
+        source.contains(
+            "if (!request.headers.Get(\"accept\").has_value()) "
+                + "request.headers.Set(\"accept\", \"application/octet-stream\");"),
+        source);
+    // The unguarded form is what clobbered it, so its absence is the fix —
+    // checked per line, since the guarded statement ends with those same
+    // characters and a substring search would always find them.
+    for (String line : source.split("\n", -1)) {
+      assertFalse(
+          line.strip().equals("request.headers.Set(\"accept\", \"application/octet-stream\");"),
+          source);
+    }
+  }
+
+  @Test
   void streamingBlobsStayPlainBufferedBlobs() {
     // A @streaming blob in the *request* payload is still an ordinary, fully
     // buffered opal::Blob with the plain unary operation around it: writing

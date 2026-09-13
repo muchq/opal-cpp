@@ -239,6 +239,19 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Fixed
 
+- **A modeled `@httpHeader("Accept")` input member reaches the wire.** An
+  operation with a response `@httpPayload` emits that payload's content type
+  as the request's Accept header — but it did so with an unconditional `Set`,
+  after the `@httpHeader` bindings had already written the caller's own
+  modeled Accept, so the modeled member was overwritten on every call and a
+  consumer had to put it back with an interceptor's `ModifyBeforeTransmit`.
+  The payload content type is now a default, applied only when nothing has
+  already set the header — the same guard the generated `Send` helper has
+  always applied to its document-response default, and the one the request
+  payload's `Content-Type` already had. Goldens move for every operation with
+  a response payload; behavior changes only for a model that binds Accept (or
+  an `@httpPrefixHeaders` map carrying it).
+
 - **Health probes are distinguishable from dispatch failures in observability
   hooks.** `HealthEndpoint` built its response without stamping
   `HttpResponse::operation`, so every probe reached `Observe` (and so any
