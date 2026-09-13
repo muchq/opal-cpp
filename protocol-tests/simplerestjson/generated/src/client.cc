@@ -358,7 +358,7 @@ opal::Outcome<AddMenuItemOutput> PizzaAdminServiceClient::AddMenuItem(const AddM
   request.target = std::move(target);
   request.body = opal::json::Encode(SerializeMenuItem(input.menuItem));
   if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 201) return helpers::ParseAddMenuItemError(*response);
@@ -436,7 +436,7 @@ opal::Outcome<GetMenuOutput> PizzaAdminServiceClient::GetMenu(const GetMenuInput
   opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseGetMenuError(*response);
@@ -518,7 +518,7 @@ opal::Outcome<HttpPayloadRequiredWithDefaultOutput> PizzaAdminServiceClient::Htt
   request.target = std::move(target);
   request.body = opal::json::Encode(opal::Document(input.body));
   if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseHttpPayloadRequiredWithDefaultError(*response);
@@ -542,7 +542,7 @@ opal::Outcome<HttpPayloadWithDefaultOutput> PizzaAdminServiceClient::HttpPayload
     request.body = opal::json::Encode(opal::Document((*input.body)));
     if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
   }
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseHttpPayloadWithDefaultError(*response);
@@ -564,7 +564,7 @@ opal::Outcome<OpenUnionsOutput> PizzaAdminServiceClient::OpenUnions(const OpenUn
   request.target = std::move(target);
   request.body = opal::json::Encode(SerializeOpenUnionsPayload(input.data));
   if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/json");
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseOpenUnionsError(*response);
@@ -650,7 +650,7 @@ opal::Outcome<VersionOutput> PizzaAdminServiceClient::Version(const VersionInput
   opal::http::HttpRequest request;
   request.method = "GET";
   request.target = std::move(target);
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseVersionError(*response);

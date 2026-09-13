@@ -308,7 +308,7 @@ opal::Outcome<UploadAttachmentOutput> RoundTripRestClient::UploadAttachment(cons
     request.body = (*input.data).ToString();
     if (!request.headers.Get("content-type").has_value()) request.headers.Set("content-type", "application/octet-stream");
   }
-  request.headers.Set("accept", "application/json");
+  if (!request.headers.Get("accept").has_value()) request.headers.Set("accept", "application/json");
   auto response = Send(std::move(request));
   if (!response) return std::move(response).error();
   if (response->status != 200) return helpers::ParseUploadAttachmentError(*response);

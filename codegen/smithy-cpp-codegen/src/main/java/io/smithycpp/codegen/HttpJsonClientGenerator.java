@@ -173,8 +173,16 @@ final class HttpJsonClientGenerator {
     }
 
     if (responsePayload != null) {
+      // The payload's content type is this operation's *default* Accept, not
+      // an override: a modeled @httpHeader("Accept") member (or an
+      // @httpPrefixHeaders map carrying one) has already been written above,
+      // and an unconditional Set would discard it on every call, leaving the
+      // member dead and the caller reaching for an interceptor to put back
+      // what the client just took away. Same guard the generated Send helper
+      // applies to its own document-response default, one level down.
       w.write(
-          "request.headers.Set(\"accept\", $S);",
+          "if (!request.headers.Get(\"accept\").has_value()) "
+              + "request.headers.Set(\"accept\", $S);",
           HttpBindingCodeGen.payloadContentType(context, operation, false));
     }
     ProtocolSupport.writeRequestCompression(w, operation);

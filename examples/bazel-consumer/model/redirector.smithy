@@ -152,6 +152,13 @@ operation Download {
         @required
         @httpLabel
         slug: String
+
+        /// A caller that wants a narrower media type than the payload's own
+        /// says so here. Modeled deliberately: the generated client emits the
+        /// payload's content type as a *default* Accept, and this member is
+        /// what proves it stays a default rather than an override.
+        @httpHeader("Accept")
+        accept: String
     }
 
     output := {
