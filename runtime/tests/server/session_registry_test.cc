@@ -20,6 +20,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -1431,6 +1432,276 @@ TEST(SessionRegistryGraceTest, RetentionSkipsThePreLossBacklogAndThePolicy) {
   EXPECT_EQ(NextAt(fresh), "post-1");
   EXPECT_TRUE(registry.SendTo("ada", Note{"flowing"}));
   EXPECT_EQ(NextAt(fresh), "flowing");
+}
+
+// ---------------------------------------------------------------------------
+// Delivery classes (issue #227): droppable events yield room, coalesce
+// events merge by key, and an event mid-delivery is never touched.
+// ---------------------------------------------------------------------------
+
+// A server end whose sends park until Open(): the registry's queue holds
+// still behind the first event, so its contents are deterministic. Records
+// each payload as the registry hands it over, in delivery order.
+class HeldSocket final : public http::WebSocket {
+ public:
+  explicit HeldSocket(bool async) : async_(async) {}
+
+  Outcome<std::optional<Message>> Receive() override { return std::optional<Message>{}; }
+  Outcome<std::optional<Message>> Receive(std::chrono::milliseconds) override {
+    return std::optional<Message>{};
+  }
+
+  Outcome<Unit> Send(const Message& message) override {
+    std::unique_lock<std::mutex> lock(mutex_);
+    sent_.push_back(message.payload.ToString());
+    changed_.notify_all();
+    changed_.wait(lock, [this] { return open_ || closed_; });
+    if (!open_) return Error::Transport("held socket closed");
+    return Unit{};
+  }
+
+  void SendAsync(const Message& message, SendCallback callback) override {
+    bool open = false;
+    {
+      const std::lock_guard<std::mutex> lock(mutex_);
+      sent_.push_back(message.payload.ToString());
+      changed_.notify_all();
+      if (!open_ && !closed_) {
+        parked_ = std::move(callback);
+        return;
+      }
+      open = open_;
+    }
+    callback(open ? Outcome<Unit>(Unit{}) : Outcome<Unit>(Error::Transport("held socket closed")));
+  }
+
+  bool SupportsAsync() const override { return async_; }
+
+  void Close() override {
+    SendCallback parked;
+    {
+      const std::lock_guard<std::mutex> lock(mutex_);
+      closed_ = true;
+      parked = std::move(parked_);
+    }
+    changed_.notify_all();
+    if (parked) parked(Error::Transport("held socket closed"));
+  }
+
+  // Lets every send through, now and from here on.
+  void Open() {
+    SendCallback parked;
+    {
+      const std::lock_guard<std::mutex> lock(mutex_);
+      open_ = true;
+      parked = std::move(parked_);
+    }
+    changed_.notify_all();
+    if (parked) parked(Unit{});
+  }
+
+  // The payloads handed over once at least n have been; the deadline only
+  // bounds a failing test.
+  std::vector<std::string> SentOnce(std::size_t n) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    changed_.wait_for(lock, std::chrono::seconds(5), [this, n] { return sent_.size() >= n; });
+    return sent_;
+  }
+
+ private:
+  const bool async_;
+  std::mutex mutex_;
+  std::condition_variable changed_;
+  std::vector<std::string> sent_;
+  SendCallback parked_;
+  bool open_ = false;
+  bool closed_ = false;
+};
+
+struct HeldSession {
+  std::shared_ptr<HeldSocket> socket;
+  std::unique_ptr<ServerStream> stream;
+  std::optional<EventStreamHandle<Note>> handle;
+};
+
+HeldSession MakeHeldSession(bool async = false) {
+  HeldSession session;
+  session.socket = std::make_shared<HeldSocket>(async);
+  session.stream = std::make_unique<ServerStream>(session.socket, EncodeNote, nullptr);
+  session.handle = session.stream->Share();
+  return session;
+}
+
+// A registry whose slow-consumer policy only counts, so a full queue never
+// closes the session under test.
+Registry CountingRegistry(std::atomic<int>* policy_runs, std::size_t queue_capacity,
+                          bool async_delivery = false) {
+  Registry::Options options;
+  options.queue_capacity = queue_capacity;
+  options.async_delivery = async_delivery;
+  options.on_slow_consumer = [policy_runs](const std::string&) { ++*policy_runs; };
+  return Registry(std::move(options));
+}
+
+using Strings = std::vector<std::string>;
+
+TEST(SessionRegistryDeliveryClassTest, DroppableEventsAreEvictedBeforeThePolicyRuns) {
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/3);
+  HeldSession ada = MakeHeldSession();
+  ASSERT_TRUE(registry.Add("ada", *ada.handle));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"held"}));
+  ASSERT_EQ(ada.socket->SentOnce(1).size(), 1U);  // the writer is parked mid-send
+
+  ASSERT_TRUE(registry.SendTo("ada", Note{"d0"}, DeliveryClass::Droppable()));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"r1"}));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"d2"}, DeliveryClass::Droppable()));
+
+  // Full: a reliable event evicts the oldest droppable one.
+  EXPECT_TRUE(registry.SendTo("ada", Note{"r3"}));
+  EXPECT_TRUE(registry.SendTo("ada", Note{"r4"}));
+  EXPECT_EQ(policy_runs.load(), 0);
+
+  // Nothing droppable left: a droppable event drops quietly, a reliable one
+  // runs the policy, as today.
+  EXPECT_FALSE(registry.SendTo("ada", Note{"d5"}, DeliveryClass::Droppable()));
+  EXPECT_EQ(policy_runs.load(), 0);
+  EXPECT_FALSE(registry.SendTo("ada", Note{"r6"}));
+  EXPECT_EQ(policy_runs.load(), 1);
+
+  ada.socket->Open();
+  EXPECT_EQ(ada.socket->SentOnce(4), (Strings{"held", "r1", "r3", "r4"}));
+}
+
+TEST(SessionRegistryDeliveryClassTest, ADroppableEventDisplacesAnOlderDroppableOne) {
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/2);
+  HeldSession ada = MakeHeldSession();
+  ASSERT_TRUE(registry.Add("ada", *ada.handle));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"held"}));
+  ASSERT_EQ(ada.socket->SentOnce(1).size(), 1U);
+
+  ASSERT_TRUE(registry.SendTo("ada", Note{"d0"}, DeliveryClass::Droppable()));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"r1"}));
+  EXPECT_TRUE(registry.SendTo("ada", Note{"d2"}, DeliveryClass::Droppable()));
+  EXPECT_EQ(policy_runs.load(), 0);
+
+  ada.socket->Open();
+  EXPECT_EQ(ada.socket->SentOnce(3), (Strings{"held", "r1", "d2"}));
+}
+
+TEST(SessionRegistryDeliveryClassTest, CoalesceReplacesInPlaceWithoutGrowingTheQueue) {
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/4);
+  HeldSession ada = MakeHeldSession();
+  ASSERT_TRUE(registry.Add("ada", *ada.handle));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"held"}));
+  ASSERT_EQ(ada.socket->SentOnce(1).size(), 1U);
+
+  ASSERT_TRUE(registry.SendTo("ada", Note{"a0"}, DeliveryClass::Coalesce("moved:a")));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"r1"}));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"b0"}, DeliveryClass::Coalesce("moved:b")));
+  for (int i = 1; i <= 10; ++i) {
+    EXPECT_TRUE(
+        registry.SendTo("ada", Note{"a" + std::to_string(i)}, DeliveryClass::Coalesce("moved:a")));
+  }
+  EXPECT_TRUE(registry.SendTo("ada", Note{"b1"}, DeliveryClass::Coalesce("moved:b")));
+
+  // Three slots used: one more fits, the next is full.
+  EXPECT_TRUE(registry.SendTo("ada", Note{"r2"}));
+  EXPECT_EQ(policy_runs.load(), 0);
+  EXPECT_FALSE(registry.SendTo("ada", Note{"r3"}));
+  EXPECT_EQ(policy_runs.load(), 1);
+
+  // A coalesce event with no match queues like a reliable one.
+  EXPECT_FALSE(registry.SendTo("ada", Note{"c0"}, DeliveryClass::Coalesce("moved:c")));
+  EXPECT_EQ(policy_runs.load(), 2);
+
+  ada.socket->Open();
+  EXPECT_EQ(ada.socket->SentOnce(5), (Strings{"held", "a10", "r1", "b1", "r2"}));
+}
+
+TEST(SessionRegistryDeliveryClassTest, AnInFlightEventIsNeitherCoalescedNorEvicted) {
+  // Async delivery keeps the in-flight event at the queue's front until its
+  // completion lands; both checks here target that slot.
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/2, /*async=*/true);
+  HeldSession ada = MakeHeldSession(/*async=*/true);
+  ASSERT_TRUE(registry.Add("ada", *ada.handle));
+
+  ASSERT_TRUE(registry.SendTo("ada", Note{"k0"}, DeliveryClass::Coalesce("k")));
+  ASSERT_EQ(ada.socket->SentOnce(1), (Strings{"k0"}));                            // in flight
+  ASSERT_TRUE(registry.SendTo("ada", Note{"k1"}, DeliveryClass::Coalesce("k")));  // queued behind
+  ASSERT_TRUE(registry.SendTo("ada", Note{"k2"}, DeliveryClass::Coalesce("k")));  // replaces k1
+  EXPECT_FALSE(registry.SendTo("ada", Note{"r"}));  // full, nothing to evict
+  EXPECT_EQ(policy_runs.load(), 1);
+
+  ada.socket->Open();
+  EXPECT_EQ(ada.socket->SentOnce(2), (Strings{"k0", "k2"}));
+}
+
+TEST(SessionRegistryDeliveryClassTest, AnInFlightDroppableEventIsNotEvicted) {
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/2, /*async=*/true);
+  HeldSession ada = MakeHeldSession(/*async=*/true);
+  ASSERT_TRUE(registry.Add("ada", *ada.handle));
+
+  ASSERT_TRUE(registry.SendTo("ada", Note{"d0"}, DeliveryClass::Droppable()));
+  ASSERT_EQ(ada.socket->SentOnce(1), (Strings{"d0"}));  // in flight
+  ASSERT_TRUE(registry.SendTo("ada", Note{"r1"}));
+  EXPECT_FALSE(registry.SendTo("ada", Note{"r2"}));  // d0 is the only droppable
+  EXPECT_EQ(policy_runs.load(), 1);
+
+  ada.socket->Open();
+  EXPECT_EQ(ada.socket->SentOnce(2), (Strings{"d0", "r1"}));
+}
+
+TEST(SessionRegistryDeliveryClassTest, BroadcastAppliesTheClassToEveryRecipient) {
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/1);
+  HeldSession ada = MakeHeldSession();
+  HeldSession grace = MakeHeldSession();
+  ASSERT_TRUE(registry.Add("ada", *ada.handle));
+  ASSERT_TRUE(registry.Add("grace", *grace.handle));
+  ASSERT_EQ(registry.Broadcast(Note{"held"}), 2U);
+  ASSERT_EQ(ada.socket->SentOnce(1).size(), 1U);
+  ASSERT_EQ(grace.socket->SentOnce(1).size(), 1U);
+
+  const std::vector<std::string> ids{"ada", "grace"};
+  EXPECT_EQ(registry.Broadcast(ids, Note{"k0"}, DeliveryClass::Coalesce("k")), 2U);
+  EXPECT_EQ(registry.Broadcast(ids, Note{"k1"}, DeliveryClass::Coalesce("k")), 2U);
+  EXPECT_EQ(registry.Broadcast(Note{"d"}, DeliveryClass::Droppable()), 0U);
+  EXPECT_EQ(policy_runs.load(), 0);
+
+  ada.socket->Open();
+  grace.socket->Open();
+  EXPECT_EQ(ada.socket->SentOnce(2), (Strings{"held", "k1"}));
+  EXPECT_EQ(grace.socket->SentOnce(2), (Strings{"held", "k1"}));
+}
+
+TEST(SessionRegistryDeliveryClassTest, RetentionWhileDetachedFollowsTheSameClasses) {
+  std::atomic<int> policy_runs{0};
+  Registry::Options options;
+  options.grace_period = std::chrono::seconds{300};
+  options.queue_while_detached = true;
+  options.queue_capacity = 2;
+  options.on_slow_consumer = [&policy_runs](const std::string&) { ++policy_runs; };
+  Registry registry(std::move(options));
+  Session session = MakeSession();
+  ASSERT_TRUE(registry.Add("ada", *session.handle));
+  ASSERT_TRUE(registry.Detach("ada"));
+
+  ASSERT_TRUE(registry.SendTo("ada", Note{"d0"}, DeliveryClass::Droppable()));
+  ASSERT_TRUE(registry.SendTo("ada", Note{"k0"}, DeliveryClass::Coalesce("k")));
+  EXPECT_TRUE(registry.SendTo("ada", Note{"r1"}));  // evicts d0
+  EXPECT_TRUE(registry.SendTo("ada", Note{"k1"}, DeliveryClass::Coalesce("k")));
+  EXPECT_FALSE(registry.SendTo("ada", Note{"r2"}));  // full: dropped outright
+  EXPECT_EQ(policy_runs.load(), 0);                  // no policy while detached
+
+  Session fresh = MakeSession();
+  ASSERT_TRUE(registry.Resume("ada", *fresh.handle));
+  EXPECT_EQ(NextAt(fresh), "k1");
+  EXPECT_EQ(NextAt(fresh), "r1");
 }
 
 }  // namespace
