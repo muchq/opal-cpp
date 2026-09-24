@@ -178,6 +178,22 @@ the default disconnects the client (its handler observes the close and unwinds);
 construction exists because broadcast-identical-bytes is the wrong primitive for
 per-viewer state — the callback runs once per recipient, outside all registry locks.
 
+Not every event deserves the same claim on that queue (issue #227). `SendTo` and every
+`Broadcast` overload take an optional `DeliveryClass`:
+
+```cpp
+registry.SendTo(peer, signal);                                           // kReliable (default)
+registry.Broadcast(ids, cursor, DeliveryClass::Droppable());             // shed first when full
+registry.Broadcast(ids, moved, DeliveryClass::Coalesce("moved:" + who)); // latest wins, in place
+```
+
+A full queue evicts its oldest queued droppable event before refusing anything; a
+droppable event that finds nothing to evict is dropped quietly, with no policy run. A coalesce
+event replaces the queued, undelivered event with the same key, keeping its place, so a
+burst of position updates costs one slot per walker. Only a reliable (or unmatched
+coalesce) event that still can't fit runs the slow-consumer policy. An event already being
+delivered is never replaced or evicted.
+
 Reconnects get a grace window on the same registry (ADR-0020): set
 `Options::grace_period`, call `Detach(id)` on abrupt loss instead of `Remove`,
 and `Resume(id, handle)` swaps a reconnecting connection into the parked entry

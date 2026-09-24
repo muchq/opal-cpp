@@ -21,6 +21,39 @@
 
 namespace opal::server {
 
+// How an event competes for room in a session's bounded queue (issue #227).
+// A session's queue is one FIFO shared by everything sent to it, so without
+// a class, a burst of low-value traffic (position updates) can overflow it
+// and trip the slow-consumer policy, which by default disconnects, or crowd
+// out an event that must arrive (WebRTC signaling).
+//
+//   kReliable: today's behavior and the default. When the queue is full it
+//     first evicts a queued droppable event; if there is none, the event is
+//     dropped and the slow-consumer policy runs.
+//   kDroppable: the first to go. When the queue is full it evicts the oldest
+//     queued droppable event; if there is none, the event itself is dropped
+//     quietly (SendTo reports false, no policy run).
+//   kCoalesce{key}: latest-wins state. It replaces a queued, not yet
+//     delivered coalesce event with the same key in place, keeping that
+//     event's queue position: the newest state goes out no later than the
+//     stale one would have, and the queue does not grow. With no match it
+//     queues like kReliable.
+//
+// An event already being delivered is never replaced or evicted. Delivery
+// stays FIFO over whatever remains queued.
+struct DeliveryClass {
+  enum class Kind { kReliable, kDroppable, kCoalesce };
+
+  static DeliveryClass Reliable() { return {}; }
+  static DeliveryClass Droppable() { return {.kind = Kind::kDroppable, .key = {}}; }
+  static DeliveryClass Coalesce(std::string key) {
+    return {.kind = Kind::kCoalesce, .key = std::move(key)};
+  }
+
+  Kind kind = Kind::kReliable;
+  std::string key;  // kCoalesce only
+};
+
 // The multi-client fan-out helper (issue #112): a thread-safe map of owning
 // session handles (EventStream::Share) with a bounded outbound queue per
 // session, so "N connected players, server pushes state to all of them"
@@ -39,13 +72,15 @@ namespace opal::server {
 // The queue is the load-bearing decision: SendTo/Broadcast enqueue and
 // return, and a per-session writer thread (started by Add) delivers in FIFO
 // order — so a broadcast never stalls the room behind the slowest client's
-// TCP window. When an attached session's queue is full the event is dropped
-// and the slow-consumer policy runs: by default the session is closed (the
-// Go-hub answer — its handler observes the close, returns, and removes
-// itself); Options::on_slow_consumer replaces that default, keeping policy
-// with the application. (A detached session's overflow just drops — see
-// Options::queue_while_detached.) Per-recipient construction (the Broadcast(ids, make)
-// overloads) exists because broadcast-identical-bytes is the wrong
+// TCP window. When an attached session's queue is full, a queued droppable
+// event is evicted to make room if there is one (see DeliveryClass);
+// otherwise the event is dropped and the slow-consumer policy runs: by
+// default the session is closed (the Go-hub answer — its handler observes
+// the close, returns, and removes itself); Options::on_slow_consumer
+// replaces that default, keeping policy with the application. (A detached
+// session's overflow just drops — see Options::queue_while_detached.)
+// Per-recipient construction (the Broadcast(ids, make) overloads) exists
+// because broadcast-identical-bytes is the wrong
 // primitive for per-viewer state: make runs once per recipient, outside all
 // registry locks.
 //
@@ -207,7 +242,7 @@ class SessionRegistry {
       entry = std::move(it->second);
       sessions_.erase(it);
       // Stop and decide retirement under ONE entry-lock hold: a chain
-      // callback converting this entry to writer mode (PumpAsync's
+      // callback converting this entry to writer mode (SubmitAsync's
       // collision fallback) either spawned first — and the writer is
       // joinable here, so it retires and gets its join — or observes
       // stopping and never spawns. No interleaving orphans a thread.
@@ -276,7 +311,7 @@ class SessionRegistry {
     if (options_.grace_period == std::chrono::seconds{0}) return false;
     const bool async_mode = options_.async_delivery && handle.SupportsAsync();
     std::shared_ptr<Entry> entry;
-    bool kick = false;
+    std::optional<Tx> claimed;
     {
       const std::lock_guard<std::mutex> lock(mutex_);
       const auto it = sessions_.find(id);
@@ -303,13 +338,12 @@ class SessionRegistry {
       entry->async_mode = async_mode;
       if (!async_mode) {
         entry->writer = std::thread([entry] { WriterLoop(*entry); });
-      } else if (!entry->queue.empty()) {
-        entry->delivering = true;  // retained tail: re-kick below
-        kick = true;
+      } else {
+        claimed = ClaimLocked(*entry);  // the retained tail, if any
       }
     }
     entry->wake.notify_all();
-    if (kick) PumpAsync(entry);
+    if (claimed) SubmitAsync(entry, *claimed);
     return true;
   }
 
@@ -359,12 +393,15 @@ class SessionRegistry {
   }
 
   // Queues one event for id; delivery is FIFO whichever mode the session
-  // runs in. True when queued. False — the event is dropped — for an
-  // unknown id; a session whose delivery already failed; an attached
-  // session's full queue (after running the slow-consumer policy); or a
-  // detached id, unless Options::queue_while_detached retains it (a full
-  // detached queue drops with no policy run — see the Option).
-  bool SendTo(const Id& id, Tx event) {
+  // runs in. True when queued (a coalesce that replaced a queued event
+  // counts). False — the event is dropped — for an unknown id; a session
+  // whose delivery already failed; a full queue with nothing droppable to
+  // evict (an attached session then runs the slow-consumer policy, unless
+  // the event itself is droppable); or a detached id, unless
+  // Options::queue_while_detached retains it (a full detached queue drops
+  // with no policy run — see the Option). `delivery` decides how the event
+  // competes for room; see DeliveryClass.
+  bool SendTo(const Id& id, Tx event, DeliveryClass delivery = {}) {
     std::shared_ptr<Entry> entry;
     {
       const std::lock_guard<std::mutex> lock(mutex_);
@@ -372,13 +409,15 @@ class SessionRegistry {
       if (it == sessions_.end()) return false;
       entry = it->second;
     }
-    return Enqueue(id, entry, std::move(event));
+    return Enqueue(id, entry, std::move(event), delivery);
   }
 
   // Queues make(id)'s event for each registered id in ids (unknown ids are
   // skipped; make runs only for registered ones, outside all registry
-  // locks). Returns how many were queued.
-  std::size_t Broadcast(const std::vector<Id>& ids, const std::function<Tx(const Id&)>& make) {
+  // locks). Returns how many were queued. Every recipient's event gets the
+  // same delivery class (and coalesce key).
+  std::size_t Broadcast(const std::vector<Id>& ids, const std::function<Tx(const Id&)>& make,
+                        const DeliveryClass& delivery = {}) {
     // Borrow the caller's ids rather than copying them; they outlive the call.
     std::vector<std::pair<const Id*, std::shared_ptr<Entry>>> targets;
     targets.reserve(ids.size());
@@ -392,19 +431,21 @@ class SessionRegistry {
     }
     std::size_t queued = 0;
     for (auto& [id, entry] : targets) {
-      if (Enqueue(*id, entry, make(*id))) ++queued;
+      if (Enqueue(*id, entry, make(*id), delivery)) ++queued;
     }
     return queued;
   }
 
   // The identical-bytes convenience of the above.
-  std::size_t Broadcast(const std::vector<Id>& ids, const Tx& event) {
-    return Broadcast(ids, [&event](const Id&) { return event; });
+  std::size_t Broadcast(const std::vector<Id>& ids, const Tx& event,
+                        const DeliveryClass& delivery = {}) {
+    return Broadcast(ids, [&event](const Id&) { return event; }, delivery);
   }
 
   // Broadcast to every currently registered session (one registry pass, no
   // intermediate Ids() snapshot).
-  std::size_t Broadcast(const std::function<Tx(const Id&)>& make) {
+  std::size_t Broadcast(const std::function<Tx(const Id&)>& make,
+                        const DeliveryClass& delivery = {}) {
     std::vector<std::pair<Id, std::shared_ptr<Entry>>> targets;
     {
       const std::lock_guard<std::mutex> lock(mutex_);
@@ -413,12 +454,12 @@ class SessionRegistry {
     }
     std::size_t queued = 0;
     for (auto& [id, entry] : targets) {
-      if (Enqueue(id, entry, make(id))) ++queued;
+      if (Enqueue(id, entry, make(id), delivery)) ++queued;
     }
     return queued;
   }
-  std::size_t Broadcast(const Tx& event) {
-    return Broadcast([&event](const Id&) { return event; });
+  std::size_t Broadcast(const Tx& event, const DeliveryClass& delivery = {}) {
+    return Broadcast([&event](const Id&) { return event; }, delivery);
   }
 
   // Closes id's current session — the kick primitive (ADR-0022): the
@@ -491,6 +532,11 @@ class SessionRegistry {
   }
 
  private:
+  struct Queued {
+    Tx event;
+    DeliveryClass delivery;
+  };
+
   struct Entry {
     explicit Entry(Handle h) : handle(std::move(h)) {}
     // Written only by Resume, under BOTH the registry and entry locks,
@@ -502,7 +548,7 @@ class SessionRegistry {
     Handle handle;
     std::mutex mutex;
     std::condition_variable wake;
-    std::deque<Tx> queue;
+    std::deque<Queued> queue;
     bool stopping = false;  // delivery must end: Remove/teardown/Detach
                             // asked, or its own delivery failed (queue
                             // discarded unless detached and retaining)
@@ -540,7 +586,7 @@ class SessionRegistry {
         std::unique_lock<std::mutex> lock(entry.mutex);
         entry.wake.wait(lock, [&entry] { return entry.stopping || !entry.queue.empty(); });
         if (entry.stopping) break;
-        event = std::move(entry.queue.front());
+        event = std::move(entry.queue.front().event);
         entry.queue.pop_front();
       }
       if (!entry.handle.Send(event).ok()) {
@@ -570,35 +616,73 @@ class SessionRegistry {
     entry.wake.notify_all();
   }
 
-  bool Enqueue(const Id& id, const std::shared_ptr<Entry>& entry, Tx event) {
+  enum class Placement { kQueued, kDropped, kFull };
+
+  // Entry lock held. Places event in the queue per its delivery class (see
+  // DeliveryClass): coalesce onto a queued match, else make room by
+  // evicting the oldest droppable event, else report the queue full (the
+  // caller picks the policy) or, for a droppable event, drop it quietly.
+  Placement PlaceLocked(Entry& entry, Tx& event, const DeliveryClass& delivery) {
+    using Kind = DeliveryClass::Kind;
+    auto& queue = entry.queue;
+    // While `delivering`, the front is the async chain's in-flight event
+    // (ClaimLocked): it stays queued until its completion lands, so it is
+    // off limits to both coalescing and eviction.
+    const auto pending = queue.begin() + (entry.delivering && !queue.empty() ? 1 : 0);
+    if (delivery.kind == Kind::kCoalesce) {
+      const auto match = std::find_if(pending, queue.end(), [&delivery](const Queued& queued) {
+        return queued.delivery.kind == Kind::kCoalesce && queued.delivery.key == delivery.key;
+      });
+      if (match != queue.end()) {
+        match->event = std::move(event);
+        return Placement::kQueued;
+      }
+    }
+    if (queue.size() >= options_.queue_capacity) {
+      const auto victim = std::find_if(pending, queue.end(), [](const Queued& queued) {
+        return queued.delivery.kind == Kind::kDroppable;
+      });
+      if (victim == queue.end()) {
+        return delivery.kind == Kind::kDroppable ? Placement::kDropped : Placement::kFull;
+      }
+      queue.erase(victim);
+    }
+    queue.push_back(Queued{std::move(event), delivery});
+    return Placement::kQueued;
+  }
+
+  bool Enqueue(const Id& id, const std::shared_ptr<Entry>& entry, Tx event,
+               const DeliveryClass& delivery) {
     bool queued = false;
-    bool kick = false;
+    std::optional<Tx> claimed;
     {
       const std::lock_guard<std::mutex> lock(entry->mutex);
       if (entry->detached) {
         // Tested before stopping: detached implies stopping, and the
         // retention branch must win over the refuse-on-stopping one.
         // Default: drop — snapshot replay on resume is authoritative.
-        // Opt-in retention queues to capacity; a full queue drops outright
-        // (the slow-consumer policy needs a live session to act on).
+        // Opt-in retention queues to capacity under the same delivery
+        // classes; a full queue drops outright (the slow-consumer policy
+        // needs a live session to act on).
         if (!options_.queue_while_detached) return false;
-        if (entry->queue.size() >= options_.queue_capacity) return false;
-        entry->queue.push_back(std::move(event));
-        return true;  // delivered after Resume re-arms delivery
+        // Delivered after Resume re-arms delivery.
+        return PlaceLocked(*entry, event, delivery) == Placement::kQueued;
       }
       if (entry->stopping) return false;
-      if (entry->queue.size() < options_.queue_capacity) {
-        entry->queue.push_back(std::move(event));
-        queued = true;
-        if (entry->async_mode && !entry->delivering) {
-          entry->delivering = true;
-          kick = true;
-        }
+      switch (PlaceLocked(*entry, event, delivery)) {
+        case Placement::kQueued:
+          queued = true;
+          if (entry->async_mode && !entry->delivering) claimed = ClaimLocked(*entry);
+          break;
+        case Placement::kDropped:
+          return false;  // a droppable event: no policy to run
+        case Placement::kFull:
+          break;
       }
     }
     if (queued) {
-      if (kick) {
-        PumpAsync(entry);  // outside the entry lock, like every send
+      if (claimed) {
+        SubmitAsync(entry, *claimed);  // outside the entry lock, like every send
       } else if (!entry->async_mode) {
         entry->wake.notify_one();  // outside the lock: the writer wakes runnable
       }
@@ -638,26 +722,33 @@ class SessionRegistry {
   // pair's ready path completes inline on the enqueuer, one frame per
   // drained event, so recursion depth tracks the drain — the wire
   // transports post completions and stay at depth one.
-  static void PumpAsync(const std::shared_ptr<Entry>& entry) {
-    Tx event;
-    {
-      const std::lock_guard<std::mutex> lock(entry->mutex);
-      if (entry->stopping || entry->queue.empty()) {
-        entry->delivering = false;
-        entry->wake.notify_all();  // Resume waits out the chain's idle flip
-        return;
-      }
-      event = entry->queue.front();  // copy: the slot is the in-flight marker
+  //
+  // Entry lock held. Claims the front for the chain: returns a copy to
+  // SubmitAsync (the slot stays queued as the in-flight marker), or marks
+  // the chain idle when there is nothing to send. Every chain step claims
+  // under the same lock hold that sets or keeps `delivering`, so at every
+  // lock release `delivering` means exactly "the front is in flight" —
+  // which PlaceLocked relies on to leave that one slot alone.
+  static std::optional<Tx> ClaimLocked(Entry& entry) {
+    if (entry.stopping || entry.queue.empty()) {
+      entry.delivering = false;
+      entry.wake.notify_all();  // Resume waits out the chain's idle flip
+      return std::nullopt;
     }
+    entry.delivering = true;
+    return entry.queue.front().event;
+  }
+
+  static void SubmitAsync(const std::shared_ptr<Entry>& entry, const Tx& event) {
     entry->handle.SendAsync(event, [entry](const Outcome<Unit>& sent) {
-      bool next = false;
+      std::optional<Tx> next;
       {
         const std::lock_guard<std::mutex> lock(entry->mutex);
         if (sent.ok()) {
           // Delivered: retire the event. (RequestStop may have cleared the
           // queue mid-flight, so the pop is guarded.)
           if (!entry->queue.empty()) entry->queue.pop_front();
-          next = true;
+          next = ClaimLocked(*entry);
         } else if (sent.error().kind() == ErrorKind::kValidation) {
           // Refused, not failed: an application send holds the session's
           // one send slot (websocket.h's one-outstanding contract) — and
@@ -683,7 +774,7 @@ class SessionRegistry {
         }
       }
       if (next) {
-        PumpAsync(entry);
+        SubmitAsync(entry, *next);
       } else {
         entry->wake.notify_all();  // Resume waits out the chain's last flip
       }
