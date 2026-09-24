@@ -8,6 +8,14 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Breaking
 
+- **Inbound stream events are validated against the model's constraints**
+  (issue #228, ADR-0025). A generated server's decoder now runs each event
+  union's validator. An event that breaks a constraint reaches the handler as
+  `Error::Validation` from `Receive`, not as the event, and that error leaves
+  the session open. Any other decoder failure still closes it. A receive loop
+  that returns on every error now ends the session on an invalid event. To
+  refuse the event and keep serving, check `error().kind() ==
+  ErrorKind::kValidation` and continue.
 - **Client responses are capped at `ClientConfig::max_response_bytes`**,
   default 64 MiB (issue #189). Responses are buffered whole before decoding,
   so the cap is the memory one call can make a process commit; the Beast
@@ -82,6 +90,12 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Added
 
+- **`SessionRegistry` delivery classes** (issue #227). `SendTo` and every
+  `Broadcast` overload take an optional `DeliveryClass`: `Reliable()` (the
+  default), `Droppable()` (evicted first when a queue is full, dropped
+  quietly otherwise), or `Coalesce(key)` (replaces the queued, unsent event
+  with the same key, in place). The slow-consumer policy runs only when a
+  reliable event still can't fit.
 - **`Retry-After` is honored** (#189). When a retried response carries the
   header, that delay becomes a floor under the backoff for that attempt: both
   RFC 9110 §10.2.3 forms are read, delta-seconds and HTTP-date, with a date

@@ -277,7 +277,9 @@ class AsyncEventStream {
   // Awaits the next event: nullopt is the peer's clean close. A message
   // the decoder rejects — a received exception (decoded to its modeled
   // Error) or an undecodable message — is terminal (ADR-0016): the session
-  // is closed and the error is the awaited result.
+  // is closed and the error is the awaited result. A constraint violation
+  // (Error::Validation, ADR-0025) refuses that one event and leaves the
+  // session open, as in EventStream::Receive.
   class [[nodiscard]] ReceiveAwaitable {
    public:
     explicit ReceiveAwaitable(AsyncEventStream* stream,
@@ -308,13 +310,14 @@ class AsyncEventStream {
       // A timeout (code "TimeoutError") arrives here as raw_'s error and
       // passes through untouched: it is not terminal, nothing is closed,
       // and the next co_await picks the stream up where it left off. Only
-      // a decoder rejection below ends the session.
+      // a decoder rejection below ends the session, and not a constraint
+      // violation (SparesSession, ADR-0025) — that refuses one event.
       if (!raw_.ok()) return std::move(raw_).error();
       std::optional<Message>& message = *raw_;
       if (!message.has_value()) return std::optional<Rx>();
       auto event = stream_->decode_(*message);
       if (!event.ok()) {
-        stream_->Close();
+        if (!SparesSession(event.error())) stream_->Close();
         return std::move(event).error();
       }
       return std::optional<Rx>(std::move(*event));

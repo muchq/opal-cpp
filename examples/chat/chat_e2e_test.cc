@@ -143,6 +143,32 @@ TEST_F(ChatEndToEndTest, ServerEndsTheStreamAfterALeaveEvent) {
   EXPECT_FALSE(end->has_value());
 }
 
+TEST_F(ChatEndToEndTest, AnEventBreakingItsConstraintsIsRefusedAndTheSessionLivesOn) {
+  // ChatMessage.text is @length(max: 280). The generated server decoder
+  // refuses an oversized message as Error::Validation without closing the
+  // session (ADR-0025); RoomHandler skips it, so it is never echoed, and the
+  // next message round-trips on the same stream.
+  ConverseInput input;
+  input.room = "lobby";
+  input.nickname = "mallory";
+  auto stream = client_->Converse(input);
+  ASSERT_TRUE(stream.ok()) << stream.error().message();
+  ASSERT_TRUE(stream->Receive().ok());  // drain the joined greeting
+
+  ChatMessage oversized;
+  oversized.text = std::string(281, 'x');
+  ASSERT_TRUE(stream->Send(ChatEvents::FromMessage(oversized)).ok());
+  ChatMessage fine;
+  fine.text = std::string(280, 'y');
+  ASSERT_TRUE(stream->Send(ChatEvents::FromMessage(fine)).ok());
+
+  auto echo = stream->Receive(std::chrono::seconds(5));
+  ASSERT_TRUE(echo.ok()) << echo.error().message();
+  ASSERT_TRUE(echo->has_value() && (**echo).is_message());
+  EXPECT_EQ((**echo).as_message().text, fine.text);
+  stream->Close();
+}
+
 TEST_F(ChatEndToEndTest, ServerPushStreamsWithoutAClientTransmitDirection) {
   WatchInput input;
   input.room = "lobby";

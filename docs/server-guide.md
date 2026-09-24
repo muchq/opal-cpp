@@ -158,6 +158,19 @@ query, and headers arrive on the upgrade request, which the transport accepts *b
 route parses them — so a validation failure surfaces as a successful dial whose first
 `Receive()` is a terminal `SerializationException`, not as a refused upgrade.
 
+Events that arrive after the opening are validated too (ADR-0025). An event that breaks a
+constraint reaches the handler as `Error::Validation` from `Receive()`, and unlike every
+other receive error it leaves the session open. The handler decides what to do: answer
+with the service's own rejection event, skip the event, or return and end the session.
+
+```cpp
+auto event = stream.Receive();
+if (!event.ok() && event.error().kind() == opal::ErrorKind::kValidation) {
+  (void)stream.Send(Events::FromRejected({.reason = event.error().message()}));
+  continue;
+}
+```
+
 Multi-client fan-out — "N connected players, the server pushes state to all of them" —
 is `opal::server::SessionRegistry<Out>` (issue #112, ADR-0017), a thread-safe map of
 owning handles with a bounded outbound queue and a writer thread per session, so a

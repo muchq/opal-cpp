@@ -98,7 +98,10 @@ union RoomEvents {
 }
 
 structure ChatMessage {
+    /// Bounded, so a client's oversized message is refused as one event
+    /// (ADR-0025) instead of reaching the handler.
     @required
+    @length(max: 280)
     text: String
 
     sender: String
