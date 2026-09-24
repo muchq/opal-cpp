@@ -253,6 +253,15 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Fixed
 
+- **A dialed WebSocket released on its own io thread no longer terminates
+  the process.** When the last handle to a `BeastWebSocketClient::Dial`
+  socket dropped inside one of its own completions (typically a `Detached`
+  loop that owned the socket and finished there), the destructor joined the
+  thread it was running on, and `std::terminate` fired with "Resource
+  deadlock avoided". That thread now owns a share of the connection and
+  session: a destructor running on it detaches, and the thread frees them
+  once `run()` returns. Found as an intermittent failure in the consumer
+  module's async acceptance test.
 - **A modeled `@httpHeader("Accept")` input member reaches the wire.** An
   operation with a response `@httpPayload` emits that payload's content type
   as the request's Accept header — but it did so with an unconditional `Set`,

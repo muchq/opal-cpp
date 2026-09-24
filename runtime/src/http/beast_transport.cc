@@ -2417,54 +2417,69 @@ struct DialedConnection {
   }
 };
 
+// The io machinery a dialed socket shares with its io thread. Declaration
+// order is load-bearing: members destroy in reverse, so the session (whose
+// websocket stream references the io_context) is released BEFORE the
+// connection destroys that context.
+struct DialedIo {
+  std::unique_ptr<DialedConnection> connection;
+  std::shared_ptr<WebSocketSessionBase> session;
+};
+
 // The handle the application owns: delegates to the session and keeps the
-// io thread alive for the connection's lifetime. Destruction (an app
-// thread — pump callbacks never own this object) aborts the session, stops
-// the io, and joins.
+// io thread alive for the connection's lifetime. Destruction aborts the
+// session, stops the io, and joins, unless it runs on the io thread itself.
+// That happens when a completion owns the last handle (a Detached loop that
+// owns its dialed socket finishes on this thread): a thread cannot join
+// itself, so it is detached, and its own reference to DialedIo frees the io
+// machinery once run() returns, which the stop makes immediate.
 class DialedWebSocket final : public WebSocket {
  public:
   DialedWebSocket(std::shared_ptr<WebSocketSessionBase> session,
                   std::unique_ptr<DialedConnection> connection)
-      : connection_(std::move(connection)),
-        session_(std::move(session)),
-        work_guard_(asio::make_work_guard(connection_->io)),
-        runner_([this] { RunIoThread(connection_->io, "beast client websocket"); }) {}
+      : io_(std::make_shared<DialedIo>(
+            DialedIo{.connection = std::move(connection), .session = std::move(session)})),
+        work_guard_(asio::make_work_guard(io_->connection->io)),
+        runner_([io = io_] { RunIoThread(io->connection->io, "beast client websocket"); }) {}
 
   ~DialedWebSocket() override {
-    session_->Abort("client released the session");
+    io_->session->Abort("client released the session");
     work_guard_.reset();
-    connection_->io.stop();
-    if (runner_.joinable()) {
-      runner_.join();
+    io_->connection->io.stop();
+    if (!runner_.joinable()) {
+      return;
     }
+    if (runner_.get_id() == std::this_thread::get_id()) {
+      runner_.detach();
+      return;
+    }
+    runner_.join();
   }
 
-  Outcome<std::optional<eventstream::Message>> Receive() override { return session_->Receive(); }
+  Outcome<std::optional<eventstream::Message>> Receive() override {
+    return io_->session->Receive();
+  }
   Outcome<std::optional<eventstream::Message>> Receive(std::chrono::milliseconds timeout) override {
-    return session_->Receive(timeout);
+    return io_->session->Receive(timeout);
   }
   Outcome<Unit> Send(const eventstream::Message& message) override {
-    return session_->Send(message);
+    return io_->session->Send(message);
   }
-  void Close() override { session_->Close(); }
+  void Close() override { io_->session->Close(); }
   void ReceiveAsync(WebSocket::ReceiveCallback callback) override {
-    session_->ReceiveAsync(std::move(callback));
+    io_->session->ReceiveAsync(std::move(callback));
   }
   void ReceiveAsync(std::chrono::milliseconds timeout,
                     WebSocket::ReceiveCallback callback) override {
-    session_->ReceiveAsync(timeout, std::move(callback));
+    io_->session->ReceiveAsync(timeout, std::move(callback));
   }
   void SendAsync(const eventstream::Message& message, WebSocket::SendCallback callback) override {
-    session_->SendAsync(message, std::move(callback));
+    io_->session->SendAsync(message, std::move(callback));
   }
-  bool SupportsAsync() const override { return session_->SupportsAsync(); }
+  bool SupportsAsync() const override { return io_->session->SupportsAsync(); }
 
  private:
-  // Declaration order is load-bearing: members destroy in reverse, so the
-  // session (whose websocket stream references the io_context) must be
-  // released BEFORE connection_ destroys that context.
-  std::unique_ptr<DialedConnection> connection_;
-  std::shared_ptr<WebSocketSessionBase> session_;
+  std::shared_ptr<DialedIo> io_;  // shared with runner_, which may outlive this
   asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
   std::thread runner_;
 };

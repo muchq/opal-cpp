@@ -106,6 +106,55 @@ TEST(BeastWebSocketTest, MessagesRoundTripBothWaysOverTheUpgrade) {
   server.Stop();
 }
 
+TEST(BeastWebSocketTest, ADetachedLoopMayReleaseTheLastHandleOnTheSocketsOwnIoThread) {
+  // A Detached client loop that owns its dialed socket resumes, finishes and
+  // is destroyed on that socket's io thread, so the last reference drops
+  // there. Teardown must not join the thread it runs on (std::terminate,
+  // "Resource deadlock avoided") or free the io_context under it.
+  std::promise<void> parked;
+  std::shared_future<void> go = parked.get_future().share();
+  BeastServerTransport::Options options;
+  options.on_websocket = [go](const HttpRequest&, WebSocket& socket) {
+    go.wait();  // push only once the client's receive is parked
+    (void)socket.Send(Text("news", "unsolicited"));
+    while (true) {
+      auto message = socket.Receive();
+      if (!message.ok() || !message->has_value()) return;
+    }
+  };
+  BeastServerTransport server(options);
+  ASSERT_TRUE(server.Start(NotFoundHandler()).ok());
+  auto dialed = BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()});
+  ASSERT_TRUE(dialed.ok()) << dialed.error().message();
+
+  std::promise<std::string> delivered;
+  std::promise<void> frame_gone;
+  // The frame owns the only reference once `dialed` is released below.
+  struct SignalOnExit {
+    std::promise<void>* gone;
+    ~SignalOnExit() { gone->set_value(); }
+  };
+  [](std::shared_ptr<WebSocket> socket, std::promise<std::string>* delivered,
+     std::promise<void>* gone) -> eventstream::Detached {
+    const SignalOnExit signal{gone};  // destroyed after `stream`, so after the release
+    eventstream::AsyncEventStream<Message, Message> stream(
+        std::move(socket), [](const Message& m) -> Outcome<Message> { return m; },
+        [](const Message& m) -> Outcome<Message> { return m; });
+    auto message = co_await stream.Receive();
+    delivered->set_value(message.ok() && message->has_value() ? (**message).payload.ToString()
+                                                              : "<none>");
+  }(std::exchange(*dialed, nullptr), &delivered, &frame_gone);
+  parked.set_value();
+
+  auto body = delivered.get_future();
+  ASSERT_EQ(body.wait_for(std::chrono::seconds(5)), std::future_status::ready);
+  EXPECT_EQ(body.get(), "unsolicited");
+  // The frame (and with it ~DialedWebSocket) finished on the io thread
+  // without taking the process down.
+  EXPECT_EQ(frame_gone.get_future().wait_for(std::chrono::seconds(5)), std::future_status::ready);
+  server.Stop();
+}
+
 TEST(BeastWebSocketTest, AReceiveDeadlineExpiresOnAQuietWireAndSparesTheSession) {
   // The echo server says nothing unsolicited, so a receive with no deadline
   // would park here forever — the hang this overload exists to prevent.
