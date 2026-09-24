@@ -242,7 +242,7 @@ class SessionRegistry {
       entry = std::move(it->second);
       sessions_.erase(it);
       // Stop and decide retirement under ONE entry-lock hold: a chain
-      // callback converting this entry to writer mode (PumpAsync's
+      // callback converting this entry to writer mode (SubmitAsync's
       // collision fallback) either spawned first — and the writer is
       // joinable here, so it retires and gets its join — or observes
       // stopping and never spawns. No interleaving orphans a thread.
@@ -311,7 +311,7 @@ class SessionRegistry {
     if (options_.grace_period == std::chrono::seconds{0}) return false;
     const bool async_mode = options_.async_delivery && handle.SupportsAsync();
     std::shared_ptr<Entry> entry;
-    bool kick = false;
+    std::optional<Tx> claimed;
     {
       const std::lock_guard<std::mutex> lock(mutex_);
       const auto it = sessions_.find(id);
@@ -338,13 +338,12 @@ class SessionRegistry {
       entry->async_mode = async_mode;
       if (!async_mode) {
         entry->writer = std::thread([entry] { WriterLoop(*entry); });
-      } else if (!entry->queue.empty()) {
-        entry->delivering = true;  // retained tail: re-kick below
-        kick = true;
+      } else {
+        claimed = ClaimLocked(*entry);  // the retained tail, if any
       }
     }
     entry->wake.notify_all();
-    if (kick) PumpAsync(entry);
+    if (claimed) SubmitAsync(entry, *claimed);
     return true;
   }
 
@@ -626,9 +625,9 @@ class SessionRegistry {
   Placement PlaceLocked(Entry& entry, Tx& event, const DeliveryClass& delivery) {
     using Kind = DeliveryClass::Kind;
     auto& queue = entry.queue;
-    // The async chain keeps its in-flight event at the front until the
-    // completion lands (PumpAsync): it is being delivered, so it is off
-    // limits to both coalescing and eviction.
+    // While `delivering`, the front is the async chain's in-flight event
+    // (ClaimLocked): it stays queued until its completion lands, so it is
+    // off limits to both coalescing and eviction.
     const auto pending = queue.begin() + (entry.delivering && !queue.empty() ? 1 : 0);
     if (delivery.kind == Kind::kCoalesce) {
       const auto match = std::find_if(pending, queue.end(), [&delivery](const Queued& queued) {
@@ -655,7 +654,7 @@ class SessionRegistry {
   bool Enqueue(const Id& id, const std::shared_ptr<Entry>& entry, Tx event,
                const DeliveryClass& delivery) {
     bool queued = false;
-    bool kick = false;
+    std::optional<Tx> claimed;
     {
       const std::lock_guard<std::mutex> lock(entry->mutex);
       if (entry->detached) {
@@ -673,10 +672,7 @@ class SessionRegistry {
       switch (PlaceLocked(*entry, event, delivery)) {
         case Placement::kQueued:
           queued = true;
-          if (entry->async_mode && !entry->delivering) {
-            entry->delivering = true;
-            kick = true;
-          }
+          if (entry->async_mode && !entry->delivering) claimed = ClaimLocked(*entry);
           break;
         case Placement::kDropped:
           return false;  // a droppable event: no policy to run
@@ -685,8 +681,8 @@ class SessionRegistry {
       }
     }
     if (queued) {
-      if (kick) {
-        PumpAsync(entry);  // outside the entry lock, like every send
+      if (claimed) {
+        SubmitAsync(entry, *claimed);  // outside the entry lock, like every send
       } else if (!entry->async_mode) {
         entry->wake.notify_one();  // outside the lock: the writer wakes runnable
       }
@@ -726,26 +722,33 @@ class SessionRegistry {
   // pair's ready path completes inline on the enqueuer, one frame per
   // drained event, so recursion depth tracks the drain — the wire
   // transports post completions and stay at depth one.
-  static void PumpAsync(const std::shared_ptr<Entry>& entry) {
-    Tx event;
-    {
-      const std::lock_guard<std::mutex> lock(entry->mutex);
-      if (entry->stopping || entry->queue.empty()) {
-        entry->delivering = false;
-        entry->wake.notify_all();  // Resume waits out the chain's idle flip
-        return;
-      }
-      event = entry->queue.front().event;  // copy: the slot is the in-flight marker
+  //
+  // Entry lock held. Claims the front for the chain: returns a copy to
+  // SubmitAsync (the slot stays queued as the in-flight marker), or marks
+  // the chain idle when there is nothing to send. Every chain step claims
+  // under the same lock hold that sets or keeps `delivering`, so at every
+  // lock release `delivering` means exactly "the front is in flight" —
+  // which PlaceLocked relies on to leave that one slot alone.
+  static std::optional<Tx> ClaimLocked(Entry& entry) {
+    if (entry.stopping || entry.queue.empty()) {
+      entry.delivering = false;
+      entry.wake.notify_all();  // Resume waits out the chain's idle flip
+      return std::nullopt;
     }
+    entry.delivering = true;
+    return entry.queue.front().event;
+  }
+
+  static void SubmitAsync(const std::shared_ptr<Entry>& entry, const Tx& event) {
     entry->handle.SendAsync(event, [entry](const Outcome<Unit>& sent) {
-      bool next = false;
+      std::optional<Tx> next;
       {
         const std::lock_guard<std::mutex> lock(entry->mutex);
         if (sent.ok()) {
           // Delivered: retire the event. (RequestStop may have cleared the
           // queue mid-flight, so the pop is guarded.)
           if (!entry->queue.empty()) entry->queue.pop_front();
-          next = true;
+          next = ClaimLocked(*entry);
         } else if (sent.error().kind() == ErrorKind::kValidation) {
           // Refused, not failed: an application send holds the session's
           // one send slot (websocket.h's one-outstanding contract) — and
@@ -771,7 +774,7 @@ class SessionRegistry {
         }
       }
       if (next) {
-        PumpAsync(entry);
+        SubmitAsync(entry, *next);
       } else {
         entry->wake.notify_all();  // Resume waits out the chain's last flip
       }

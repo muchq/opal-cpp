@@ -18,9 +18,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <deque>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -1702,6 +1704,125 @@ TEST(SessionRegistryDeliveryClassTest, RetentionWhileDetachedFollowsTheSameClass
   ASSERT_TRUE(registry.Resume("ada", *fresh.handle));
   EXPECT_EQ(NextAt(fresh), "k1");
   EXPECT_EQ(NextAt(fresh), "r1");
+}
+
+// Completes every SendAsync on its own worker thread, as the wire transports
+// post theirs: completions race the enqueuer, so every chain handoff
+// (completion -> claim of the next front) runs concurrently with placement.
+class WorkerCompletedSocket final : public http::WebSocket {
+ public:
+  WorkerCompletedSocket() : worker_([this] { Run(); }) {}
+  ~WorkerCompletedSocket() override { Stop(); }
+
+  // Closes and joins the worker. Call it from the test thread before
+  // teardown: a completion callback holds the session (and through it this
+  // socket), so the worker must never be left to drop the last reference.
+  void Stop() {
+    Close();
+    if (worker_.joinable()) worker_.join();
+  }
+
+  Outcome<std::optional<Message>> Receive() override { return std::optional<Message>{}; }
+  Outcome<std::optional<Message>> Receive(std::chrono::milliseconds) override {
+    return std::optional<Message>{};
+  }
+  Outcome<Unit> Send(const Message& message) override {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    delivered_.push_back(message.payload.ToString());
+    changed_.notify_all();
+    return Unit{};
+  }
+  void SendAsync(const Message& message, SendCallback callback) override {
+    {
+      const std::lock_guard<std::mutex> lock(mutex_);
+      if (!closed_) {
+        pending_.emplace_back(message.payload.ToString(), std::move(callback));
+        changed_.notify_all();
+        return;
+      }
+    }
+    callback(Error::Transport("worker socket closed"));
+  }
+  bool SupportsAsync() const override { return true; }
+  void Close() override {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    closed_ = true;
+    changed_.notify_all();
+  }
+
+  // Everything delivered once `last` has been; the deadline only bounds a
+  // failing test.
+  std::vector<std::string> DeliveredThrough(const std::string& last) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    changed_.wait_for(lock, std::chrono::seconds(10),
+                      [this, &last] { return !delivered_.empty() && delivered_.back() == last; });
+    return delivered_;
+  }
+
+ private:
+  void Run() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    for (;;) {
+      changed_.wait(lock, [this] { return closed_ || !pending_.empty(); });
+      if (pending_.empty()) return;  // closed and drained
+      auto [payload, callback] = std::move(pending_.front());
+      pending_.pop_front();
+      const bool ok = !closed_;
+      if (ok) delivered_.push_back(payload);
+      changed_.notify_all();
+      lock.unlock();
+      callback(ok ? Outcome<Unit>(Unit{}) : Outcome<Unit>(Error::Transport("closed")));
+      lock.lock();
+    }
+  }
+
+  std::mutex mutex_;
+  std::condition_variable changed_;
+  std::deque<std::pair<std::string, SendCallback>> pending_;
+  std::vector<std::string> delivered_;
+  bool closed_ = false;
+  std::thread worker_;  // last: starts after every member it reads
+};
+
+TEST(SessionRegistryDeliveryClassTest, ConcurrentCompletionHandoffsKeepTheContract) {
+  // A regression net for the chain's completion -> next-send handoff racing
+  // placement (issue #227 review): whatever interleaves, every accepted
+  // reliable event arrives exactly once and in order, nothing arrives
+  // twice, and the latest accepted coalesce state is the last one sent.
+  auto socket = std::make_shared<WorkerCompletedSocket>();
+  std::atomic<int> policy_runs{0};
+  Registry registry = CountingRegistry(&policy_runs, /*queue_capacity=*/4, /*async=*/true);
+  ServerStream stream(socket, EncodeNote, nullptr);
+  ASSERT_TRUE(registry.Add("ada", stream.Share()));
+
+  Strings accepted_reliable;
+  std::string last_coalesce;
+  for (int i = 0; i < 5000; ++i) {
+    const std::string n = std::to_string(i);
+    if (registry.SendTo("ada", Note{"r" + n})) accepted_reliable.push_back("r" + n);
+    registry.SendTo("ada", Note{"d" + n}, DeliveryClass::Droppable());
+    if (registry.SendTo("ada", Note{"c" + n}, DeliveryClass::Coalesce("k"))) {
+      last_coalesce = "c" + n;
+    }
+  }
+  while (!registry.SendTo("ada", Note{"end"})) std::this_thread::yield();
+  accepted_reliable.push_back("end");
+
+  const Strings delivered = socket->DeliveredThrough("end");
+  ASSERT_EQ(delivered.back(), "end");
+  Strings reliable;
+  std::string final_coalesce;
+  for (const std::string& payload : delivered) {
+    if (payload[0] == 'r' || payload == "end") reliable.push_back(payload);
+    if (payload[0] == 'c') final_coalesce = payload;
+  }
+  EXPECT_EQ(reliable, accepted_reliable);
+  EXPECT_EQ(final_coalesce, last_coalesce);
+  Strings unique = delivered;
+  std::sort(unique.begin(), unique.end());
+  EXPECT_EQ(std::adjacent_find(unique.begin(), unique.end()), unique.end());
+  EXPECT_TRUE(registry.Remove("ada"));
+  socket->Stop();
 }
 
 }  // namespace
