@@ -5,7 +5,8 @@
 // the in-memory pair and chat_e2e_beast_test.cc over real WebSockets, one
 // handler so the two halves cannot drift: greets each joiner, echoes
 // messages back to the room, kicks anyone who asks (the modeled mid-stream
-// error), and announces leavers before closing its side.
+// error), skips events the model's constraints refused, and announces
+// leavers before closing its side.
 
 #include <string>
 
@@ -33,6 +34,8 @@ class RoomHandler final : public ChatHandler {
     if (!stream.Send(RoomEvents::FromJoined(joined)).ok()) return opal::Unit{};
     while (true) {
       auto event = stream.Receive();
+      // A refused event (an oversized message, ADR-0025): skip it, keep going.
+      if (!event.ok() && event.error().kind() == opal::ErrorKind::kValidation) continue;
       if (!event.ok()) return opal::Unit{};          // wire failed: nothing to add
       if (!event->has_value()) return opal::Unit{};  // client closed cleanly
       const ChatEvents& received = **event;

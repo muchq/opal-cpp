@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
@@ -16,7 +17,9 @@
 #include "example/chat/server.h"
 #include "opal/core/base64.h"
 #include "opal/core/blob.h"
+#include "opal/core/document.h"
 #include "opal/core/document_serde.h"
+#include "opal/core/text.h"
 #include "opal/eventstream/async_event_stream.h"
 #include "opal/eventstream/envelope.h"
 #include "opal/http/headers.h"
@@ -112,6 +115,58 @@ opal::http::HttpResponse JsonError(int status, const std::string& code, const st
   return helpers::JsonError(500, "InternalFailure", "internal failure", {});
 }
 
+// Constraint validation (smithy.framework#ValidationException): messages
+// and '/member' paths follow the official validation conformance suite.
+void AddValidationFailure(std::vector<opal::server::ValidationFailure>* failures, std::string path, std::string message) {
+  failures->push_back({std::move(path), std::move(message)});
+}
+
+void ValidateChatMessage(const types::ChatMessage& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
+  {
+    const std::string member_path = path + "/text";
+    {
+      const std::size_t member_length = opal::Utf8CodePointCount(value.text);
+      if (member_length > 280ULL) {
+        helpers::AddValidationFailure(failures, member_path, "Value with length " + std::to_string(member_length) + " at '" + member_path + "' failed to satisfy constraint: Member must have length less than or equal to 280");
+      }
+    }
+  }
+}
+
+void ValidateChatEvents(const types::ChatEvents& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
+  if (value.is_message()) {
+    const std::string member_path = path + "/message";
+    helpers::ValidateChatMessage(value.as_message(), member_path, failures);
+  }
+}
+
+void ValidateConverseInput(const types::ConverseInput& value, const std::string& path, std::vector<opal::server::ValidationFailure>* failures) {
+  if (value.events.has_value()) {
+    const std::string member_path = path + "/events";
+    helpers::ValidateChatEvents((*value.events), member_path, failures);
+  }
+}
+
+// [[maybe_unused]]: only unary routes reject invalid input over HTTP; a
+// service whose operations all stream reports validation on the stream.
+[[maybe_unused]] opal::http::HttpResponse ValidationErrorResponse(const std::vector<opal::server::ValidationFailure>& failures) {
+  std::string summary = std::to_string(failures.size()) + " validation error" + (failures.size() == 1 ? "" : "s") + " detected. ";
+  opal::DocumentList field_list;
+  for (std::size_t i = 0; i < failures.size(); ++i) {
+    if (i > 0) summary += "; ";
+    summary += failures[i].message;
+    opal::DocumentMap field;
+    field.emplace("message", opal::Document(failures[i].message));
+    field.emplace("path", opal::Document(failures[i].path));
+    field_list.push_back(opal::Document(std::move(field)));
+  }
+  opal::DocumentMap body;
+  body.emplace("fieldList", opal::Document(std::move(field_list)));
+  opal::http::HttpResponse response = helpers::JsonError(400, "", summary, std::move(body));
+  response.headers.Set("x-error-type", "ValidationException");
+  return response;
+}
+
 opal::Outcome<types::ConverseInput> ParseConverseInput(const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::vector<opal::server::ValidationFailure>* validation_failures) {
   (void)request;
   (void)context;
@@ -173,6 +228,17 @@ opal::Outcome<opal::eventstream::Message> EncodeConverseEvent(const types::RoomE
   return opal::Error::Validation("RoomEvents: no event member engaged");
 }
 
+// A decoded event that breaks its model constraints is refused as
+// Error::Validation, which spares the session (ADR-0025).
+opal::Outcome<types::ChatEvents> CheckConverseEvent(types::ChatEvents event) {
+  std::vector<opal::server::ValidationFailure> validation_failures;
+  helpers::ValidateChatEvents(event, "", &validation_failures);
+  if (!validation_failures.empty()) {
+    return opal::Error::Validation(validation_failures.front().message);
+  }
+  return event;
+}
+
 opal::Outcome<types::ChatEvents> DecodeConverseEvent(const opal::eventstream::Message& message) {
   auto envelope = opal::eventstream::ParseEnvelope(message);
   if (!envelope) return std::move(envelope).error();
@@ -186,14 +252,14 @@ opal::Outcome<types::ChatEvents> DecodeConverseEvent(const opal::eventstream::Me
     if (!doc) return std::move(doc).error();
     auto event = DeserializeChatMessage(*doc);
     if (!event) return std::move(event).error();
-    return types::ChatEvents::FromMessage(*std::move(event));
+    return CheckConverseEvent(types::ChatEvents::FromMessage(*std::move(event)));
   }
   if (envelope->type == "leave") {
     auto doc = opal::json::Decode(envelope->payload.ToString());
     if (!doc) return std::move(doc).error();
     auto event = DeserializeLeaveNotice(*doc);
     if (!event) return std::move(event).error();
-    return types::ChatEvents::FromLeave(*std::move(event));
+    return CheckConverseEvent(types::ChatEvents::FromLeave(*std::move(event)));
   }
   return opal::Error::Serialization("Converse: unknown event type: " + envelope->type);
 }
@@ -324,6 +390,7 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
     }
     std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseListRoomsInput(request, context, &validation_failures);
+    if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
     auto outcome = handler->ListRooms(*input, context);
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
@@ -340,6 +407,17 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
       socket.Close();
       return;
     }
+    if (!validation_failures.empty()) {
+      (void)socket.Send(helpers::BuildConverseExceptionMessage(opal::Error::Validation(validation_failures.front().message)));
+      socket.Close();
+      return;
+    }
+    helpers::ValidateConverseInput(*input, "", &validation_failures);
+    if (!validation_failures.empty()) {
+      (void)socket.Send(helpers::BuildConverseExceptionMessage(opal::Error::Validation(validation_failures.front().message)));
+      socket.Close();
+      return;
+    }
     types::ConverseServerStream stream(socket, helpers::EncodeConverseEvent, helpers::DecodeConverseEvent);
     auto outcome = handler->Converse(*input, stream, context);
     if (!outcome) {
@@ -352,6 +430,11 @@ ChatServer::ChatServer(std::shared_ptr<ChatHandler> handler)
     auto input = helpers::ParseWatchInput(request, context, &validation_failures);
     if (!input) {
       (void)socket.Send(helpers::BuildWatchExceptionMessage(input.error()));
+      socket.Close();
+      return;
+    }
+    if (!validation_failures.empty()) {
+      (void)socket.Send(helpers::BuildWatchExceptionMessage(opal::Error::Validation(validation_failures.front().message)));
       socket.Close();
       return;
     }
@@ -387,6 +470,7 @@ ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
     }
     std::vector<opal::server::ValidationFailure> validation_failures;
     auto input = helpers::ParseListRoomsInput(request, context, &validation_failures);
+    if (!validation_failures.empty()) return helpers::ValidationErrorResponse(validation_failures);
     if (!input) return helpers::ErrorToResponse(input.error());
     auto outcome = handler->ListRooms(*input, context);
     if (!outcome) return helpers::ErrorToResponse(outcome.error());
@@ -400,6 +484,17 @@ ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
       socket->Close();
       return;
     }
+    if (!validation_failures.empty()) {
+      (void)socket->Send(helpers::BuildConverseExceptionMessage(opal::Error::Validation(validation_failures.front().message)));
+      socket->Close();
+      return;
+    }
+    helpers::ValidateConverseInput(*input, "", &validation_failures);
+    if (!validation_failures.empty()) {
+      (void)socket->Send(helpers::BuildConverseExceptionMessage(opal::Error::Validation(validation_failures.front().message)));
+      socket->Close();
+      return;
+    }
     helpers::ServeConverseAsync(handler, *std::move(input), std::move(socket));
   }, "Converse");
   (void)stream_router_->AddSession("GET", "/rooms/{room}/watch", [handler](const opal::http::HttpRequest& request, const opal::server::RequestContext& context, std::shared_ptr<opal::http::WebSocket> socket) {
@@ -407,6 +502,11 @@ ChatServer::ChatServer(std::shared_ptr<ChatAsyncHandler> handler)
     auto input = helpers::ParseWatchInput(request, context, &validation_failures);
     if (!input) {
       (void)socket->Send(helpers::BuildWatchExceptionMessage(input.error()));
+      socket->Close();
+      return;
+    }
+    if (!validation_failures.empty()) {
+      (void)socket->Send(helpers::BuildWatchExceptionMessage(opal::Error::Validation(validation_failures.front().message)));
       socket->Close();
       return;
     }

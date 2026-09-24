@@ -136,6 +136,38 @@ TEST(EventStreamTest, AnUndecodableMessageIsEquallyTerminal) {
   EXPECT_FALSE(server.Send(Pong{"x"}).ok());
 }
 
+// The generated server decoder's constraint check (ADR-0025): an event that
+// parses but breaks its model constraints comes back as Error::Validation.
+Outcome<Ping> DecodeBoundedPing(const Message& message) {
+  auto ping = DecodePing(message);
+  if (ping.ok() && ping->number < 0) return Error::Validation("ping out of range");
+  return ping;
+}
+
+TEST(EventStreamTest, AConstraintViolationRefusesOneEventAndSparesTheSession) {
+  auto [client_socket, server_socket] = http::InMemoryWebSocketPair::Create();
+  ClientStream client(client_socket, EncodePing, DecodePong);
+  ServerStream server(server_socket, EncodePong, DecodeBoundedPing);
+
+  ASSERT_TRUE(client.Send(Ping{-1}).ok());
+  ASSERT_TRUE(client.Send(Ping{7}).ok());
+
+  const auto refused = server.Receive();
+  ASSERT_FALSE(refused.ok());
+  EXPECT_EQ(refused.error().kind(), ErrorKind::kValidation);
+  EXPECT_EQ(refused.error().message(), "ping out of range");
+
+  // Only that event was refused: the next one arrives, and both directions
+  // still work.
+  const auto next = server.Receive(std::chrono::seconds(5));
+  ASSERT_TRUE(next.ok() && next->has_value()) << (next.ok() ? "" : next.error().message());
+  EXPECT_EQ((*next)->number, 7);
+  ASSERT_TRUE(server.Send(Pong{"still-open"}).ok());
+  const auto pong = client.Receive();
+  ASSERT_TRUE(pong.ok() && pong->has_value());
+  EXPECT_EQ((*pong)->text, "still-open");
+}
+
 TEST(EventStreamTest, ThePeersCleanCloseIsNullopt) {
   auto [client_socket, server_socket] = http::InMemoryWebSocketPair::Create();
   ClientStream client(client_socket, EncodePing, DecodePong);

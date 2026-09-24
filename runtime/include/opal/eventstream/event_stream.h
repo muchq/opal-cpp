@@ -31,6 +31,15 @@ struct NoEvents {
 template <typename Tx, typename Rx>
 class AsyncEventStream;  // the coroutine adapter (ADR-0019) also mints handles
 
+// Whether a decoder's rejection leaves the session open. Generated server
+// decoders return Error::Validation for an inbound event that parsed but
+// broke its model constraints (ADR-0025): that one event is refused, not
+// the peer. Every other decoder failure (undecodable, unknown type, a
+// received exception) is terminal (ADR-0016).
+inline bool SparesSession(const Error& decode_error) {
+  return decode_error.kind() == ErrorKind::kValidation;
+}
+
 namespace internal {
 
 // The seam between a stream and its handles (issue #112): a revocable view
@@ -291,7 +300,10 @@ class EventStream {
   // stream's natural end. A message the decoder rejects — a received
   // exception (the decoder returns it as the modeled Error) or an
   // undecodable message — is terminal (ADR-0016): the session is closed
-  // and the error returned.
+  // and the error returned. The exception is an Error::Validation verdict:
+  // the event decoded but broke its model constraints (ADR-0025), so it is
+  // dropped, the error returned, and the session left open. The handler
+  // decides whether to answer, carry on, or end the session.
   Outcome<std::optional<Rx>> Receive() { return Decode(socket_->Receive()); }
 
   // Receive under a deadline (the socket's timed overload, typed): the
@@ -299,9 +311,9 @@ class EventStream {
   // Error::Timeout ("TimeoutError") when `timeout` passes with nothing to
   // report. A timeout is the one failure here that spares the session: it
   // closes nothing, so the caller can assert, log, send, or wait again on
-  // a stream that is still live. Decoder failures stay terminal, deadline
-  // or not. Every WebSocket implements the deadline (it is pure virtual
-  // there), so the bound is real whatever session this stream wraps.
+  // a stream that is still live. Decoder failures stay terminal (a
+  // constraint violation aside, as above), deadline or not. Every WebSocket implements the deadline
+  // (it is pure virtual there), so the bound is real whatever session this stream wraps.
   Outcome<std::optional<Rx>> Receive(std::chrono::milliseconds timeout) {
     return Decode(socket_->Receive(timeout));
   }
@@ -322,7 +334,8 @@ class EventStream {
 
  private:
   // Both receive overloads: nullopt through, decode the message, and treat
-  // a decoder failure as terminal (ADR-0016). A transport failure —
+  // a decoder failure as terminal (ADR-0016) unless it is a constraint
+  // violation (ADR-0025). A transport failure —
   // including the deadline's Error::Timeout — passes through untouched;
   // only the decoder's verdict ends the session here.
   Outcome<std::optional<Rx>> Decode(Outcome<std::optional<Message>> received) {
@@ -331,7 +344,7 @@ class EventStream {
     if (!message.has_value()) return std::optional<Rx>();
     auto event = decode_(*message);
     if (!event.ok()) {
-      Close();
+      if (!SparesSession(event.error())) Close();
       return std::move(event).error();
     }
     return std::optional<Rx>(std::move(*event));

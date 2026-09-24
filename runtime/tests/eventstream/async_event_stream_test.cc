@@ -486,6 +486,53 @@ TEST(AsyncEventStreamTest, AwaitedReceiveTimesOutAndTheSessionStaysUsable) {
   EXPECT_TRUE(done.load());
 }
 
+// The generated server decoder's constraint check (ADR-0025).
+Outcome<Ping> DecodeBoundedPing(const Message& message) {
+  auto ping = DecodePing(message);
+  if (ping.ok() && ping->number < 0) return Error::Validation("ping out of range");
+  return ping;
+}
+
+// A constraint violation refuses one event, as in EventStream: the loop
+// sees Error::Validation, answers with its own rejection, and keeps serving
+// the same session.
+TEST(AsyncEventStreamTest, AnAwaitedConstraintViolationSparesTheSession) {
+  auto [client_socket, server_socket] = http::InMemoryWebSocketPair::Create();
+  std::atomic<bool> done{false};
+
+  [](std::shared_ptr<http::WebSocket> socket, std::atomic<bool>* done) -> Detached {
+    AsyncServer stream(std::move(socket), EncodePong, DecodeBoundedPing);
+    while (true) {
+      auto ping = co_await stream.Receive();
+      if (!ping.ok() && ping.error().kind() == ErrorKind::kValidation) {
+        if (!(co_await stream.Send(Pong{"rejected: " + ping.error().message()})).ok()) break;
+        continue;
+      }
+      if (!ping.ok() || !ping->has_value()) break;
+      auto sent = co_await stream.Send(Pong{"pong-" + std::to_string((*ping)->number)});
+      if (!sent.ok()) break;
+    }
+    *done = true;
+  }(server_socket, &done);
+
+  EventStream<Ping, Pong> client(client_socket, EncodePing, DecodePong);
+  ASSERT_TRUE(client.Send(Ping{-1}).ok());
+  auto rejected = client.Receive();
+  ASSERT_TRUE(rejected.ok() && rejected->has_value());
+  EXPECT_EQ((*rejected)->text, "rejected: ping out of range");
+  ASSERT_TRUE(client.Send(Ping{3}).ok());
+  auto pong = client.Receive();
+  ASSERT_TRUE(pong.ok() && pong->has_value());
+  EXPECT_EQ((*pong)->text, "pong-3");
+  EXPECT_FALSE(done.load());
+
+  client.Close();
+  for (int i = 0; i < 100 && !done.load(); ++i) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_TRUE(done.load());
+}
+
 // The raw awaitable's deadline (#130): ReceiveMessage with a timeout — the
 // ADR-0023 launch-body shape, where a client that never sends its opening
 // envelope must not park the serve coroutine forever.

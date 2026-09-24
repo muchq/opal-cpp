@@ -397,7 +397,7 @@ final class EventStreamCodeGen {
           protocol,
           operation,
           outputInfo(context.model(), operation),
-          /* clientSide= */ true);
+          /* inboundValidation= */ null);
     }
   }
 
@@ -416,6 +416,10 @@ final class EventStreamCodeGen {
     w.addInclude("\"opal/http/websocket.h\"");
     w.addInclude("\"opal/eventstream/async_event_stream.h\"");
     w.addInclude("<utility>");
+    // Inbound events are checked against their model constraints (ADR-0025);
+    // the Validate functions come from the protocol's server helpers, which
+    // run over every operation and so reach each input event union.
+    ValidationGenerator validation = new ValidationGenerator(context, streamingOperations);
     if (protocol.streamsRideJsonRpcEnvelopes()) {
       // The JSON-RPC-native wire (ADR-0023): the codec pairs are the shared
       // machinery; everything else — terminal envelopes instead of
@@ -432,7 +436,7 @@ final class EventStreamCodeGen {
             protocol,
             operation,
             inputInfo(context.model(), operation),
-            /* clientSide= */ false);
+            validation);
         JsonRpc2StreamCodeGen.writeAsyncServeWrapper(w, context, service, operation);
       }
       JsonRpc2StreamCodeGen.writeServeDrivers(w, context, service, protocol, streamingOperations);
@@ -447,7 +451,7 @@ final class EventStreamCodeGen {
           protocol,
           operation,
           inputInfo(context.model(), operation),
-          /* clientSide= */ false);
+          validation);
       writeExceptionMessageBuilder(w, context, service, protocol, operation);
       writeAsyncServeWrapper(w, context, service, operation);
     }
@@ -591,7 +595,10 @@ final class EventStreamCodeGen {
    * Decode&lt;Op&gt;Event: envelope parse, exception handling (terminal, ADR-0016), then
    * member-name dispatch into the union's From factories. The client end resolves exceptions
    * through the operation's Make&lt;Error&gt;Error machinery; a server receiving one (clients never
-   * send exceptions) reports a terminal protocol violation.
+   * send exceptions) reports a terminal protocol violation. On the server ({@code
+   * inboundValidation} non-null), a decoded event whose union carries constraints is checked
+   * against them: a violation is Error::Validation, which refuses that one event and spares the
+   * session (ADR-0025).
    */
   private static void writeDecodeFunction(
       CppWriter w,
@@ -600,7 +607,8 @@ final class EventStreamCodeGen {
       ProtocolGenerator protocol,
       OperationShape operation,
       Optional<EventStreamInfo> rx,
-      boolean clientSide) {
+      ValidationGenerator inboundValidation) {
+    boolean clientSide = inboundValidation == null;
     String op = opName(operation);
     if (rx.isEmpty()) {
       w.write("// $L models no events in this direction: any received message is a", op);
@@ -618,6 +626,22 @@ final class EventStreamCodeGen {
     }
     UnionShape union = eventUnion(rx.get());
     String unionType = context.cppSymbols().typeRef(union);
+    boolean checked = !clientSide && inboundValidation.validatesShape(union);
+    if (checked) {
+      w.write("// A decoded event that breaks its model constraints is refused as");
+      w.write("// Error::Validation, which spares the session (ADR-0025).");
+      w.openBlock("opal::Outcome<$L> Check$LEvent($L event) {", unionType, op, unionType);
+      w.write("std::vector<opal::server::ValidationFailure> validation_failures;");
+      w.write(
+          "helpers::$L(event, \"\", &validation_failures);",
+          inboundValidation.validatorNameForShape(union));
+      w.openBlock("if (!validation_failures.empty()) {");
+      w.write("return opal::Error::Validation(validation_failures.front().message);");
+      w.closeBlock("}");
+      w.write("return event;");
+      w.closeBlock("}");
+      w.write("");
+    }
     w.openBlock(
         "opal::Outcome<$L> Decode$LEvent(const opal::eventstream::Message& message) {",
         unionType,
@@ -641,10 +665,16 @@ final class EventStreamCodeGen {
       w.write(
           "auto event = Deserialize$L(*doc);", SerdeCodeGen.serdeFunctionSuffix(context, target));
       w.write("if (!event) return std::move(event).error();");
-      w.write(
-          "return $L::From$L(*std::move(event));",
-          unionType,
-          SerdeGenerator.pascal(context.cppSymbols().toMemberName(member)));
+      String construct =
+          unionType
+              + "::From"
+              + SerdeGenerator.pascal(context.cppSymbols().toMemberName(member))
+              + "(*std::move(event))";
+      if (checked) {
+        w.write("return Check$LEvent($L);", op, construct);
+      } else {
+        w.write("return $L;", construct);
+      }
       w.closeBlock("}");
     }
     w.write(

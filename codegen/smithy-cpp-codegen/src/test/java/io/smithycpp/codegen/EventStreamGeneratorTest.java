@@ -346,6 +346,51 @@ class EventStreamGeneratorTest {
   }
 
   @Test
+  void serverDecodersRefuseInboundEventsThatBreakTheirConstraints() {
+    // ADR-0025: a constrained inbound event union is checked after decode, on
+    // the server only (clients do not validate what servers send), and the
+    // violation is Error::Validation — the kind the stream runtime treats as
+    // one refused event rather than a dead session.
+    String constrained = "structure ChatMessage { @required @length(max: 8) text: String }";
+    String rest =
+        REST_MODEL.replace("structure ChatMessage { @required text: String }", constrained);
+    MockManifest manifest = PluginTestHarness.generate(rest, "test.stream#Svc", "test::stream");
+    String server = manifest.expectFileString("/src/server.cc");
+    assertTrue(
+        server.contains(
+            "opal::Outcome<types::ClientEvents> CheckConverseEvent(types::ClientEvents event) {"),
+        server);
+    assertTrue(
+        server.contains("helpers::ValidateClientEvents(event, \"\", &validation_failures);"),
+        server);
+    assertTrue(
+        server.contains("return opal::Error::Validation(validation_failures.front().message);"),
+        server);
+    assertTrue(
+        server.contains(
+            "return CheckConverseEvent(types::ClientEvents::FromMessage(*std::move(event)));"),
+        server);
+    assertFalse(manifest.expectFileString("/src/client.cc").contains("Check"), "client decodes");
+
+    // The JSON-RPC wire shares the decoder, so it shares the check.
+    String jsonRpc =
+        JSONRPC_MODEL.replace("structure ChatMessage { @required text: String }", constrained);
+    String jsonRpcServer =
+        PluginTestHarness.generate(jsonRpc, "test.stream#Svc", "test::stream")
+            .expectFileString("/src/server.cc");
+    assertTrue(
+        jsonRpcServer.contains(
+            "return CheckChatEvent(types::ClientEvents::FromMessage(*std::move(event)));"),
+        jsonRpcServer);
+
+    // Unconstrained events decode straight into the union, as before.
+    String plain = rest().expectFileString("/src/server.cc");
+    assertFalse(plain.contains("CheckConverseEvent"), plain);
+    assertTrue(
+        plain.contains("return types::ClientEvents::FromMessage(*std::move(event));"), plain);
+  }
+
+  @Test
   void rpcv2CborStreamsOnTheFixedUpgradeUriWithCborPayloads() {
     MockManifest manifest = cbor();
     String client = manifest.expectFileString("/src/client.cc");

@@ -110,6 +110,19 @@ final class ValidationGenerator {
     return !constrained.isEmpty();
   }
 
+  /**
+   * Whether a shape (transitively) carries constraints, and so has a Validate function once {@link
+   * #writeWiring} has run over operations that reach it.
+   */
+  boolean validatesShape(Shape shape) {
+    return constrained.contains(shape.getId());
+  }
+
+  /** The Validate function name for a shape {@link #validatesShape} accepts. */
+  String validatorNameForShape(Shape shape) {
+    return validatorName(shape);
+  }
+
   /** The Validate function name for the operation's input shape. */
   String validatorNameFor(OperationShape operation) {
     return validatorName(ProtocolSupport.inputShape(context, operation));
