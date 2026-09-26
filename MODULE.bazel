@@ -38,7 +38,7 @@ bazel_dep(name = "rules_testing", version = "0.9.0", dev_dependency = True)
 # zero-sysroot, so the cell compiles against Bazel-supplied glibc/kernel
 # headers and libc++ instead of the runner's /usr/include, and the LLVM
 # version rides the module rather than a pinned release tarball.
-bazel_dep(name = "llvm", version = "0.8.19", dev_dependency = True)
+bazel_dep(name = "llvm", version = "0.8.24", dev_dependency = True)
 
 # The code generator runs inside the build graph as a hermetic Java action
 # (bazel/defs.bzl); rules_jvm_external pins its Smithy dependencies.
