@@ -60,7 +60,15 @@ struct LogLine {
   bool handler_threw = false;
   std::string client;
   opal::http::DerivedClient::Source client_source = opal::http::DerivedClient::Source::kUnknown;
+  opal::server::RequestLabels labels;
 };
+
+// The caller a request names in its User-Agent's first product token, the
+// labeler a sink hands Observe to key its series on who sent a request.
+opal::server::RequestLabels CallerOf(const opal::http::Headers& headers) {
+  const std::string agent = headers.Get("user-agent").value_or("");
+  return {{"caller", agent.substr(0, agent.find_first_of("/ "))}};
+}
 
 class AccessLog {
  public:
@@ -75,7 +83,8 @@ class AccessLog {
                 .response_bytes = o.response_bytes,
                 .handler_threw = o.handler_threw,
                 .client = o.client.address,
-                .client_source = o.client.source});
+                .client_source = o.client.source,
+                .labels = o.labels});
   }
   std::vector<LogLine> lines() const {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -155,7 +164,7 @@ class AccessLogAcceptanceTest : public ::testing::Test {
                  // client it was rejected for.
                  opal::server::Observe(
                      [log](const opal::server::RequestObservation& o) { log->Write(o); }, nullptr,
-                     nullptr, observe_trust),
+                     nullptr, observe_trust, CallerOf),
                  opal::server::PerClientRateLimit(
                      [limiter](const std::string& client) { return limiter->Allow(client); },
                      *trusted, std::chrono::seconds(1))},
@@ -167,13 +176,17 @@ class AccessLogAcceptanceTest : public ::testing::Test {
 
   // A request carrying an x-forwarded-for, the way one arrives through a
   // proxy. The client is the header's entry; the peer is the proxy.
-  opal::Outcome<opal::http::HttpResponse> SendForwarded(const std::string& body) {
+  opal::Outcome<opal::http::HttpResponse> SendForwarded(const std::string& body,
+                                                        const std::string& user_agent = "") {
     opal::http::BeastHttpClient raw({.host = "127.0.0.1", .port = transport_->port()});
     opal::http::HttpRequest request;
     request.method = "POST";
     request.target = "/tasks";
     request.headers.Set("content-type", "application/json");
     request.headers.Set("x-forwarded-for", kForwardedClient);
+    if (!user_agent.empty()) {
+      request.headers.Set("user-agent", user_agent);
+    }
     request.body = body;
     return raw.Send(request);
   }
@@ -208,6 +221,16 @@ TEST_F(AccessLogAcceptanceTest, TheLoggedClientIsTheBucketTheLimiterKeyedOn) {
   // would have reported.
   EXPECT_NE(lines[0].client, "127.0.0.1");
   EXPECT_EQ(lines[0].client_source, opal::http::DerivedClient::Source::kForwarded);
+}
+
+TEST_F(AccessLogAcceptanceTest, TheLineCarriesTheLabelsItsHeadersEarned) {
+  const auto served = SendForwarded(R"({"title":"ship it"})", "games_hub/1.0");
+  ASSERT_TRUE(served.ok()) << served.error().message();
+  ASSERT_EQ(served->status, 200);
+
+  const auto lines = log_->lines();
+  ASSERT_EQ(lines.size(), 1u);
+  EXPECT_EQ(lines[0].labels, (opal::server::RequestLabels{{"caller", "games_hub"}}));
 }
 
 TEST_F(AccessLogAcceptanceTest, ARejectionIsLoggedWithTheClientItWasRejectedFor) {

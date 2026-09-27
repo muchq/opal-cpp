@@ -4,10 +4,10 @@
 #include <chrono>
 #include <cstddef>
 #include <functional>
-#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "opal/http/forwarded.h"
@@ -111,15 +111,15 @@ Middleware HealthEndpoint(std::string path = "/health", std::vector<ReadinessChe
 // spell the pivot identically.
 inline constexpr std::string_view kUnmatchedRoute = "unmatched";
 
-// One served request, as seen from outside the router. FormatAccessLog
-// (opal/server/access_log.h) renders one as a JSON access-log line.
 // Names a sink attaches to a request, read off its headers by Observe's
 // labeler. Each value becomes a metrics series or a log field, so a labeler
 // maps what it reads onto a bounded vocabulary rather than passing a header
-// through.
-using RequestLabels = std::map<std::string, std::string>;
+// through. The same shape as MetricLabels.
+using RequestLabels = std::vector<std::pair<std::string, std::string>>;
 using RequestLabeler = std::function<RequestLabels(const http::Headers&)>;
 
+// One served request, as seen from outside the router. FormatAccessLog
+// (opal/server/access_log.h) renders one as a JSON access-log line.
 struct RequestObservation {
   std::string method;
   std::string target;
