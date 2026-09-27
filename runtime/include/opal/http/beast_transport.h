@@ -144,10 +144,6 @@ class BeastServerTransport : public HttpServerTransport {
     // the same sink as opal::server::Observe so over-limit abuse is
     // visible in the same metrics.
     std::function<void(const RejectedRequest&)> on_rejected{};
-    // Projects a rejected request's headers onto RejectedRequest::labels,
-    // the same function a service hands Observe. Only its result reaches
-    // on_rejected; a throwing labeler is logged and labels nothing.
-    std::function<Labels(const Headers&)> label_rejection{};
     // Observation hook for connections the transport terminated without a
     // response (one call per ConnectionEvent; ADR-0013). Same contract as
     // on_rejected: io thread, concurrent across connections, cheap and
@@ -218,6 +214,10 @@ class BeastServerTransport : public HttpServerTransport {
     // h2-only) is refused at the handshake. mTLS is tracked with #90.
     std::string tls_certificate_chain_pem{};
     std::string tls_private_key_pem{};
+    // Projects a rejected request's headers onto RejectedRequest::labels,
+    // the same function a service hands Observe. Only its result reaches
+    // on_rejected; a throwing labeler is logged and labels nothing.
+    std::function<Labels(const Headers&)> label_rejection{};
   };
 
   BeastServerTransport() : BeastServerTransport(Options{}) {}

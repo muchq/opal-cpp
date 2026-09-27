@@ -495,11 +495,11 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
             const std::lock_guard<std::mutex> lock(mutex);
             rejected.push_back(r);
           },
+      .on_connection_event = events.Hook(),
       .label_rejection = [](const Headers& headers) -> BeastServerTransport::Labels {
         const std::string agent = headers.Get("user-agent").value_or("");
         return {{"caller", agent.substr(0, agent.find('/'))}};
-      },
-      .on_connection_event = events.Hook()});
+      }});
   ASSERT_TRUE(server.Start([](const HttpRequest&) { return HttpResponse{}; }).ok());
   SocketHttpClient client("127.0.0.1", server.port());
   HttpRequest request;
