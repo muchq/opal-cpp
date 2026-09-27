@@ -502,6 +502,9 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
   request.method = "POST";
   request.target = "/";
   request.headers.Set("user-agent", "games_hub/1.0");
+  request.headers.Set("authorization", "Bearer s3cret");
+  request.headers.Set("Proxy-Authorization", "Basic cHJveHk=");
+  request.headers.Set("cookie", "session=s3cret");
   request.body = std::string(64 * 1024, 'x');
   const auto response = client.Send(request);
   // Issue #94: a declared Content-Length over the limit is the deterministic,
@@ -519,6 +522,10 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
     EXPECT_EQ(rejected[0].method, "POST");
     EXPECT_EQ(rejected[0].target, "/");
     EXPECT_EQ(rejected[0].headers.Get("user-agent"), "games_hub/1.0");
+    // Credentials never reach an observer, which may well log what it gets.
+    EXPECT_FALSE(rejected[0].headers.Get("authorization").has_value());
+    EXPECT_FALSE(rejected[0].headers.Get("proxy-authorization").has_value());
+    EXPECT_FALSE(rejected[0].headers.Get("cookie").has_value());
     EXPECT_EQ(rejected[0].peer_address.rfind("127.0.0.1:", 0), 0u) << rejected[0].peer_address;
   }
   {

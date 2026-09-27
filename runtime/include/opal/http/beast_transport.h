@@ -43,7 +43,7 @@ class BeastServerTransport : public HttpServerTransport {
   // written before a handler chain exists, which Observe middleware therefore
   // never sees (issue #46). method/target may be empty when the request never
   // parsed that far (a 431 can fire mid-headers), and headers holds the
-  // fields that did.
+  // fields that did, less authorization, proxy-authorization and cookie.
   //
   // The `= {}` on the strings is not redundant with their default constructor
   // (issue #193). Clang's -Wmissing-designated-field-initializers, on under
