@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "opal/http/http1.h"
@@ -42,8 +43,9 @@ class BeastServerTransport : public HttpServerTransport {
   // A request the transport rejected itself — the over-limit 413/431 answers
   // written before a handler chain exists, which Observe middleware therefore
   // never sees (issue #46). method/target may be empty when the request never
-  // parsed that far (a 431 can fire mid-headers), and headers holds the
-  // fields that did, less authorization, proxy-authorization and cookie.
+  // parsed that far (a 431 can fire mid-headers). labels is what
+  // Options::label_rejection made of the headers; the headers themselves
+  // never leave the transport.
   //
   // The `= {}` on the strings is not redundant with their default constructor
   // (issue #193). Clang's -Wmissing-designated-field-initializers, on under
@@ -52,12 +54,15 @@ class BeastServerTransport : public HttpServerTransport {
   // case above, `{.status = 431}`, would not compile under this repo's
   // --config=werror, and would have to spell out the empties to say what the
   // omission already said.
+  // The shape of opal::server::RequestLabels, so one labeler serves both.
+  using Labels = std::vector<std::pair<std::string, std::string>>;
+
   struct RejectedRequest {
     int status = 0;
     std::string peer_address = {};
     std::string method = {};
     std::string target = {};
-    Headers headers = {};
+    Labels labels = {};
   };
 
   // A connection the transport terminated without delivering a response
@@ -139,6 +144,10 @@ class BeastServerTransport : public HttpServerTransport {
     // the same sink as opal::server::Observe so over-limit abuse is
     // visible in the same metrics.
     std::function<void(const RejectedRequest&)> on_rejected{};
+    // Projects a rejected request's headers onto RejectedRequest::labels,
+    // the same function a service hands Observe. Only its result reaches
+    // on_rejected; a throwing labeler is logged and labels nothing.
+    std::function<Labels(const Headers&)> label_rejection{};
     // Observation hook for connections the transport terminated without a
     // response (one call per ConnectionEvent; ADR-0013). Same contract as
     // on_rejected: io thread, concurrent across connections, cheap and

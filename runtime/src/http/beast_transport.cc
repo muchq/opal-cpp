@@ -102,16 +102,6 @@ HttpRequest ToSmithyRequest(bhttp::request<bhttp::string_body> wire) {
   return request;
 }
 
-// Headers that carry credentials. A rejection observer is a logging and
-// metrics hook, so it never sees them.
-bool IsCredentialHeader(std::string_view name) {
-  static constexpr std::array<std::string_view, 3> kCredentials = {"authorization",
-                                                                   "proxy-authorization", "cookie"};
-  return std::ranges::any_of(kCredentials, [name](std::string_view credential) {
-    return HeaderNameEquals(name, credential);
-  });
-}
-
 // The transport is authoritative for framing: keep_alive()/prepare_payload()
 // below own these fields, and a handler-set copy would ride along beside
 // them — a duplicate or conflicting content-length / transfer-encoding is
@@ -1257,10 +1247,12 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
                                                    .peer_address = PeerAddressOf(stream),
                                                    .method = std::string(partial.method_string()),
                                                    .target = std::string(partial.target())};
-    for (const auto& field : partial) {
-      if (!IsCredentialHeader(field.name_string())) {
-        rejected.headers.Add(std::string(field.name_string()), std::string(field.value()));
+    if (opts.label_rejection) {
+      Headers headers;
+      for (const auto& field : partial) {
+        headers.Add(std::string(field.name_string()), std::string(field.value()));
       }
+      InvokeCompletion("label_rejection", [&] { rejected.labels = opts.label_rejection(headers); });
     }
     try {
       opts.on_rejected(rejected);

@@ -1116,8 +1116,9 @@ the budget without reading may still see a reset, which is inherent to the
 recipe. These rejections are written by the transport itself, before a
 handler chain exists, so `Observe` middleware never sees them — set
 `Options::on_rejected` to observe them (status, peer address, and whatever
-the parser got to, headers included), wired to the same sink as your
-`Observe` callbacks.
+the parser got to), wired to the same sink as your `Observe` callbacks. Set
+`Options::label_rejection` to the labeler you hand `Observe` and the
+rejections carry the same labels; the raw headers never reach the hook.
 
 The connections that die without any response are observable the same way
 (ADR-0013): set `Options::on_connection_event` for TLS handshake failures
