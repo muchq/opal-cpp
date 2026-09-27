@@ -501,6 +501,7 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
   HttpRequest request;
   request.method = "POST";
   request.target = "/";
+  request.headers.Set("user-agent", "games_hub/1.0");
   request.body = std::string(64 * 1024, 'x');
   const auto response = client.Send(request);
   // Issue #94: a declared Content-Length over the limit is the deterministic,
@@ -517,6 +518,7 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
     EXPECT_EQ(rejected[0].status, 413);
     EXPECT_EQ(rejected[0].method, "POST");
     EXPECT_EQ(rejected[0].target, "/");
+    EXPECT_EQ(rejected[0].headers.Get("user-agent"), "games_hub/1.0");
     EXPECT_EQ(rejected[0].peer_address.rfind("127.0.0.1:", 0), 0u) << rejected[0].peer_address;
   }
   {

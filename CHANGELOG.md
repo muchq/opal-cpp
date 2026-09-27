@@ -90,6 +90,14 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Added
 
+- **`Observe` labels requests from their headers** (issue #235). An optional
+  fifth argument, `RequestLabeler`, maps a request's headers to
+  `RequestLabels` once, before dispatch; the result rides on both
+  `RequestStart::labels` and `RequestObservation::labels`, so a sink can key
+  its completion series on something only the headers carry. A throwing
+  labeler is logged and labels nothing. `RejectedRequest::headers` carries
+  the fields the parser read before a 413/431, so transport rejections can
+  be labeled the same way.
 - **`SessionRegistry` delivery classes** (issue #227). `SendTo` and every
   `Broadcast` overload take an optional `DeliveryClass`: `Reliable()` (the
   default), `Droppable()` (evicted first when a queue is full, dropped

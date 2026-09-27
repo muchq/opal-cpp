@@ -378,7 +378,12 @@ transport.Start(opal::server::Chain(
            // gauge +1 (labeled by s.method/s.target; the operation is not
            // known until the router runs).
          },
-         nullptr, trusted),
+         nullptr, trusted,
+         // Optional: bounded labels read off the headers once, on both
+         // s.labels and o.labels.
+         [](const opal::http::Headers& h) -> opal::server::RequestLabels {
+           return {{"caller", h.Get("x-forwarded-for") ? "edge" : "direct"}};
+         }),
      // Liveness: GET or HEAD /livez -> 200 {"status":"healthy"}. A HEAD
      // gets that body's Content-Length and none of its octets, framed by
      // the transport; everything else passes through to the router.
@@ -1111,7 +1116,8 @@ the budget without reading may still see a reset, which is inherent to the
 recipe. These rejections are written by the transport itself, before a
 handler chain exists, so `Observe` middleware never sees them — set
 `Options::on_rejected` to observe them (status, peer address, and whatever
-the parser got to), wired to the same sink as your `Observe` callbacks.
+the parser got to, headers included), wired to the same sink as your
+`Observe` callbacks.
 
 The connections that die without any response are observable the same way
 (ADR-0013): set `Options::on_connection_event` for TLS handshake failures
