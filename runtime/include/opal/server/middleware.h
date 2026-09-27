@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "opal/http/forwarded.h"
@@ -110,6 +111,13 @@ Middleware HealthEndpoint(std::string path = "/health", std::vector<ReadinessChe
 // spell the pivot identically.
 inline constexpr std::string_view kUnmatchedRoute = "unmatched";
 
+// Names a sink attaches to a request, read off its headers by Observe's
+// labeler. Each value becomes a metrics series or a log field, so a labeler
+// maps what it reads onto a bounded vocabulary rather than passing a header
+// through. The same shape as MetricLabels.
+using RequestLabels = std::vector<std::pair<std::string, std::string>>;
+using RequestLabeler = std::function<RequestLabels(const http::Headers&)>;
+
 // One served request, as seen from outside the router. FormatAccessLog
 // (opal/server/access_log.h) renders one as a JSON access-log line.
 struct RequestObservation {
@@ -154,6 +162,8 @@ struct RequestObservation {
   // which carries the same trace id (ADR-0011). Always false under
   // -fno-exceptions, where the path is compiled out.
   bool handler_threw = false;
+  // What Observe's labeler returned for this request; empty without one.
+  RequestLabels labels = {};
 };
 
 // What on_start sees, before the router runs. The Smithy operation is not
@@ -162,6 +172,8 @@ struct RequestObservation {
 struct RequestStart {
   std::string method;
   std::string target;
+  // The same labels the request's completion carries.
+  RequestLabels labels = {};
 };
 
 // Middleware reporting every request to callbacks — the structured-logging
@@ -187,10 +199,15 @@ struct RequestStart {
 // address parse, and string building on every request, which is pure waste
 // in a chain whose sinks never read client — RecordMetrics deliberately
 // does not, so the metrics-only composition pays nothing here.
+//
+// `labeler` runs once per request, before on_start, and its result rides on
+// both RequestStart and RequestObservation: the one place a sink reads the
+// request's headers. A throwing labeler is logged and labels nothing.
 Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
                    std::function<void(const RequestStart&)> on_start = nullptr,
                    std::function<std::chrono::steady_clock::time_point()> now = nullptr,
-                   std::optional<http::TrustedProxies> trusted = std::nullopt);
+                   std::optional<http::TrustedProxies> trusted = std::nullopt,
+                   RequestLabeler labeler = nullptr);
 
 // 401 unless the request carries "authorization: Bearer <token>" (scheme
 // matched case-insensitively per RFC 6750) and validator(token) returns

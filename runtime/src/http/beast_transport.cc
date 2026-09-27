@@ -1243,11 +1243,17 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
     if (!opts.on_rejected) {
       return;
     }
-    const BeastServerTransport::RejectedRequest rejected{
-        .status = static_cast<int>(status),
-        .peer_address = PeerAddressOf(stream),
-        .method = std::string(partial.method_string()),
-        .target = std::string(partial.target())};
+    BeastServerTransport::RejectedRequest rejected{.status = static_cast<int>(status),
+                                                   .peer_address = PeerAddressOf(stream),
+                                                   .method = std::string(partial.method_string()),
+                                                   .target = std::string(partial.target())};
+    if (opts.label_rejection) {
+      Headers headers;
+      for (const auto& field : partial) {
+        headers.Add(std::string(field.name_string()), std::string(field.value()));
+      }
+      InvokeCompletion("label_rejection", [&] { rejected.labels = opts.label_rejection(headers); });
+    }
     try {
       opts.on_rejected(rejected);
     } catch (const std::exception& e) {

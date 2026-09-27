@@ -281,6 +281,63 @@ TEST(ObserveTest, OnStartFiresBeforeDispatch) {
   EXPECT_EQ(log, (std::vector<std::string>{"start:POST /tasks", "handler", "complete"}));
 }
 
+// A caller's name from its User-Agent, the shape of labeler a metrics sink
+// wants: one bounded value per request, read off the headers once.
+RequestLabels CallerLabel(const http::Headers& headers) {
+  const std::string agent = headers.Get("user-agent").value_or("");
+  return {{"caller", agent.substr(0, agent.find('/'))}};
+}
+
+TEST(ObserveTest, LabelsFromTheHeadersRideOnStartAndCompletion) {
+  std::vector<RequestStart> starts;
+  std::vector<RequestObservation> completions;
+  auto handler = Chain({Observe([&](const RequestObservation& o) { completions.push_back(o); },
+                                [&](const RequestStart& s) { starts.push_back(s); }, nullptr,
+                                std::nullopt, CallerLabel)},
+                       [](const http::HttpRequest&) { return Ok("served"); });
+
+  http::HttpRequest request;
+  request.headers.Set("user-agent", "games_hub/1.0");
+  (void)handler(request);
+
+  const RequestLabels expected = {{"caller", "games_hub"}};
+  ASSERT_EQ(starts.size(), 1u);
+  EXPECT_EQ(starts[0].labels, expected);
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_EQ(completions[0].labels, expected);
+}
+
+TEST(ObserveTest, LabelsRideOnTheThrownCompletionToo) {
+  std::vector<RequestObservation> completions;
+  auto handler = Chain({Observe([&](const RequestObservation& o) { completions.push_back(o); },
+                                nullptr, nullptr, std::nullopt, CallerLabel)},
+                       [](const http::HttpRequest&) -> http::HttpResponse {
+                         throw std::runtime_error("handler exploded");
+                       });
+
+  http::HttpRequest request;
+  request.headers.Set("user-agent", "mcpserver");
+  EXPECT_THROW((void)handler(request), std::runtime_error);
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_EQ(completions[0].labels, (RequestLabels{{"caller", "mcpserver"}}));
+}
+
+TEST(ObserveTest, AThrowingLabelerIsContainedAndLabelsNothing) {
+  std::vector<RequestObservation> completions;
+  auto handler = Chain({Observe([&](const RequestObservation& o) { completions.push_back(o); },
+                                nullptr, nullptr, std::nullopt,
+                                [](const http::Headers&) -> RequestLabels {
+                                  throw std::runtime_error("labeler down");
+                                })},
+                       [](const http::HttpRequest&) { return Ok("served"); });
+
+  http::HttpResponse response;
+  EXPECT_NO_THROW(response = handler({}));
+  EXPECT_EQ(response.body, "served");
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_TRUE(completions[0].labels.empty());
+}
+
 TEST(ObserveTest, PairsCompleteWithStartWhenDispatchThrows) {
   int started = 0;
   std::vector<RequestObservation> completions;

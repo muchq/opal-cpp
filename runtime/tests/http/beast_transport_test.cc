@@ -488,19 +488,25 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
   std::vector<BeastServerTransport::RejectedRequest> rejected;
   ConnectionEventRecorder events;  // must stay empty: on_rejected already
                                    // observed this connection (ADR-0013)
-  BeastServerTransport server(
-      BeastServerTransport::Options{.max_body_bytes = 1024,
-                                    .on_rejected =
-                                        [&](const BeastServerTransport::RejectedRequest& r) {
-                                          const std::lock_guard<std::mutex> lock(mutex);
-                                          rejected.push_back(r);
-                                        },
-                                    .on_connection_event = events.Hook()});
+  BeastServerTransport server(BeastServerTransport::Options{
+      .max_body_bytes = 1024,
+      .on_rejected =
+          [&](const BeastServerTransport::RejectedRequest& r) {
+            const std::lock_guard<std::mutex> lock(mutex);
+            rejected.push_back(r);
+          },
+      .on_connection_event = events.Hook(),
+      .label_rejection = [](const Headers& headers) -> BeastServerTransport::Labels {
+        const std::string agent = headers.Get("user-agent").value_or("");
+        return {{"caller", agent.substr(0, agent.find('/'))}};
+      }});
   ASSERT_TRUE(server.Start([](const HttpRequest&) { return HttpResponse{}; }).ok());
   SocketHttpClient client("127.0.0.1", server.port());
   HttpRequest request;
   request.method = "POST";
   request.target = "/";
+  request.headers.Set("user-agent", "games_hub/1.0");
+  request.headers.Set("authorization", "Bearer s3cret");
   request.body = std::string(64 * 1024, 'x');
   const auto response = client.Send(request);
   // Issue #94: a declared Content-Length over the limit is the deterministic,
@@ -517,6 +523,9 @@ TEST(BeastTransportTest, OversizedDeclaredBodyReadsA413) {
     EXPECT_EQ(rejected[0].status, 413);
     EXPECT_EQ(rejected[0].method, "POST");
     EXPECT_EQ(rejected[0].target, "/");
+    // Only what the labeler projects out of the headers reaches the
+    // observer; the headers themselves, credentials included, never do.
+    EXPECT_EQ(rejected[0].labels, (BeastServerTransport::Labels{{"caller", "games_hub"}}));
     EXPECT_EQ(rejected[0].peer_address.rfind("127.0.0.1:", 0), 0u) << rejected[0].peer_address;
   }
   {
@@ -857,9 +866,15 @@ TEST(BeastTransportTest, OversizedHeadersReadA431) {
   std::mutex mutex;
   std::vector<BeastServerTransport::RejectedRequest> rejected;
   BeastServerTransport server(BeastServerTransport::Options{
-      .max_header_bytes = 1024, .on_rejected = [&](const BeastServerTransport::RejectedRequest& r) {
-        const std::lock_guard<std::mutex> lock(mutex);
-        rejected.push_back(r);
+      .max_header_bytes = 1024,
+      .on_rejected =
+          [&](const BeastServerTransport::RejectedRequest& r) {
+            const std::lock_guard<std::mutex> lock(mutex);
+            rejected.push_back(r);
+          },
+      // A throwing labeler costs the labels, never the observation.
+      .label_rejection = [](const Headers&) -> BeastServerTransport::Labels {
+        throw std::runtime_error("labeler down");
       }});
   ASSERT_TRUE(server.Start([](const HttpRequest&) { return HttpResponse{200, {}, ""}; }).ok());
   SocketHttpClient client("127.0.0.1", server.port());
@@ -878,6 +893,7 @@ TEST(BeastTransportTest, OversizedHeadersReadA431) {
     const std::lock_guard<std::mutex> lock(mutex);
     ASSERT_EQ(rejected.size(), 1u);
     EXPECT_EQ(rejected[0].status, 431);
+    EXPECT_TRUE(rejected[0].labels.empty());
     EXPECT_EQ(rejected[0].peer_address.rfind("127.0.0.1:", 0), 0u) << rejected[0].peer_address;
   }
   server.Stop();

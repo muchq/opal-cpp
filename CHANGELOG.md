@@ -90,6 +90,15 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Added
 
+- **`Observe` labels requests from their headers** (issue #235). An optional
+  fifth argument, `RequestLabeler`, maps a request's headers to
+  `RequestLabels` once, before dispatch; the result rides on both
+  `RequestStart::labels` and `RequestObservation::labels`, so a sink can key
+  its completion series on something only the headers carry. A throwing
+  labeler is logged and labels nothing. `BeastServerTransport::Options::
+  label_rejection` takes the same function for the transport's own 413/431
+  rejections: `RejectedRequest::labels` carries what it returns, and the
+  headers themselves never reach `on_rejected`.
 - **`SessionRegistry` delivery classes** (issue #227). `SendTo` and every
   `Broadcast` overload take an optional `DeliveryClass`: `Reliable()` (the
   default), `Droppable()` (evicted first when a queue is full, dropped

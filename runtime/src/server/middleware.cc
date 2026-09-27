@@ -162,7 +162,7 @@ Middleware HealthEndpoint(std::string path, std::vector<ReadinessCheck> checks) 
 Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
                    std::function<void(const RequestStart&)> on_start,
                    std::function<std::chrono::steady_clock::time_point()> now,
-                   std::optional<http::TrustedProxies> trusted) {
+                   std::optional<http::TrustedProxies> trusted, RequestLabeler labeler) {
   if (on_complete == nullptr) {
     opal::internal::Fatal("opal::server::Observe: on_complete may not be null");
   }
@@ -170,13 +170,21 @@ Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
     now = [] { return std::chrono::steady_clock::now(); };
   }
   return [on_complete = std::move(on_complete), on_start = std::move(on_start),
-          now = std::move(now), trusted = std::move(trusted)](http::RequestHandler next) {
-    return [on_complete, on_start, now, trusted,
+          now = std::move(now), trusted = std::move(trusted),
+          labeler = std::move(labeler)](http::RequestHandler next) {
+    return [on_complete, on_start, now, trusted, labeler,
             next = std::move(next)](const http::HttpRequest& request) {
+      RequestLabels labels;
+      if (labeler != nullptr) {
+        CallContained([&](const http::Headers& headers) { labels = labeler(headers); },
+                      request.headers, "Observe labeler");
+      }
       if (on_start != nullptr) {
-        CallContained(on_start, RequestStart{request.method, request.target}, "Observe on_start");
+        CallContained(on_start, RequestStart{request.method, request.target, labels},
+                      "Observe on_start");
       }
       RequestObservation observation;
+      observation.labels = std::move(labels);
       observation.method = request.method;
       observation.target = request.target;
       observation.trace_parent = request.headers.Get("traceparent").value_or("");
