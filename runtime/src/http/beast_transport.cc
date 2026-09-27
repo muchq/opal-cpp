@@ -105,12 +105,11 @@ HttpRequest ToSmithyRequest(bhttp::request<bhttp::string_body> wire) {
 // Headers that carry credentials. A rejection observer is a logging and
 // metrics hook, so it never sees them.
 bool IsCredentialHeader(std::string_view name) {
-  for (const std::string_view credential : {"authorization", "proxy-authorization", "cookie"}) {
-    if (HeaderNameEquals(name, credential)) {
-      return true;
-    }
-  }
-  return false;
+  static constexpr std::array<std::string_view, 3> kCredentials = {"authorization",
+                                                                   "proxy-authorization", "cookie"};
+  return std::ranges::any_of(kCredentials, [name](std::string_view credential) {
+    return HeaderNameEquals(name, credential);
+  });
 }
 
 // The transport is authoritative for framing: keep_alive()/prepare_payload()
