@@ -526,9 +526,8 @@ std::string MetricsRegistry::Expose() const {
     return BuiltInLabels(
         {{std::string(kMethodLabel), key.method}, {std::string(kRouteLabel), key.route}});
   };
-  using RouteCounter = std::uint64_t RouteStats::*;
   const auto counter_family = [&](std::string_view name, std::string_view help,
-                                  RouteCounter field) {
+                                  std::uint64_t RouteStats::*field) {
     AppendFamilyHeader(out, name, "counter", help);
     for (const auto& [key, stats] : routes_) {
       AppendSample(out, name, "", route_labels(key), std::to_string(stats.*field));
