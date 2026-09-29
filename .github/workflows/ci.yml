@@ -307,7 +307,7 @@ jobs:
     # Held on 24.04: 26.04's clang-tidy (21+) enables checks that flag ~180
     # sites (modernize-use-scoped-lock, -use-designated-initializers, ...).
     # Move with that cleanup, not with a runner bump.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
       # Boost headers so clang-tidy can process the Beast transport. libboost-dev
