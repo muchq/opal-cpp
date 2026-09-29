@@ -3,19 +3,20 @@
   "__INPUT_ARTIFACTS_HASH": {
     "com.disneystreaming.alloy:alloy-core": 1488650836,
     "repositories": -1949687017,
-    "software.amazon.smithy:smithy-build": -1587686179,
-    "software.amazon.smithy:smithy-codegen-core": 1575840880,
-    "software.amazon.smithy:smithy-protocol-test-traits": 1786050706,
-    "software.amazon.smithy:smithy-protocol-traits": 1862512745
+    "software.amazon.smithy:smithy-build": 910329758,
+    "software.amazon.smithy:smithy-codegen-core": -221110479,
+    "software.amazon.smithy:smithy-protocol-test-traits": -10900653,
+    "software.amazon.smithy:smithy-protocol-traits": 65561386
   },
   "__RESOLVED_ARTIFACTS_HASH": {
-    "com.disneystreaming.alloy:alloy-core": 1887741082,
-    "software.amazon.smithy:smithy-build": 606290808,
-    "software.amazon.smithy:smithy-codegen-core": 46544817,
-    "software.amazon.smithy:smithy-model": 827976386,
-    "software.amazon.smithy:smithy-protocol-test-traits": -295932261,
-    "software.amazon.smithy:smithy-protocol-traits": 566742906,
-    "software.amazon.smithy:smithy-utils": -1578567500
+    "com.disneystreaming.alloy:alloy-core": 814190152,
+    "software.amazon.smithy:smithy-build": -365184394,
+    "software.amazon.smithy:smithy-codegen-core": 146214004,
+    "software.amazon.smithy:smithy-jmespath": -634903530,
+    "software.amazon.smithy:smithy-model": -1140368011,
+    "software.amazon.smithy:smithy-protocol-test-traits": -1267215192,
+    "software.amazon.smithy:smithy-protocol-traits": -1591169356,
+    "software.amazon.smithy:smithy-utils": 1831663989
   },
   "artifacts": {
     "com.disneystreaming.alloy:alloy-core": {
@@ -28,37 +29,43 @@
       "shasums": {
         "jar": "1c74e9f6c0e0b79a1d5c169351775f266a43bea9698bd70906feff8080070d52"
       },
-      "version": "1.73.0"
+      "version": "1.74.0"
     },
     "software.amazon.smithy:smithy-codegen-core": {
       "shasums": {
         "jar": "b51b89221eae6e0b8f8f26acc9f60f6f1ce83fc27878dc2e10b24c7c04a23c1a"
       },
-      "version": "1.73.0"
+      "version": "1.74.0"
+    },
+    "software.amazon.smithy:smithy-jmespath": {
+      "shasums": {
+        "jar": "2abf99938ae88132c976d73880d42d75018ea9c68bab08c9e48d205306a381d6"
+      },
+      "version": "1.74.0"
     },
     "software.amazon.smithy:smithy-model": {
       "shasums": {
-        "jar": "816e2cbbf8a62895d484e481e1d7beb1e4e929dec0cfbdda8c160d69402f750b"
+        "jar": "5bd61bdc656e6c51cb0bfbcf4f83868c9bf1a8b828564decd8ade0fc51e1723f"
       },
-      "version": "1.73.0"
+      "version": "1.74.0"
     },
     "software.amazon.smithy:smithy-protocol-test-traits": {
       "shasums": {
         "jar": "be0af3d1c6d05981e6ae4f4d980a156e21d93be8c7d2a5e5eaab57b24d140b5e"
       },
-      "version": "1.73.0"
+      "version": "1.74.0"
     },
     "software.amazon.smithy:smithy-protocol-traits": {
       "shasums": {
         "jar": "bdc10a1eb56eaa6704994211b78778a9a8566d5b540a2c83d5d8d13292639c7f"
       },
-      "version": "1.73.0"
+      "version": "1.74.0"
     },
     "software.amazon.smithy:smithy-utils": {
       "shasums": {
         "jar": "1d89fa0624ebf8e0f3032cc6b8283ee58335d3ee43e1826b24b1e951b3bdf8d2"
       },
-      "version": "1.73.0"
+      "version": "1.74.0"
     }
   },
   "dependencies": {
@@ -74,7 +81,11 @@
       "software.amazon.smithy:smithy-model",
       "software.amazon.smithy:smithy-utils"
     ],
+    "software.amazon.smithy:smithy-jmespath": [
+      "software.amazon.smithy:smithy-utils"
+    ],
     "software.amazon.smithy:smithy-model": [
+      "software.amazon.smithy:smithy-jmespath",
       "software.amazon.smithy:smithy-utils"
     ],
     "software.amazon.smithy:smithy-protocol-test-traits": [
@@ -107,6 +118,11 @@
       "software.amazon.smithy.codegen.core.docs",
       "software.amazon.smithy.codegen.core.trace",
       "software.amazon.smithy.codegen.core.writer"
+    ],
+    "software.amazon.smithy:smithy-jmespath": [
+      "software.amazon.smithy.jmespath",
+      "software.amazon.smithy.jmespath.ast",
+      "software.amazon.smithy.jmespath.evaluation"
     ],
     "software.amazon.smithy:smithy-model": [
       "software.amazon.smithy.model",
@@ -147,6 +163,7 @@
       "com.disneystreaming.alloy:alloy-core",
       "software.amazon.smithy:smithy-build",
       "software.amazon.smithy:smithy-codegen-core",
+      "software.amazon.smithy:smithy-jmespath",
       "software.amazon.smithy:smithy-model",
       "software.amazon.smithy:smithy-protocol-test-traits",
       "software.amazon.smithy:smithy-protocol-traits",
@@ -272,7 +289,9 @@
         "software.amazon.smithy.model.traits.BoxTrait$Provider",
         "software.amazon.smithy.model.traits.ClientOptionalTrait$Provider",
         "software.amazon.smithy.model.traits.CorsTrait$Provider",
+        "software.amazon.smithy.model.traits.CreatesResourcesTrait$Provider",
         "software.amazon.smithy.model.traits.DefaultTrait$Provider",
+        "software.amazon.smithy.model.traits.DeletesResourcesTrait$Provider",
         "software.amazon.smithy.model.traits.DeprecatedTrait$Provider",
         "software.amazon.smithy.model.traits.DocumentationTrait$Provider",
         "software.amazon.smithy.model.traits.EndpointTrait$Provider",
@@ -319,8 +338,10 @@
         "software.amazon.smithy.model.traits.PrivateTrait$Provider",
         "software.amazon.smithy.model.traits.PropertyTrait$Provider",
         "software.amazon.smithy.model.traits.ProtocolDefinitionTrait$Provider",
+        "software.amazon.smithy.model.traits.PutsResourcesTrait$Provider",
         "software.amazon.smithy.model.traits.RangeTrait$Provider",
         "software.amazon.smithy.model.traits.ReadonlyTrait$Provider",
+        "software.amazon.smithy.model.traits.ReadsResourcesTrait$Provider",
         "software.amazon.smithy.model.traits.RecommendedTrait$Provider",
         "software.amazon.smithy.model.traits.ReferencesTrait$Provider",
         "software.amazon.smithy.model.traits.RequestCompressionTrait$Provider",
@@ -340,7 +361,9 @@
         "software.amazon.smithy.model.traits.TraitValidatorsTrait$Provider",
         "software.amazon.smithy.model.traits.UniqueItemsTrait$Provider",
         "software.amazon.smithy.model.traits.UnitTypeTrait$Provider",
+        "software.amazon.smithy.model.traits.UnstableFeaturesTrait$Provider",
         "software.amazon.smithy.model.traits.UnstableTrait$Provider",
+        "software.amazon.smithy.model.traits.UpdatesResourcesTrait$Provider",
         "software.amazon.smithy.model.traits.XmlAttributeTrait$Provider",
         "software.amazon.smithy.model.traits.XmlFlattenedTrait$Provider",
         "software.amazon.smithy.model.traits.XmlNameTrait$Provider",
@@ -349,6 +372,7 @@
       "software.amazon.smithy.model.transform.ModelTransformerPlugin": [
         "software.amazon.smithy.model.transform.plugins.CleanBindings",
         "software.amazon.smithy.model.transform.plugins.CleanOperationStructures",
+        "software.amazon.smithy.model.transform.plugins.CleanResourceLifecycleReferences",
         "software.amazon.smithy.model.transform.plugins.CleanResourceReferences",
         "software.amazon.smithy.model.transform.plugins.CleanServiceRenames",
         "software.amazon.smithy.model.transform.plugins.CleanStructureAndUnionMembers",
@@ -401,6 +425,7 @@
         "software.amazon.smithy.model.validation.validators.ResourceCycleValidator",
         "software.amazon.smithy.model.validation.validators.ResourceIdentifierBindingValidator",
         "software.amazon.smithy.model.validation.validators.ResourceIdentifierValidator",
+        "software.amazon.smithy.model.validation.validators.ResourceLifecycleTraitValidator",
         "software.amazon.smithy.model.validation.validators.ResourceLifecycleValidator",
         "software.amazon.smithy.model.validation.validators.ResourceOperationInputOutputValidator",
         "software.amazon.smithy.model.validation.validators.ServiceAuthDefinitionsValidator",
@@ -422,6 +447,7 @@
         "software.amazon.smithy.model.validation.validators.TypedMetadataValidator",
         "software.amazon.smithy.model.validation.validators.UnionValidator",
         "software.amazon.smithy.model.validation.validators.UnitTypeValidator",
+        "software.amazon.smithy.model.validation.validators.UnstableFeaturesValidator",
         "software.amazon.smithy.model.validation.validators.UnstableTraitValidator",
         "software.amazon.smithy.model.validation.validators.XmlFlattenedTraitValidator",
         "software.amazon.smithy.model.validation.validators.XmlNamespaceTraitValidator"

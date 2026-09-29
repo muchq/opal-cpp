@@ -33,6 +33,9 @@ build:llvm --extra_toolchains=@llvm//toolchain:all
 build:llvm --per_file_copt=external/boost.context@-std=c++17
 
 # AddressSanitizer: bazel test //... --config=asan
+# The feature tells the toolchain asan is on: apple_support 2.x otherwise adds
+# -D_FORTIFY_SOURCE=1, which clashes with ASan's built-in 0 under -Werror.
+build:asan --features=asan
 build:asan --strip=never
 build:asan --copt=-fsanitize=address
 build:asan --copt=-fno-omit-frame-pointer
