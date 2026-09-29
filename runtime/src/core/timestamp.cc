@@ -48,7 +48,7 @@ struct CivilTime {
 };
 
 std::int64_t FloorDiv(std::int64_t a, std::int64_t b) {
-  return a / b - ((a % b != 0 && (a < 0) != (b < 0)) ? 1 : 0);
+  return (a / b) - ((a % b != 0 && (a < 0) != (b < 0)) ? 1 : 0);
 }
 
 std::int64_t EpochDays(const CivilTime& c) {
@@ -57,7 +57,7 @@ std::int64_t EpochDays(const CivilTime& c) {
 
 CivilTime Decompose(std::int64_t ms) {
   const std::int64_t days = FloorDiv(ms, kMsPerDay);
-  std::int64_t ms_of_day = ms - days * kMsPerDay;
+  std::int64_t ms_of_day = ms - (days * kMsPerDay);
 
   const std::chrono::year_month_day ymd{std::chrono::sys_days{std::chrono::days{days}}};
   CivilTime civil;
@@ -74,10 +74,10 @@ CivilTime Decompose(std::int64_t ms) {
 }
 
 std::int64_t Compose(const CivilTime& c) {
-  return EpochDays(c) * kMsPerDay +
-         (static_cast<std::int64_t>(c.hour) * 3600 + static_cast<std::int64_t>(c.minute) * 60 +
-          c.second) *
-             kMsPerSecond +
+  return (EpochDays(c) * kMsPerDay) +
+         (((static_cast<std::int64_t>(c.hour) * 3600) + (static_cast<std::int64_t>(c.minute) * 60) +
+           c.second) *
+          kMsPerSecond) +
          c.millisecond;
 }
 
@@ -102,7 +102,7 @@ bool ParseDigits(std::string_view text, std::size_t pos, std::size_t count, int*
   for (std::size_t i = 0; i < count; ++i) {
     const char c = text[pos + i];
     if (c < '0' || c > '9') return false;
-    value = value * 10 + (c - '0');
+    value = (value * 10) + (c - '0');
   }
   *out = value;
   return true;
@@ -155,8 +155,8 @@ Outcome<Timestamp> ParseDateTime(std::string_view text) {
         !ParseDigits(text, pos + 4, 2, &om) || oh > 23 || om > 59) {
       return invalid();
     }
-    offset_ms =
-        (static_cast<std::int64_t>(oh) * 3600 + static_cast<std::int64_t>(om) * 60) * kMsPerSecond;
+    offset_ms = ((static_cast<std::int64_t>(oh) * 3600) + (static_cast<std::int64_t>(om) * 60)) *
+                kMsPerSecond;
     if (negative) offset_ms = -offset_ms;
     pos += 6;
   } else {

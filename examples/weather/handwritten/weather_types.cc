@@ -82,7 +82,7 @@ Outcome<ListCitiesOutput> DeserializeListCitiesOutput(const Document& doc) {
     const Document* name = entry.Find("name");
     if (city_id == nullptr || name == nullptr) return MissingMember("items[].*");
     if (!city_id->is_string() || !name->is_string()) return WrongType("items[].*");
-    out.items.push_back(CitySummary{city_id->as_string(), name->as_string()});
+    out.items.push_back(CitySummary{.cityId = city_id->as_string(), .name = name->as_string()});
   }
   return out;
 }

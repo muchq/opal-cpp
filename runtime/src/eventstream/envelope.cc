@@ -24,10 +24,12 @@ Error Malformed(std::string what) {
 Message MakeMessage(std::string_view message_type, std::string_view type_header,
                     std::string_view type, std::string_view content_type, Blob payload) {
   Message message;
-  message.headers.push_back({std::string(kMessageTypeHeader), std::string(message_type)});
-  message.headers.push_back({std::string(type_header), std::string(type)});
+  message.headers.push_back(
+      {.name = std::string(kMessageTypeHeader), .value = std::string(message_type)});
+  message.headers.push_back({.name = std::string(type_header), .value = std::string(type)});
   if (!content_type.empty()) {
-    message.headers.push_back({std::string(kContentTypeHeader), std::string(content_type)});
+    message.headers.push_back(
+        {.name = std::string(kContentTypeHeader), .value = std::string(content_type)});
   }
   message.payload = std::move(payload);
   return message;

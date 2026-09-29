@@ -1,8 +1,12 @@
-# Scoped exclusion: boost::asio::thread_pool's destructor chain trips a
-# clang-analyzer false positive (the analyzer models the execution_context
-# base destructor before the derived body, then reports use-after-free on
-# service_registry_ inside boost's own ipp). thread_pool.hpp is included
-# only by beast_transport.cc, so the check stays enabled everywhere else —
-# see the root .clang-tidy's convention note.
+# Scoped exclusions: Boost.Asio internals reached only through
+# beast_transport.cc trip clang-analyzer false positives inside boost's own
+# ipp files, so the checks stay enabled everywhere else — see the root
+# .clang-tidy's convention note.
+# - cplusplus.NewDelete: boost::asio::thread_pool's destructor chain (the
+#   analyzer models the execution_context base destructor before the derived
+#   body, then reports use-after-free on service_registry_).
+# - optin.cplusplus.VirtualCall: resolver_thread_pool's destructor calls its
+#   own shutdown(); newer Boost (1.88+) exposes it to the analyzer via the
+#   tcp::resolver in Dial().
 InheritParentConfig: true
-Checks: "-clang-analyzer-cplusplus.NewDelete"
+Checks: "-clang-analyzer-cplusplus.NewDelete,-clang-analyzer-optin.cplusplus.VirtualCall"

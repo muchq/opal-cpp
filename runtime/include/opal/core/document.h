@@ -58,7 +58,7 @@ class Document {
   Document(DocumentMap value) : value_(std::move(value)) {}    // NOLINT
 
   static Document FromTimestamp(Timestamp ts, TimestampFormat format) {
-    return Document(TimestampValue{ts, format});
+    return Document(TimestampValue{.value = ts, .format = format});
   }
 
   bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }

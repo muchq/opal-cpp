@@ -208,7 +208,7 @@ class Parser {
     if (AtEnd() || Peek() < '0' || Peek() > '9') return false;
     long value = 0;
     while (!AtEnd() && Peek() >= '0' && Peek() <= '9') {
-      value = value * 10 + (Take() - '0');
+      value = (value * 10) + (Take() - '0');
       if (value > kMaxRepeatCount) return false;
     }
     *out = static_cast<int>(value);
@@ -429,7 +429,7 @@ class Parser {
       else if (c >= 'A' && c <= 'F')
         d = c - 'A' + 10;
       if (d < 0) return -1;
-      value = value * 16 + d;
+      value = (value * 16) + d;
     }
     return value;
   }
@@ -469,7 +469,7 @@ class RegexCompiler {
     if (auto emitted = compiler.Emit(**tree); !emitted.ok()) {
       return std::move(emitted).error();
     }
-    if (auto added = compiler.Add({Regex::Inst::Op::kMatch}); !added.ok()) {
+    if (auto added = compiler.Add({.op = Regex::Inst::Op::kMatch}); !added.ok()) {
       return std::move(added).error();
     }
     return re;
@@ -503,17 +503,17 @@ class RegexCompiler {
       case Node::Kind::kEmpty:
         return Unit{};
       case Node::Kind::kByte: {
-        Inst inst{Inst::Op::kByte};
+        Inst inst{.op = Inst::Op::kByte};
         inst.byte = node.byte;
         return Add(inst);
       }
       case Node::Kind::kClass: {
-        Inst inst{Inst::Op::kClass};
+        Inst inst{.op = Inst::Op::kClass};
         inst.arg = AddClass(node.cls);
         return Add(inst);
       }
       case Node::Kind::kAssert: {
-        Inst inst{Inst::Op::kAssert};
+        Inst inst{.op = Inst::Op::kAssert};
         inst.assert_kind = node.assert_kind;
         return Add(inst);
       }
@@ -530,12 +530,12 @@ class RegexCompiler {
           std::uint32_t split_pc = 0;
           if (!last) {
             split_pc = Here();
-            if (auto added = Add({Inst::Op::kSplit}); !added.ok()) return added;
+            if (auto added = Add({.op = Inst::Op::kSplit}); !added.ok()) return added;
           }
           if (auto emitted = Emit(*node.children[i]); !emitted.ok()) return emitted;
           if (!last) {
             jumps_to_end.push_back(Here());
-            if (auto added = Add({Inst::Op::kJmp}); !added.ok()) return added;
+            if (auto added = Add({.op = Inst::Op::kJmp}); !added.ok()) return added;
             re_->program_[split_pc].arg = Here();
           }
         }
@@ -556,9 +556,9 @@ class RegexCompiler {
     if (node.max < 0) {
       // body{min,} — one looping optional copy: L: split(end); body; jmp L
       std::uint32_t loop = Here();
-      if (auto added = Add({Inst::Op::kSplit}); !added.ok()) return added;
+      if (auto added = Add({.op = Inst::Op::kSplit}); !added.ok()) return added;
       if (auto emitted = Emit(body); !emitted.ok()) return emitted;
-      Inst jmp{Inst::Op::kJmp};
+      Inst jmp{.op = Inst::Op::kJmp};
       jmp.arg = loop;
       if (auto added = Add(jmp); !added.ok()) return added;
       re_->program_[loop].arg = Here();
@@ -569,7 +569,7 @@ class RegexCompiler {
     std::vector<std::uint32_t> splits;
     for (int i = node.min; i < node.max; ++i) {
       splits.push_back(Here());
-      if (auto added = Add({Inst::Op::kSplit}); !added.ok()) return added;
+      if (auto added = Add({.op = Inst::Op::kSplit}); !added.ok()) return added;
       if (auto emitted = Emit(body); !emitted.ok()) return emitted;
     }
     for (std::uint32_t pc : splits) re_->program_[pc].arg = Here();

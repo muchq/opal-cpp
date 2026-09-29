@@ -109,7 +109,7 @@ class PairEnd final : public WebSocket {
     // completion can tear down waits only on that end's pins.
     std::array<WebSocket::TerminalWaiters, 2> waiters;
     {
-      const std::lock_guard<std::mutex> lock(state_->mutex);
+      const std::scoped_lock lock(state_->mutex);
       state_->closed = true;
       for (std::size_t end = 0; end < 2; ++end) {
         WebSocket::SendCallback send;
@@ -157,7 +157,7 @@ class PairEnd final : public WebSocket {
     WebSocket::ReceiveCallback deliver;
     eventstream::Message delivered;
     {
-      const std::lock_guard<std::mutex> lock(state_->mutex);
+      const std::scoped_lock lock(state_->mutex);
       if (state_->closed) {
         callback(Error::Transport("websocket pair: session is closed"));
         return;
@@ -170,7 +170,8 @@ class PairEnd final : public WebSocket {
       std::deque<eventstream::Message>& outbound = state_->queues[send_index_];
       if (outbound.size() >= kQueueDepth) {
         // Backpressure without blocking: park until the receiver drains.
-        state_->pending_send[send_index_] = PendingSend{message, std::move(callback)};
+        state_->pending_send[send_index_] =
+            PendingSend{.message = message, .callback = std::move(callback)};
         return;
       }
       deliver = TakePeerReceiverLocked(message, delivered);
@@ -206,7 +207,7 @@ class PairEnd final : public WebSocket {
     WebSocket::ReceiveCallback deliver;
     std::uint64_t parked_generation = 0;
     {
-      const std::lock_guard<std::mutex> lock(state_->mutex);
+      const std::scoped_lock lock(state_->mutex);
       if (state_->pending_receive[send_index_] || state_->blocked_receivers[send_index_] > 0) {
         callback(Error::Validation("websocket pair: a receive is already outstanding"));
         return;
@@ -273,13 +274,13 @@ class PairEnd final : public WebSocket {
     // Under -fno-exceptions a failed thread spawn terminates (nothing can
     // throw), which is the fail-fast posture; with exceptions on, contain
     // it here so the caller never sees a throw beside a still-armed park.
-#if defined(__cpp_exceptions)
+#ifdef __cpp_exceptions
     WebSocket::ReceiveCallback refused;
     try {
       std::thread(watchdog).detach();
       return;
     } catch (...) {
-      const std::lock_guard<std::mutex> lock(state_->mutex);
+      const std::scoped_lock lock(state_->mutex);
       if (state_->pending_receive[send_index_] &&
           state_->receive_park_generation[send_index_] == generation) {
         refused = std::exchange(state_->pending_receive[send_index_], nullptr);

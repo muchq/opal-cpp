@@ -89,10 +89,9 @@ std::function<std::optional<http::HttpResponse>(const http::HttpRequest&)> WebSo
     std::string allow;
     for (const auto& [method, bucket] : routes_) {
       if (method == request.method) continue;
-      const bool any_match =
-          std::any_of(bucket.begin(), bucket.end(), [&target](const StreamRoute& route) {
-            return internal::MatchSegments(route.segments, target->path_segments, nullptr);
-          });
+      const bool any_match = std::ranges::any_of(bucket, [&target](const StreamRoute& route) {
+        return internal::MatchSegments(route.segments, target->path_segments, nullptr);
+      });
       if (!any_match) continue;
       if (!allow.empty()) allow += ", ";
       allow += method;

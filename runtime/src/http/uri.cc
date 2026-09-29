@@ -68,17 +68,17 @@ Outcome<std::string> PercentDecode(std::string_view text) {
 }
 
 void QueryString::Add(std::string_view key, std::string_view value) {
-  params_.push_back({EncodeQueryComponent(key), EncodeQueryComponent(value), false});
+  params_.push_back(
+      {.key = EncodeQueryComponent(key), .value = EncodeQueryComponent(value), .flag = false});
 }
 
 void QueryString::AddFlag(std::string_view key) {
-  params_.push_back({EncodeQueryComponent(key), "", true});
+  params_.push_back({.key = EncodeQueryComponent(key), .value = "", .flag = true});
 }
 
 bool QueryString::Has(std::string_view key) const {
   const std::string encoded = EncodeQueryComponent(key);
-  return std::any_of(params_.begin(), params_.end(),
-                     [&](const Param& param) { return param.key == encoded; });
+  return std::ranges::any_of(params_, [&](const Param& param) { return param.key == encoded; });
 }
 
 std::string QueryString::ToString() const {
@@ -144,11 +144,11 @@ Outcome<Endpoint> ParseEndpoint(std::string_view url) {
   constexpr std::string_view kHttp = "http://";
   constexpr std::string_view kHttps = "https://";
   std::string_view rest;
-  if (url.substr(0, kHttp.size()) == kHttp) {
+  if (url.starts_with(kHttp)) {
     endpoint.scheme = "http";
     endpoint.port = 80;
     rest = url.substr(kHttp.size());
-  } else if (url.substr(0, kHttps.size()) == kHttps) {
+  } else if (url.starts_with(kHttps)) {
     endpoint.scheme = "https";
     endpoint.port = 443;
     rest = url.substr(kHttps.size());
@@ -169,7 +169,7 @@ Outcome<Endpoint> ParseEndpoint(std::string_view url) {
     int port = 0;
     for (const char c : authority.substr(colon + 1)) {
       if (c < '0' || c > '9') return Error::Validation("endpoint: invalid port");
-      port = port * 10 + (c - '0');
+      port = (port * 10) + (c - '0');
       if (port > 65535) return Error::Validation("endpoint: invalid port");
     }
     if (port == 0) return Error::Validation("endpoint: invalid port");

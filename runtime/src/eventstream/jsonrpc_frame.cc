@@ -155,8 +155,7 @@ JsonRpcStreamFrame DecodeResponse(const Document& envelope, const Document& id) 
   DocumentMap payload = data != nullptr ? data->as_map() : DocumentMap();
   // The unary client's fallback, mirrored: an error message member fills a
   // data object that carries none.
-  if (message != nullptr && !message->as_string().empty() &&
-      payload.find(kMessageMember) == payload.end()) {
+  if (message != nullptr && !message->as_string().empty() && !payload.contains(kMessageMember)) {
     payload.emplace(kMessageMember, *message);
   }
   const Document* type = data != nullptr ? data->Find(kTypeMember) : nullptr;

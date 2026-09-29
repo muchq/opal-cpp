@@ -282,14 +282,15 @@ Outcome<std::optional<DecodedFrame>> DecodeMessage(std::string_view buffer) {
     if (!value.has_value()) {
       return Malformed("malformed header value");
     }
-    message.headers.push_back(Header{std::move(name), std::move(*value)});
+    message.headers.push_back(Header{.name = std::move(name), .value = std::move(*value)});
   }
   // The bounds checks above keep cursor <= block.size() at every step, so
   // the loop exits exactly at the block boundary.
 
   message.payload = Blob::FromString(
       buffer.substr(kPreludeBytes + headers_length, total - kFrameOverheadBytes - headers_length));
-  return std::optional<DecodedFrame>(DecodedFrame{std::move(message), total});
+  return std::optional<DecodedFrame>(
+      DecodedFrame{.message = std::move(message), .bytes_consumed = total});
 }
 
 }  // namespace opal::eventstream

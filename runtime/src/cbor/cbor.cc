@@ -293,12 +293,12 @@ class Decoder {
           if (inner->is_int()) {
             auto ts = Timestamp::FromEpochSecondsChecked(static_cast<double>(inner->as_int()));
             if (!ts) return std::move(ts).error();
-            return Document(TimestampValue{*ts, TimestampFormat::kEpochSeconds});
+            return Document(TimestampValue{.value = *ts, .format = TimestampFormat::kEpochSeconds});
           }
           if (inner->is_double()) {
             auto ts = Timestamp::FromEpochSecondsChecked(inner->as_double());
             if (!ts) return std::move(ts).error();
-            return Document(TimestampValue{*ts, TimestampFormat::kEpochSeconds});
+            return Document(TimestampValue{.value = *ts, .format = TimestampFormat::kEpochSeconds});
           }
           return Fail("tag 1 content is not a number");
         }

@@ -235,7 +235,7 @@ namespace internal {
 
 void MetricFamily::Add(const MetricLabels& labels, double amount, bool set) {
   const std::string key = RenderLabels(labels, kind == Kind::kHistogram);
-  const std::lock_guard<std::mutex> lock(mutex);
+  const std::scoped_lock lock(mutex);
   if (auto found = samples.find(key); found != samples.end()) {
     if (set) {
       found->second.value = amount;
@@ -253,7 +253,7 @@ void MetricFamily::Add(const MetricLabels& labels, double amount, bool set) {
 
 void MetricFamily::Observe(const MetricLabels& labels, double value) {
   const std::string key = RenderLabels(labels, kind == Kind::kHistogram);
-  const std::lock_guard<std::mutex> lock(mutex);
+  const std::scoped_lock lock(mutex);
   auto found = samples.find(key);
   if (found == samples.end()) {
     if (samples.size() >= max_series) {
@@ -275,7 +275,7 @@ void MetricFamily::Observe(const MetricLabels& labels, double value) {
 
 void MetricFamily::Declare(const MetricLabels& labels) {
   const std::string key = RenderLabels(labels, kind == Kind::kHistogram);
-  const std::lock_guard<std::mutex> lock(mutex);
+  const std::scoped_lock lock(mutex);
   if (samples.contains(key)) {
     return;  // idempotent, and never disturbs a series already carrying events
   }
@@ -332,7 +332,7 @@ void MetricsRegistry::RecordStart(const RequestStart& start) {
   // always keyed by method — the unlabeled form is the sum over these keys —
   // and the key set is bounded by the method vocabulary.
   std::string method = NormalizeMethod(start.method);
-  const std::lock_guard<std::mutex> lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   ++in_flight_[std::move(method)];
 }
 
@@ -364,7 +364,7 @@ void MetricsRegistry::Record(const RequestObservation& observation) {
                      .route = observation.operation.empty() ? std::string(kUnmatchedRoute)
                                                             : observation.operation};
 
-  const std::lock_guard<std::mutex> lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   // Before the cap check: a request that started must bring the gauge back
   // down whether or not its route survives admission, or a refused route
   // leaks in-flight forever. Only decrement one that was incremented —
@@ -410,7 +410,7 @@ void MetricsRegistry::RecordRejection(std::string_view method, int status) {
       .method = method.empty() ? std::string(kUnparsedMethod) : NormalizeMethod(method),
       .route = std::string(kUnmatchedRoute)};
 
-  const std::lock_guard<std::mutex> lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   RouteStats* stats = AdmitRoute(key);
   if (stats == nullptr) {
     return;
@@ -446,7 +446,7 @@ std::shared_ptr<internal::MetricFamily> MetricsRegistry::Register(std::string na
                             "' is one of the built-in families");
     }
   }
-  const std::lock_guard<std::mutex> lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   if (auto found = families_.find(name); found != families_.end()) {
     // Idempotent for an identical re-registration; a mismatch is the case
     // that would corrupt the scrape, so it aborts rather than picking one.
@@ -516,7 +516,7 @@ std::string MetricsRegistry::Expose() const {
     return {};
   }
   std::string out;
-  const std::lock_guard<std::mutex> lock(mutex_);
+  const std::scoped_lock lock(mutex_);
 
   // Families are emitted whole and in order. The format requires every line
   // of a family to be contiguous, so each family is written in one pass —
@@ -526,8 +526,9 @@ std::string MetricsRegistry::Expose() const {
     return BuiltInLabels(
         {{std::string(kMethodLabel), key.method}, {std::string(kRouteLabel), key.route}});
   };
+  using RouteCounter = std::uint64_t RouteStats::*;
   const auto counter_family = [&](std::string_view name, std::string_view help,
-                                  std::uint64_t RouteStats::*field) {
+                                  RouteCounter field) {
     AppendFamilyHeader(out, name, "counter", help);
     for (const auto& [key, stats] : routes_) {
       AppendSample(out, name, "", route_labels(key), std::to_string(stats.*field));
@@ -580,7 +581,7 @@ std::string MetricsRegistry::Expose() const {
   AppendSample(out, kObservationsDropped, "", BuiltInLabels({}),
                std::to_string(observations_dropped_));
   for (const auto& [name, family] : families_) {
-    const std::lock_guard<std::mutex> family_lock(family->mutex);
+    const std::scoped_lock family_lock(family->mutex);
     if (family->dropped != 0) {
       AppendSample(out, kObservationsDropped, "", BuiltInLabels({{"metric", name}}),
                    std::to_string(family->dropped));
@@ -591,7 +592,7 @@ std::string MetricsRegistry::Expose() const {
   // are already keyed by rendered labels, so a family's series are
   // contiguous the way the format requires.
   for (const auto& [name, family] : families_) {
-    const std::lock_guard<std::mutex> family_lock(family->mutex);
+    const std::scoped_lock family_lock(family->mutex);
     const char* type = "counter";
     if (family->kind == internal::MetricFamily::Kind::kGauge) type = "gauge";
     if (family->kind == internal::MetricFamily::Kind::kHistogram) type = "histogram";

@@ -212,10 +212,7 @@ void Headers::Add(std::string_view name, std::string_view value) {
 }
 
 void Headers::Remove(std::string_view name) {
-  entries_.erase(
-      std::remove_if(entries_.begin(), entries_.end(),
-                     [&](const auto& entry) { return HeaderNameEquals(entry.first, name); }),
-      entries_.end());
+  std::erase_if(entries_, [&](const auto& entry) { return HeaderNameEquals(entry.first, name); });
 }
 
 std::vector<std::string> SplitHeaderListValues(std::string_view value) {

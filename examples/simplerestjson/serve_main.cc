@@ -36,14 +36,14 @@ class InMemoryBookstore final : public BookstoreHandler {
  public:
   opal::Outcome<AddBookOutput> AddBook(const AddBookInput& input,
                                        const opal::server::RequestContext& /*context*/) override {
-    const std::lock_guard<std::mutex> lock(mu_);
+    const std::scoped_lock lock(mu_);
     titles_[input.isbn] = input.title;
     return AddBookOutput{.status = 201, .isbn = input.isbn};
   }
 
   opal::Outcome<GetBookOutput> GetBook(const GetBookInput& input,
                                        const opal::server::RequestContext& /*context*/) override {
-    const std::lock_guard<std::mutex> lock(mu_);
+    const std::scoped_lock lock(mu_);
     const auto it = titles_.find(input.isbn);
     if (it == titles_.end()) {
       const std::string message = "no book: " + input.isbn;

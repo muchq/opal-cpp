@@ -62,7 +62,7 @@ std::optional<Address> ParseAddress(std::string_view text) {
   if (tail.find('.') != std::string_view::npos && !StrictDottedOctets(tail)) {
     return std::nullopt;
   }
-  std::copy(text.begin(), text.end(), terminated.begin());
+  std::ranges::copy(text, terminated.begin());
   Address address;
   if (inet_pton(AF_INET, terminated.data(), address.bytes.data()) == 1) {
     address.family = AF_INET;
@@ -90,8 +90,7 @@ std::string FormatAddress(const Address& address) {
 }
 
 bool AllDigits(std::string_view text) {
-  return !text.empty() &&
-         std::all_of(text.begin(), text.end(), [](char c) { return c >= '0' && c <= '9'; });
+  return !text.empty() && std::ranges::all_of(text, [](char c) { return c >= '0' && c <= '9'; });
 }
 
 // RFC 4007 zone suffix ("%<nonempty zone>"), dropped from IPv6 text before
@@ -178,7 +177,7 @@ Outcome<TrustedProxies> TrustedProxies::Parse(const std::vector<std::string>& ci
       }
       prefix_bits = 0;
       for (const char c : digits) {
-        prefix_bits = prefix_bits * 10 + (c - '0');
+        prefix_bits = (prefix_bits * 10) + (c - '0');
       }
       // A base written as IPv4-mapped IPv6 was normalized to the embedded
       // IPv4, so its prefix shifts across the /96 mapping range with it;
@@ -191,7 +190,8 @@ Outcome<TrustedProxies> TrustedProxies::Parse(const std::vector<std::string>& ci
         return Error::Validation("TrustedProxies: prefix out of range in \"" + cidr + "\"");
       }
     }
-    result.networks_.push_back(Network{base->bytes, base->family, prefix_bits});
+    result.networks_.push_back(
+        Network{.bytes = base->bytes, .family = base->family, .prefix_bits = prefix_bits});
   }
   return result;
 }
@@ -202,7 +202,7 @@ bool TrustedProxies::Contains(std::string_view address) const {
 }
 
 bool TrustedProxies::ContainsBytes(const std::array<std::uint8_t, 16>& bytes, int family) const {
-  return std::any_of(networks_.begin(), networks_.end(), [&](const Network& network) {
+  return std::ranges::any_of(networks_, [&](const Network& network) {
     return network.family == family && PrefixMatch(network.bytes, bytes, network.prefix_bits);
   });
 }
@@ -214,9 +214,10 @@ DerivedClient DeriveClient(const HttpRequest& request, const TrustedProxies& tru
   }
   Address client = *peer;
   if (!trusted.ContainsBytes(client.bytes, client.family)) {
-    return {FormatAddress(client), request.headers.Has("x-forwarded-for")
-                                       ? DerivedClient::Source::kUntrustedHeaderIgnored
-                                       : DerivedClient::Source::kDirectPeer};
+    return {.address = FormatAddress(client),
+            .source = request.headers.Has("x-forwarded-for")
+                          ? DerivedClient::Source::kUntrustedHeaderIgnored
+                          : DerivedClient::Source::kDirectPeer};
   }
   // The walk half of the forwarded.h contract. client is assigned before
   // each trust test, so a malformed-entry stop and exhaustion both leave
@@ -235,10 +236,10 @@ DerivedClient DeriveClient(const HttpRequest& request, const TrustedProxies& tru
     }
     client = *entry;
     if (!trusted.ContainsBytes(client.bytes, client.family)) {
-      return {FormatAddress(client), DerivedClient::Source::kForwarded};
+      return {.address = FormatAddress(client), .source = DerivedClient::Source::kForwarded};
     }
   }
-  return {FormatAddress(client), DerivedClient::Source::kTrustedTier};
+  return {.address = FormatAddress(client), .source = DerivedClient::Source::kTrustedTier};
 }
 
 std::string ClientAddress(const HttpRequest& request, const TrustedProxies& trusted) {

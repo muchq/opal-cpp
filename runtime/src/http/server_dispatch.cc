@@ -75,7 +75,7 @@ std::string FormatPeerAddress(const sockaddr* address, socklen_t length) {
 
 HttpResponse InvokeHandlerGuarded(const RequestHandler& handler, HttpRequest request) {
   if (!handler) {
-    return HttpResponse{503, {}, "", ""};
+    return HttpResponse{.status = 503, .headers = {}, .body = "", .operation = ""};
   }
   EnsureInboundTraceIdentity(request);
   // Contain any handler exception as a correlated 500 — otherwise it unwinds
