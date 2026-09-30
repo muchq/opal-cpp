@@ -155,7 +155,10 @@ bhttp::response<bhttp::empty_body> ToHeadWireResponse(
     wire.insert(field.name_string(), field.value());
   }
   wire.keep_alive(keep_alive);
-  if (full.contains(bhttp::field::content_length)) {
+  // fields::contains is Boost 1.88+; docs/development.md builds this TU
+  // against distro Boost (1.83 on Ubuntu 24.04).
+  // NOLINTNEXTLINE(readability-container-contains)
+  if (full.find(bhttp::field::content_length) != full.end()) {
     wire.content_length(full.body().size());
   }
   return wire;
