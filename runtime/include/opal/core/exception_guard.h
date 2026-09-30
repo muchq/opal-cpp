@@ -3,7 +3,7 @@
 
 #include <utility>
 
-#if defined(__cpp_exceptions)
+#ifdef __cpp_exceptions
 #include <exception>
 #endif
 
@@ -29,7 +29,7 @@ namespace opal::internal {
 // `on_throw` must return the same type as `body` (or both must be void).
 template <typename Body, typename OnThrow>
 auto Contain(Body&& body, OnThrow&& on_throw) -> decltype(std::forward<Body>(body)()) {
-#if defined(__cpp_exceptions)
+#ifdef __cpp_exceptions
   try {
     return std::forward<Body>(body)();
   } catch (const std::exception& e) {

@@ -203,7 +203,7 @@ void SocketHttpServer::AcceptLoop() {
       // Request line: "GET /target HTTP/1.1".
       HttpRequest request;
       if (!ParseRequestLine(message->start_line, &request.method, &request.target)) {
-        response = HttpResponse{400, {}, "malformed request line"};
+        response = HttpResponse{.status = 400, .headers = {}, .body = "malformed request line"};
       } else {
         // Exact: the method token is case-sensitive (RFC 9110 §9.1), and the
         // router matches it by exact string.
@@ -215,7 +215,7 @@ void SocketHttpServer::AcceptLoop() {
         response = InvokeHandlerGuarded(handler_, std::move(request));
       }
     } else {
-      response = HttpResponse{400, {}, message.error().message()};
+      response = HttpResponse{.status = 400, .headers = {}, .body = message.error().message()};
     }
 
     // The transport is authoritative for framing, so drop any copies a handler

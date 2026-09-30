@@ -46,9 +46,10 @@ Inbound FromViolation(int code, const std::string& reason, const Document& id, R
 }
 
 Inbound ClassifyInbound(Outcome<std::optional<Message>> raw, const Document& id, Role role) {
-  if (!raw.ok()) return {std::move(raw), std::nullopt, false};
+  if (!raw.ok()) return {.result = std::move(raw), .violation_text = std::nullopt, .close = false};
   const std::optional<Message>& maybe = *raw;
-  if (!maybe.has_value()) return {std::move(raw), std::nullopt, false};
+  if (!maybe.has_value())
+    return {.result = std::move(raw), .violation_text = std::nullopt, .close = false};
   const Message& message = *maybe;
   if (!message.headers.empty()) {
     // A peer speaking the eventstream envelope wire into a JSON-RPC stream
@@ -63,14 +64,18 @@ Inbound ClassifyInbound(Outcome<std::optional<Message>> raw, const Document& id,
       id);
   switch (frame.kind) {
     case JsonRpcStreamFrame::Kind::kEvent:
-      return {std::optional<Message>(std::move(frame.message)), std::nullopt, false};
+      return {.result = std::optional<Message>(std::move(frame.message)),
+              .violation_text = std::nullopt,
+              .close = false};
     case JsonRpcStreamFrame::Kind::kException:
       if (role == Role::kServer) {
         return FromViolation(-32600, "a response envelope from the client", id, role);
       }
       // The client's terminal error: exactly the exception Message the
       // downstream decoder turns into the modeled error (ADR-0016).
-      return {std::optional<Message>(std::move(frame.message)), std::nullopt, false};
+      return {.result = std::optional<Message>(std::move(frame.message)),
+              .violation_text = std::nullopt,
+              .close = false};
     case JsonRpcStreamFrame::Kind::kResult:
       if (role == Role::kServer) {
         // Terminal response envelopes are server-minted; a client-sent
@@ -79,7 +84,7 @@ Inbound ClassifyInbound(Outcome<std::optional<Message>> raw, const Document& id,
       }
       // The clean end — the server closes right behind it, so nothing
       // meaningful can follow.
-      return {std::optional<Message>(), std::nullopt, false};
+      return {.result = std::optional<Message>(), .violation_text = std::nullopt, .close = false};
     case JsonRpcStreamFrame::Kind::kViolation:
       return FromViolation(frame.code, frame.reason, id, role);
   }

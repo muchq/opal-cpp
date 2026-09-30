@@ -128,7 +128,7 @@ bool ParseRequestLine(std::string_view line, std::string* method, std::string* t
 
 Outcome<int> ParseStatusLine(std::string_view line) {
   const auto space = line.find(' ');
-  if (space == std::string_view::npos || line.size() < space + 4 || line.substr(0, 5) != "HTTP/") {
+  if (space == std::string_view::npos || line.size() < space + 4 || !line.starts_with("HTTP/")) {
     return Error::Transport("http: malformed status line: " + std::string(line));
   }
   const int status = std::atoi(std::string(line.substr(space + 1)).c_str());

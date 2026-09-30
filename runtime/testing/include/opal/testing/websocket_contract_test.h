@@ -73,7 +73,7 @@ class ContractMailbox {
     // the frame unwinds, and ~condition_variable runs while the poster is
     // still inside notify_all. Holding the lock keeps the waiter parked on
     // the mutex until the notify is done.
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::scoped_lock lock(mutex_);
     ASSERT_FALSE(value_.has_value()) << "completion fired twice";
     value_.emplace(std::move(value));
     ready_.notify_all();
@@ -89,14 +89,14 @@ class ContractMailbox {
       ADD_FAILURE() << "contract mailbox: no completion arrived within the deadline";
       std::abort();  // T (an Outcome) has no default value to limp on with
     }
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::scoped_lock lock(mutex_);
     T value = std::move(*value_);
     value_.reset();
     return value;
   }
 
   bool Empty() {
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::scoped_lock lock(mutex_);
     return !value_.has_value();
   }
 

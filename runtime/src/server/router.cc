@@ -151,7 +151,9 @@ Outcome<Unit> Router::Add(std::string_view method, std::string_view pattern, Rou
                                std::string(pattern));
     }
   }
-  bucket.push_back(RouteEntry{std::move(*segments), std::move(handler), std::string(operation)});
+  bucket.push_back(RouteEntry{.segments = std::move(*segments),
+                              .handler = std::move(handler),
+                              .operation = std::string(operation)});
   return Unit{};
 }
 
@@ -175,10 +177,9 @@ http::HttpResponse Router::Route(const http::HttpRequest& request) const {
     std::string allow;
     for (const auto& [method, bucket] : routes_) {
       if (method == request.method) continue;
-      const bool any_match =
-          std::any_of(bucket.begin(), bucket.end(), [&segments](const RouteEntry& route) {
-            return internal::MatchSegments(route.segments, segments, nullptr);
-          });
+      const bool any_match = std::ranges::any_of(bucket, [&segments](const RouteEntry& route) {
+        return internal::MatchSegments(route.segments, segments, nullptr);
+      });
       if (!any_match) continue;
       if (!allow.empty()) allow += ", ";
       allow += method;

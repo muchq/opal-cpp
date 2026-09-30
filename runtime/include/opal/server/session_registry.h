@@ -183,7 +183,7 @@ class SessionRegistry {
     ExpireDetachedNow();
     std::vector<std::shared_ptr<Entry>> all;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       for (auto& [id, entry] : sessions_) all.push_back(std::move(entry));
       sessions_.clear();
       all.insert(all.end(), std::make_move_iterator(retired_.begin()),
@@ -214,7 +214,7 @@ class SessionRegistry {
     const bool async_mode = options_.async_delivery && handle.SupportsAsync();
     auto entry = std::make_shared<Entry>(std::move(handle));
     entry->async_mode = async_mode;
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::scoped_lock lock(mutex_);
     ReapLocked();
     if (!sessions_.emplace(std::move(id), entry).second) return false;
     // Async entries drain through completion chains and hold no thread;
@@ -236,7 +236,7 @@ class SessionRegistry {
   bool Remove(const Id& id) {
     std::shared_ptr<Entry> entry;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       const auto it = sessions_.find(id);
       if (it == sessions_.end()) return false;
       entry = std::move(it->second);
@@ -250,7 +250,7 @@ class SessionRegistry {
       // its own shared_ptr.
       bool has_writer = false;
       {
-        const std::lock_guard<std::mutex> entry_lock(entry->mutex);
+        const std::scoped_lock entry_lock(entry->mutex);
         entry->stopping = true;
         entry->queue.clear();
         has_writer = entry->writer.joinable();
@@ -275,12 +275,12 @@ class SessionRegistry {
     std::shared_ptr<Entry> entry;
     std::optional<Handle> old_handle;  // a copy to close outside the locks
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       const auto it = sessions_.find(id);
       if (it == sessions_.end()) return false;
       entry = it->second;
       {
-        const std::lock_guard<std::mutex> entry_lock(entry->mutex);
+        const std::scoped_lock entry_lock(entry->mutex);
         if (entry->detached) return false;
         entry->detached = true;
         entry->deadline = std::chrono::steady_clock::now() + options_.grace_period;
@@ -313,7 +313,7 @@ class SessionRegistry {
     std::shared_ptr<Entry> entry;
     std::optional<Tx> claimed;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       const auto it = sessions_.find(id);
       if (it == sessions_.end()) return false;
       entry = it->second;
@@ -404,7 +404,7 @@ class SessionRegistry {
   bool SendTo(const Id& id, Tx event, DeliveryClass delivery = {}) {
     std::shared_ptr<Entry> entry;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       const auto it = sessions_.find(id);
       if (it == sessions_.end()) return false;
       entry = it->second;
@@ -422,7 +422,7 @@ class SessionRegistry {
     std::vector<std::pair<const Id*, std::shared_ptr<Entry>>> targets;
     targets.reserve(ids.size());
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       for (const Id& id : ids) {
         if (const auto it = sessions_.find(id); it != sessions_.end()) {
           targets.emplace_back(&id, it->second);
@@ -448,7 +448,7 @@ class SessionRegistry {
                         const DeliveryClass& delivery = {}) {
     std::vector<std::pair<Id, std::shared_ptr<Entry>>> targets;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       targets.reserve(sessions_.size());
       for (const auto& [id, entry] : sessions_) targets.emplace_back(id, entry);
     }
@@ -478,10 +478,10 @@ class SessionRegistry {
   bool Close(const Id& id) {
     std::optional<Handle> doomed;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       const auto it = sessions_.find(id);
       if (it == sessions_.end()) return false;
-      const std::lock_guard<std::mutex> entry_lock(it->second->mutex);
+      const std::scoped_lock entry_lock(it->second->mutex);
       doomed.emplace(it->second->handle);
     }
     doomed->Close();
@@ -496,7 +496,7 @@ class SessionRegistry {
     // Resume's handle swap. The closes still run outside every lock.
     std::vector<Handle> handles;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       handles.reserve(sessions_.size());
       for (const auto& [id, entry] : sessions_) handles.push_back(entry->handle);
     }
@@ -519,7 +519,7 @@ class SessionRegistry {
   // A snapshot of the registered ids — the "everyone currently here" input
   // to the Broadcast(ids, ...) overloads.
   std::vector<Id> Ids() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::scoped_lock lock(mutex_);
     std::vector<Id> ids;
     ids.reserve(sessions_.size());
     for (const auto& [id, entry] : sessions_) ids.push_back(id);
@@ -527,7 +527,7 @@ class SessionRegistry {
   }
 
   std::size_t size() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::scoped_lock lock(mutex_);
     return sessions_.size();
   }
 
@@ -590,7 +590,7 @@ class SessionRegistry {
         entry.queue.pop_front();
       }
       if (!entry.handle.Send(event).ok()) {
-        const std::lock_guard<std::mutex> lock(entry.mutex);
+        const std::scoped_lock lock(entry.mutex);
         entry.stopping = true;
         // A detached entry may be retaining its queue for the resume
         // (the failed send is the dying old connection's, not the tail's).
@@ -599,7 +599,7 @@ class SessionRegistry {
       }
     }
     {
-      const std::lock_guard<std::mutex> lock(entry.mutex);
+      const std::scoped_lock lock(entry.mutex);
       entry.done = true;
     }
     entry.wake.notify_all();  // Resume waits out this exit before swapping
@@ -609,7 +609,7 @@ class SessionRegistry {
   // own failure path sets the same state inline, under its held lock.)
   static void RequestStop(Entry& entry) {
     {
-      const std::lock_guard<std::mutex> lock(entry.mutex);
+      const std::scoped_lock lock(entry.mutex);
       entry.stopping = true;
       entry.queue.clear();
     }
@@ -656,7 +656,7 @@ class SessionRegistry {
     bool queued = false;
     std::optional<Tx> claimed;
     {
-      const std::lock_guard<std::mutex> lock(entry->mutex);
+      const std::scoped_lock lock(entry->mutex);
       if (entry->detached) {
         // Tested before stopping: detached implies stopping, and the
         // retention branch must win over the refuse-on-stopping one.
@@ -699,7 +699,7 @@ class SessionRegistry {
       // id has as the drop is charged; that is close-on-full's contract.
       std::optional<Handle> doomed;
       {
-        const std::lock_guard<std::mutex> lock(entry->mutex);
+        const std::scoped_lock lock(entry->mutex);
         doomed.emplace(entry->handle);
       }
       doomed->Close();
@@ -743,7 +743,7 @@ class SessionRegistry {
     entry->handle.SendAsync(event, [entry](const Outcome<Unit>& sent) {
       std::optional<Tx> next;
       {
-        const std::lock_guard<std::mutex> lock(entry->mutex);
+        const std::scoped_lock lock(entry->mutex);
         if (sent.ok()) {
           // Delivered: retire the event. (RequestStop may have cleared the
           // queue mid-flight, so the pop is guarded.)
@@ -796,7 +796,7 @@ class SessionRegistry {
       }
       bool done = false;
       {
-        const std::lock_guard<std::mutex> lock((*it)->mutex);
+        const std::scoped_lock lock((*it)->mutex);
         done = (*it)->done;
       }
       if (done) {
@@ -825,7 +825,7 @@ class SessionRegistry {
 
   void StopExpiry() {
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       expiry_stop_ = true;
     }
     expiry_wake_.notify_all();
@@ -837,7 +837,7 @@ class SessionRegistry {
     while (!expiry_stop_) {
       std::optional<std::chrono::steady_clock::time_point> next;
       for (const auto& [id, entry] : sessions_) {
-        const std::lock_guard<std::mutex> entry_lock(entry->mutex);
+        const std::scoped_lock entry_lock(entry->mutex);
         if (!entry->detached) continue;
         if (!next || entry->deadline < *next) next = entry->deadline;
       }
@@ -869,7 +869,7 @@ class SessionRegistry {
       bool claim = false;
       bool has_writer = false;
       {
-        const std::lock_guard<std::mutex> entry_lock(it->second->mutex);
+        const std::scoped_lock entry_lock(it->second->mutex);
         claim = it->second->detached && now >= it->second->deadline;
         has_writer = claim && it->second->writer.joinable();
       }
@@ -905,7 +905,7 @@ class SessionRegistry {
   void ExpireDetachedNow() {
     std::vector<std::pair<Id, std::shared_ptr<Entry>>> expired;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       expired = TakeExpiredLocked(std::chrono::steady_clock::time_point::max());
     }
     FireExpiries(expired);

@@ -180,8 +180,10 @@ Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
                       request.headers, "Observe labeler");
       }
       if (on_start != nullptr) {
-        CallContained(on_start, RequestStart{request.method, request.target, labels},
-                      "Observe on_start");
+        CallContained(
+            on_start,
+            RequestStart{.method = request.method, .target = request.target, .labels = labels},
+            "Observe on_start");
       }
       RequestObservation observation;
       observation.labels = std::move(labels);
@@ -199,7 +201,7 @@ Middleware Observe(std::function<void(const RequestObservation&)> on_complete,
       }
       const auto start = now();
       http::HttpResponse response;
-#if defined(__cpp_exceptions)
+#ifdef __cpp_exceptions
       try {
         response = next(request);
       } catch (...) {

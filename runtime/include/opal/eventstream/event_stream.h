@@ -59,7 +59,7 @@ struct SharedSessionState {
 // Drops one pin; the revoking stream's drain wait wakes at zero. Free so
 // async completions can release with only the state in hand (ADR-0019).
 inline void ReleasePin(SharedSessionState& state) {
-  const std::lock_guard<std::mutex> lock(state.mutex);
+  const std::scoped_lock lock(state.mutex);
   if (--state.active == 0) state.idle.notify_all();
 }
 
@@ -103,7 +103,7 @@ class SharedViewOwner {
     if (state_ == nullptr) return;
     const std::shared_ptr<SharedSessionState> state = std::move(state_);
     {
-      const std::lock_guard<std::mutex> lock(state->mutex);
+      const std::scoped_lock lock(state->mutex);
       state->socket = nullptr;
     }
     socket_->Close();
@@ -219,7 +219,7 @@ class EventStreamHandle {
   // session ended (or this handle was moved from).
   http::WebSocket* Acquire() const {
     if (state_ == nullptr) return nullptr;
-    const std::lock_guard<std::mutex> lock(state_->mutex);
+    const std::scoped_lock lock(state_->mutex);
     if (state_->socket == nullptr) return nullptr;
     ++state_->active;
     return state_->socket;

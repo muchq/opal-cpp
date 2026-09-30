@@ -40,7 +40,7 @@ struct Detached {
       // A coroutine promise must declare unhandled_exception(), but under
       // -fno-exceptions it is unreachable — nothing can throw — so the
       // containment body compiles only when exceptions are enabled.
-#if defined(__cpp_exceptions)
+#ifdef __cpp_exceptions
       try {
         std::rethrow_exception(std::current_exception());
       } catch (const std::exception& e) {
@@ -90,7 +90,7 @@ class [[nodiscard]] StreamTask {
     void unhandled_exception() noexcept {
       // Required by the coroutine machinery, but unreachable under
       // -fno-exceptions; the containment body compiles only with exceptions.
-#if defined(__cpp_exceptions)
+#ifdef __cpp_exceptions
       try {
         std::rethrow_exception(std::current_exception());
       } catch (const std::exception& e) {

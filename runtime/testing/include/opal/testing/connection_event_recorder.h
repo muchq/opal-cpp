@@ -23,7 +23,7 @@ struct ConnectionEventRecorder {
 
   std::function<void(const http::BeastServerTransport::ConnectionEvent&)> Hook() {
     return [this](const http::BeastServerTransport::ConnectionEvent& event) {
-      const std::lock_guard<std::mutex> lock(mutex);
+      const std::scoped_lock lock(mutex);
       events.push_back(event);
     };
   }
@@ -33,12 +33,12 @@ struct ConnectionEventRecorder {
     const auto deadline = std::chrono::steady_clock::now() + budget;
     while (std::chrono::steady_clock::now() < deadline) {
       {
-        const std::lock_guard<std::mutex> lock(mutex);
+        const std::scoped_lock lock(mutex);
         if (events.size() >= count) return true;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::scoped_lock lock(mutex);
     return events.size() >= count;
   }
 };

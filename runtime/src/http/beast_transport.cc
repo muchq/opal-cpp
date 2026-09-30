@@ -155,6 +155,9 @@ bhttp::response<bhttp::empty_body> ToHeadWireResponse(
     wire.insert(field.name_string(), field.value());
   }
   wire.keep_alive(keep_alive);
+  // fields::contains is Boost 1.88+; docs/development.md builds this TU
+  // against distro Boost (1.83 on Ubuntu 24.04).
+  // NOLINTNEXTLINE(readability-container-contains)
   if (full.find(bhttp::field::content_length) != full.end()) {
     wire.content_length(full.body().size());
   }
@@ -464,7 +467,7 @@ class WsSession final : public WebSocketSessionBase,
   void OnReceiveDeadline(std::uint64_t generation) {
     WebSocket::ReceiveCallback expired;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       if (!pending_receive_ || receive_park_generation_ != generation) {
         return;  // the park this deadline bounded already completed
       }
@@ -486,7 +489,7 @@ class WsSession final : public WebSocketSessionBase,
       return std::move(frame).error();  // the codec's Validation, verbatim
     }
     // Serializes concurrent senders; the wire itself allows one write op.
-    const std::lock_guard<std::mutex> send_turn(send_mutex_);
+    const std::scoped_lock send_turn(send_mutex_);
     std::unique_lock<std::mutex> lock(mutex_);
     // An async send may be in flight (send_mutex_ only serializes blocking
     // callers); wait it out — serialize-by-waiting, per ADR-0019.
@@ -550,7 +553,7 @@ class WsSession final : public WebSocketSessionBase,
     } catch (...) {
       WebSocket::SendCallback cb;
       {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        const std::scoped_lock lock(mutex_);
         cb = std::exchange(pending_send_, nullptr);
         write_complete_ = true;
         wake_.notify_all();
@@ -600,7 +603,7 @@ class WsSession final : public WebSocketSessionBase,
 
   void PumpRead() {
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       if (failed_ || peer_closed_ || close_started_) {
         return;  // ended, or the close op owns the read side now
       }
@@ -620,7 +623,7 @@ class WsSession final : public WebSocketSessionBase,
     if (ec == bws::error::closed) {
       AsyncWaiters waiters;
       {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        const std::scoped_lock lock(mutex_);
         peer_closed_ = true;
         waiters = TakeAsyncWaitersLocked();
         wake_.notify_all();
@@ -635,7 +638,7 @@ class WsSession final : public WebSocketSessionBase,
         // and a Close that escalated past an in-flight write cancelled the
         // socket's ops outright (RequestCloseLocked). Neither abort is an
         // outcome — the close/write completions decide clean-versus-error.
-        const std::lock_guard<std::mutex> lock(mutex_);
+        const std::scoped_lock lock(mutex_);
         if (close_requested_ && ec == asio::error::operation_aborted) {
           return;
         }
@@ -701,7 +704,7 @@ class WsSession final : public WebSocketSessionBase,
     WebSocket::ReceiveCallback receive;
     std::optional<eventstream::Message> handoff;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       if (pending_receive_) {
         receive = std::exchange(pending_receive_, nullptr);
         // The park is over, so its deadline has nothing left to bound.
@@ -854,7 +857,7 @@ class WsSession final : public WebSocketSessionBase,
       bool clean = false;
       std::string why;
       {
-        const std::lock_guard<std::mutex> lock(self->mutex_);
+        const std::scoped_lock lock(self->mutex_);
         if (!self->failed_ && !self->peer_closed_) {
           if (ec) {
             self->failed_ = true;
@@ -876,7 +879,7 @@ class WsSession final : public WebSocketSessionBase,
     AsyncWaiters waiters;
     std::string why;
     {
-      const std::lock_guard<std::mutex> lock(mutex_);
+      const std::scoped_lock lock(mutex_);
       if (!failed_ && !peer_closed_) {
         failed_ = true;
         error_ = std::move(reason);
@@ -1095,7 +1098,7 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
   void RegisterWebSocket(const std::shared_ptr<WebSocketSessionBase>& session) {
     std::string abort_reason;
     {
-      const std::lock_guard<std::mutex> lock(websockets_mutex);
+      const std::scoped_lock lock(websockets_mutex);
       if (!websockets_aborted) {
         std::erase_if(websockets, [](const auto& weak) { return weak.expired(); });
         websockets.push_back(session);
@@ -1109,7 +1112,7 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
   void AbortWebSockets(const std::string& reason) {
     std::vector<std::shared_ptr<WebSocketSessionBase>> live;
     {
-      const std::lock_guard<std::mutex> lock(websockets_mutex);
+      const std::scoped_lock lock(websockets_mutex);
       websockets_aborted = true;
       websockets_abort_reason = reason;
       for (const auto& weak : websockets) {
@@ -1199,8 +1202,9 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
       ReadNext(std::shared_ptr<beast::tcp_stream>(session, &session->stream));
       return;
     }
+    auto& ssl_ctx = *ssl;
     auto session = std::make_shared<Session<asio::ssl::stream<beast::tcp_stream>>>(
-        weak_from_this(), std::move(socket), *ssl);
+        weak_from_this(), std::move(socket), ssl_ctx);
     std::shared_ptr<asio::ssl::stream<beast::tcp_stream>> stream(session, &session->stream);
     beast::get_lowest_layer(*stream).expires_after(
         std::chrono::seconds(opts.request_timeout_seconds));
@@ -1544,7 +1548,7 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
   // arm — drop accounting, keep-alive teardown, the next read — is the same
   // whether or not a body follows the headers.
   template <typename Stream, typename Message>
-  void WriteWire(const std::shared_ptr<Stream>& stream, std::shared_ptr<Message> wire,
+  void WriteWire(const std::shared_ptr<Stream>& stream, const std::shared_ptr<Message>& wire,
                  bool keep_alive, std::string peer) {
     // Each wire phase gets its own request_timeout_seconds budget: Beast
     // expiries are absolute and outlive the op, so without a re-arm the
@@ -1556,26 +1560,26 @@ struct BeastServerTransport::State : std::enable_shared_from_this<State> {
         std::chrono::seconds(opts.request_timeout_seconds));
     auto& wire_stream = *stream;
     auto& wire_ref = *wire;
-    bhttp::async_write(wire_stream, wire_ref,
-                       [weak = weak_from_this(), stream, wire, keep_alive,
-                        phase = PhaseStart{std::move(peer), std::chrono::steady_clock::now()}](
-                           beast::error_code write_ec, std::size_t) mutable {
-                         auto self = weak.lock();
-                         if (self != nullptr) {
-                           self->active.fetch_sub(1);
-                         }
-                         if (self == nullptr || write_ec || !keep_alive) {
-                           if (self != nullptr && write_ec) {
-                             // The peer vanished mid-response (ADR-0013).
-                             using Kind = BeastServerTransport::ConnectionEvent::Kind;
-                             self->NotifyConnectionEvent(Kind::kDropped, write_ec,
-                                                         std::move(phase));
-                           }
-                           CloseStream(*stream);
-                           return;
-                         }
-                         self->ReadNext(stream);
-                       });
+    bhttp::async_write(
+        wire_stream, wire_ref,
+        [weak = weak_from_this(), stream, wire, keep_alive,
+         phase = PhaseStart{.peer = std::move(peer), .at = std::chrono::steady_clock::now()}](
+            beast::error_code write_ec, std::size_t) mutable {
+          auto self = weak.lock();
+          if (self != nullptr) {
+            self->active.fetch_sub(1);
+          }
+          if (self == nullptr || write_ec || !keep_alive) {
+            if (self != nullptr && write_ec) {
+              // The peer vanished mid-response (ADR-0013).
+              using Kind = BeastServerTransport::ConnectionEvent::Kind;
+              self->NotifyConnectionEvent(Kind::kDropped, write_ec, std::move(phase));
+            }
+            CloseStream(*stream);
+            return;
+          }
+          self->ReadNext(stream);
+        });
   }
 
   // The WebSocket upgrade path (ADR-0015), entered from ReadNext's success
@@ -2039,7 +2043,7 @@ struct BeastHttpClient::State {
   }
 
   std::unique_ptr<ClientConnection> TakeIdle() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::scoped_lock lock(mutex);
     if (idle.empty()) {
       return nullptr;
     }
@@ -2049,7 +2053,7 @@ struct BeastHttpClient::State {
   }
 
   void ReturnIdle(std::unique_ptr<ClientConnection> connection) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::scoped_lock lock(mutex);
     if (idle.size() < opts.max_idle_connections) {
       idle.push_back(std::move(connection));
     }
