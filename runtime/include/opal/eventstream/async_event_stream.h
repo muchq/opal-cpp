@@ -268,9 +268,17 @@ class AsyncEventStream {
   // handles minted by Share() fail softly once the stream is gone.
   ~AsyncEventStream() = default;
   AsyncEventStream(AsyncEventStream&&) noexcept = default;
-  // No explicit noexcept: the computed one depends on std::function's
-  // move-assignment, which the standard does not make noexcept.
-  AsyncEventStream& operator=(AsyncEventStream&&) = default;
+  // Not defaulted: that assigns in declaration order, so the socket would
+  // be released before view_'s assignment ends the old session through it.
+  AsyncEventStream& operator=(AsyncEventStream&& other) noexcept {
+    if (this != &other) {
+      view_ = std::move(other.view_);
+      socket_ = std::move(other.socket_);
+      encode_ = std::move(other.encode_);
+      decode_ = std::move(other.decode_);
+    }
+    return *this;
+  }
   AsyncEventStream(const AsyncEventStream&) = delete;
   AsyncEventStream& operator=(const AsyncEventStream&) = delete;
 
@@ -404,7 +412,7 @@ class AsyncEventStream {
   // stream after a Share() closes it, waits out pinned operations, and
   // leaves every handle failing softly.
   EventStreamHandle<Tx> Share() {
-    return EventStreamHandle<Tx>(view_.Ensure(socket_.get()), encode_);
+    return EventStreamHandle<Tx>(view_.Ensure(socket_.get(), socket_), encode_);
   }
 
  private:
@@ -412,7 +420,8 @@ class AsyncEventStream {
   Encoder encode_;
   Decoder decode_;
   // Last member on purpose: its teardown (End) runs first and needs the
-  // socket above still alive.
+  // socket above still alive. Move-assignment takes it first for the same
+  // reason.
   internal::SharedViewOwner view_;
 };
 

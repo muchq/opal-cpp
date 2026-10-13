@@ -1103,9 +1103,9 @@ TEST(SessionRegistryGraceTest, ResumeOrAddConvergesWhenDetachLandsMidRetry) {
   EXPECT_EQ(NextAt(fresh), "converged");
 }
 
-TEST(SessionRegistryGraceTest, CloseKicksTheLiveSessionAndFreesTheId) {
-  // The kick primitive (ADR-0022): the session observes the close, the
-  // handler side runs its normal exit path, and the id frees.
+TEST(SessionRegistryGraceTest, CloseEndsTheLiveSessionAndFreesTheId) {
+  // ADR-0022: the session observes the close, the handler side runs its
+  // normal exit path, and the id frees.
   Registry registry;
   Session session = MakeSession();
   ASSERT_TRUE(registry.Add("ada", *session.handle));
@@ -1116,6 +1116,24 @@ TEST(SessionRegistryGraceTest, CloseKicksTheLiveSessionAndFreesTheId) {
   Session fresh = MakeSession();
   EXPECT_TRUE(registry.Add("ada", *fresh.handle));  // the id freed
   EXPECT_FALSE(registry.Close("ghost"));
+}
+
+TEST(SessionRegistryGraceTest, KickEndsTheLiveSessionTellingThePeerWhy) {
+  // The kick primitive (ADR-0022): Close's exit path, and the peer reads
+  // the application's code — how a superseded client knows not to redial.
+  Registry registry;
+  Session session = MakeSession();
+  ASSERT_TRUE(registry.Add("ada", *session.handle));
+
+  EXPECT_TRUE(
+      registry.Kick("ada", {.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(100)));
+  EXPECT_EQ(NextAt(session), std::nullopt);
+  EXPECT_EQ(session.client->PeerCloseReason(),
+            (http::CloseReason{.code = 4001, .reason = "superseded"}));
+  EXPECT_TRUE(registry.Remove("ada"));
+  Session fresh = MakeSession();
+  EXPECT_TRUE(registry.Add("ada", *fresh.handle));
+  EXPECT_FALSE(registry.Kick("ghost", {.code = 4001, .reason = ""}, std::chrono::milliseconds(1)));
 }
 
 TEST(SessionRegistryGraceTest, CloseOnADetachedEntryIsAHarmlessNoOp) {

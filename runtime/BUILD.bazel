@@ -470,6 +470,7 @@ cc_test(
         ":eventstream_json",
         ":http",
         ":http_beast",
+        ":server",
         ":test_tls_identity",
         ":websocket_contract_test_support",
         # The hostile raw-websocket peer speaks Beast directly, for the

@@ -1070,13 +1070,29 @@ deadline (the old hand-rolled recipe's 20 × 50ms) comfortably covers the
 failure-notice race. The call blocks up to the deadline — legal because
 admission runs before the handler's first suspension, on the launching
 thread. A `kRefused` you
-*know* is wrong — a half-dead session whose wire never sent a FIN — has a
-convergent answer now: `registry.Close(id)` kicks the old session — its
+*know* is wrong — a half-dead session whose wire never sent a FIN, or an
+older connection the same identity has replaced — has a convergent
+answer: `registry.Kick(id, why, grace)` kicks the old session — its
 handler observes the close and runs the normal exit path, so the id is
 admittable on the next dial (freed outright after a Remove exit;
 parked-resumable after a Detach exit, where the redial resumes with the
-old identity and gets the snapshot). Kicking stays the application's call;
-`ResumeOrAdd` never does it on its own.
+old identity and gets the snapshot). `grace` bounds the wait for a peer
+that never answers; `Close(id)` would wait out the whole closing
+handshake (`request_timeout_seconds`). Put an application close code in
+`why` (4000-4999) so a kicked client that is still there can tell it was
+superseded and stop redialing — `PeerCloseReason()` on a native client,
+`CloseEvent.code` in a browser:
+
+```cpp
+auto admission = registry.ResumeOrAdd(id, mint, std::chrono::milliseconds(0));
+if (admission == Registry::Admission::kRefused) {
+  registry.Kick(id, {.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(250));
+  admission = registry.ResumeOrAdd(id, mint, std::chrono::seconds(1));
+}
+```
+
+Kicking stays the application's call; `ResumeOrAdd` never does it on its
+own.
 
 Say the posture out loud in your protocol docs, because it shapes client
 code: **recovery is snapshot replay, not message replay.** ADR-0016's

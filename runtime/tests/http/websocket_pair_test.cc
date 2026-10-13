@@ -239,6 +239,47 @@ TEST(WebSocketPairTest, CloseUnblocksASenderStalledOnBackpressure) {
   EXPECT_TRUE(failed.load());
 }
 
+// The peer of a kicked end reads why it was dropped; the end that kicked
+// started the close itself and reads nothing.
+TEST(WebSocketPairTest, AKickTellsThePeerItsCodeAndReason) {
+  auto [a, b] = InMemoryWebSocketPair::Create();
+  a->Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(100));
+
+  auto ended = b->Receive();
+  ASSERT_TRUE(ended.ok()) << ended.error().message();
+  EXPECT_FALSE(ended->has_value());
+  EXPECT_EQ(b->PeerCloseReason(), (CloseReason{.code = 4001, .reason = "superseded"}));
+  EXPECT_EQ(a->PeerCloseReason(), std::nullopt);
+}
+
+TEST(WebSocketPairTest, APlainCloseReadsAsANormalClosureAtThePeer) {
+  auto [a, b] = InMemoryWebSocketPair::Create();
+  EXPECT_EQ(b->PeerCloseReason(), std::nullopt) << "nothing closed yet";
+  a->Close();
+  EXPECT_EQ(b->PeerCloseReason(), (CloseReason{.code = 1000, .reason = ""}));
+  EXPECT_EQ(a->PeerCloseReason(), std::nullopt);
+}
+
+// Only the first close says why: a later kick from either end is the
+// no-op any close of a closed session is.
+TEST(WebSocketPairTest, AKickAfterTheSessionClosedChangesNothing) {
+  auto [a, b] = InMemoryWebSocketPair::Create();
+  a->Close();
+  a->Kick({.code = 4001, .reason = "late"}, std::chrono::milliseconds(100));
+  b->Kick({.code = 4002, .reason = "later"}, std::chrono::milliseconds(100));
+  EXPECT_EQ(b->PeerCloseReason(), (CloseReason{.code = 1000, .reason = ""}));
+  EXPECT_EQ(a->PeerCloseReason(), std::nullopt);
+}
+
+TEST(WebSocketPairDeathTest, AKickWithACodeNoEndpointMaySendDies) {
+  auto [a, b] = InMemoryWebSocketPair::Create();
+  EXPECT_DEATH(a->Kick({.code = 1006, .reason = ""}, std::chrono::milliseconds(1)),
+               "close code 1006 is not 1000 or in 3000-4999");
+  EXPECT_DEATH(
+      a->Kick({.code = 4001, .reason = std::string(124, 'x')}, std::chrono::milliseconds(1)),
+      "close reason is 124 bytes; a close frame holds 123");
+}
+
 TEST(WebSocketPairTest, AMessageTheCodecRefusesFailsValidationAndSparesTheSession) {
   auto [a, b] = InMemoryWebSocketPair::Create();
   const auto refused = a->Send(Message{.headers = {{"", true}}});  // empty header name

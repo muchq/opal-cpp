@@ -53,7 +53,10 @@ struct SharedSessionState {
   std::mutex mutex;
   std::condition_variable idle;
   http::WebSocket* socket = nullptr;  // null once the stream ended
-  int active = 0;                     // handle operations inside socket calls
+  int active = 0;                     // pinned handle operations inside socket calls
+  // Engaged when the stream owns its socket: handle operations then hold it
+  // by reference instead of a pin (EventStreamHandle::Acquire).
+  std::weak_ptr<http::WebSocket> owner;
 };
 
 // Drops one pin; the revoking stream's drain wait wakes at zero. Free so
@@ -86,10 +89,12 @@ class SharedViewOwner {
 
   // The state handles share, created on first use (a stream that never
   // shares carries none and End() is a no-op).
-  std::shared_ptr<SharedSessionState> Ensure(http::WebSocket* socket) {
+  std::shared_ptr<SharedSessionState> Ensure(http::WebSocket* socket,
+                                             std::weak_ptr<http::WebSocket> owner = {}) {
     if (state_ == nullptr) {
       state_ = std::make_shared<SharedSessionState>();
       state_->socket = socket;
+      state_->owner = std::move(owner);
       socket_ = socket;
     }
     return state_;
@@ -97,8 +102,10 @@ class SharedViewOwner {
 
   // Revoke-then-drain: null the pointer so no new handle operation starts,
   // close the socket so any operation already inside a call unblocks, wait
-  // for the in-flight count to drain. After this returns no handle can
-  // reach the socket again, so the borrow (or owned socket) may die.
+  // for the pinned count to drain. After this returns no handle starts an
+  // operation and none is inside one on a borrowed socket, so the borrow
+  // may die; one still inside a call on an owned socket holds its own
+  // reference.
   void End() {
     if (state_ == nullptr) return;
     const std::shared_ptr<SharedSessionState> state = std::move(state_);
@@ -126,7 +133,8 @@ class SharedViewOwner {
 // instead of borrowed references with manual remove-before-every-return
 // discipline. The handle never extends the session: once the stream that
 // minted it is gone (for a server handler, when the handler machinery
-// returns), Send fails with Error::Transport — exactly what a closed stream
+// returns — a call already under way finishes first), Send fails with
+// Error::Transport — exactly what a closed stream
 // returns today — and Close is a no-op, so a stale handle has no new
 // failure modes, it just misses. (A moved-from handle behaves like a stale
 // one.)
@@ -149,10 +157,10 @@ class EventStreamHandle {
                   "receive-only stream's handle (use Close)");
     auto message = encode_(event);
     if (!message.ok()) return std::move(message).error();
-    http::WebSocket* socket = Acquire();
-    if (socket == nullptr) return Error::Transport("event stream ended");
-    auto sent = socket->Send(*message);
-    Release();
+    const Hold hold = Acquire();
+    if (hold.socket == nullptr) return Error::Transport("event stream ended");
+    auto sent = hold.socket->Send(*message);
+    Release(hold);
     return sent;
   }
 
@@ -161,10 +169,21 @@ class EventStreamHandle {
   // session from outside the handler (the slow-consumer policy): the
   // owner's blocked Receive/Send unblock exactly as for any other close.
   void Close() const {
-    http::WebSocket* socket = Acquire();
-    if (socket == nullptr) return;
-    socket->Close();
-    Release();
+    const Hold hold = Acquire();
+    if (hold.socket == nullptr) return;
+    hold.socket->Close();
+    Release(hold);
+  }
+
+  // The socket's Kick (opal/http/websocket.h): Close for a peer the caller
+  // has given up on — `why` on the close frame, and at most `grace` spent
+  // waiting for an answer. A no-op once the session ended.
+  void Kick(const http::CloseReason& why, std::chrono::milliseconds grace) const {
+    http::CheckCloseReason(why);
+    const Hold hold = Acquire();
+    if (hold.socket == nullptr) return;
+    hold.socket->Kick(why, grace);
+    Release(hold);
   }
 
   // The completion-driven send (ADR-0019): the socket's SendAsync contract
@@ -182,26 +201,27 @@ class EventStreamHandle {
       callback(std::move(message).error());
       return;
     }
-    http::WebSocket* socket = Acquire();
-    if (socket == nullptr) {
+    const Hold hold = Acquire();
+    if (hold.socket == nullptr) {
       callback(Error::Transport("event stream ended"));
       return;
     }
-    socket->SendAsync(*message,
-                      [state = state_, callback = std::move(callback)](Outcome<Unit> sent) {
-                        internal::ReleasePin(*state);
-                        callback(std::move(sent));
-                      });
+    // The hold spans issue to completion.
+    hold.socket->SendAsync(*message, [state = state_, owned = hold.owned,
+                                      callback = std::move(callback)](Outcome<Unit> sent) {
+      if (owned == nullptr) internal::ReleasePin(*state);
+      callback(std::move(sent));
+    });
   }
 
   // Whether the underlying session implements the async operations —
   // false for a session that already ended (a stale handle can deliver
   // nothing either way).
   bool SupportsAsync() const {
-    http::WebSocket* socket = Acquire();
-    if (socket == nullptr) return false;
-    const bool supported = socket->SupportsAsync();
-    Release();
+    const Hold hold = Acquire();
+    if (hold.socket == nullptr) return false;
+    const bool supported = hold.socket->SupportsAsync();
+    Release(hold);
     return supported;
   }
 
@@ -215,17 +235,31 @@ class EventStreamHandle {
                     std::function<Outcome<Message>(const Tx&)> encode)
       : state_(std::move(state)), encode_(std::move(encode)) {}
 
-  // The socket, pinned against revocation until Release — or null once the
-  // session ended (or this handle was moved from).
-  http::WebSocket* Acquire() const {
-    if (state_ == nullptr) return nullptr;
+  // The socket for one handle call, or none once the session ended (or
+  // this handle was moved from). A socket the stream owns is held by
+  // reference, never pinned: a transport may complete operations inline on
+  // the calling thread (the in-memory pair does), ending the loop and
+  // destroying the stream inside the call, and the stream's teardown waits
+  // for every pin — this frame's included. A borrowed socket is pinned
+  // until Release; a borrowing stream is never torn down by its own
+  // socket's completions.
+  struct Hold {
+    std::shared_ptr<http::WebSocket> owned;
+    http::WebSocket* socket = nullptr;
+  };
+
+  Hold Acquire() const {
+    if (state_ == nullptr) return {};
     const std::scoped_lock lock(state_->mutex);
-    if (state_->socket == nullptr) return nullptr;
-    ++state_->active;
-    return state_->socket;
+    if (state_->socket == nullptr) return {};
+    Hold hold{.owned = state_->owner.lock(), .socket = state_->socket};
+    if (hold.owned == nullptr) ++state_->active;
+    return hold;
   }
 
-  void Release() const { internal::ReleasePin(*state_); }
+  void Release(const Hold& hold) const {
+    if (hold.owned == nullptr) internal::ReleasePin(*state_);
+  }
 
   std::shared_ptr<internal::SharedSessionState> state_;
   std::function<Outcome<Message>(const Tx&)> encode_;
@@ -278,9 +312,18 @@ class EventStream {
   // session fans out, so the stream itself stays single-owner.
   ~EventStream() = default;
   EventStream(EventStream&&) noexcept = default;
-  // No explicit noexcept: the computed one depends on std::function's
-  // move-assignment, which the standard leaves unspecified.
-  EventStream& operator=(EventStream&&) = default;
+  // Not defaulted: that assigns in declaration order, so the socket would
+  // be released before view_'s assignment ends the old session through it.
+  EventStream& operator=(EventStream&& other) noexcept {
+    if (this != &other) {
+      view_ = std::move(other.view_);
+      owned_ = std::move(other.owned_);
+      socket_ = other.socket_;
+      encode_ = std::move(other.encode_);
+      decode_ = std::move(other.decode_);
+    }
+    return *this;
+  }
 
   // Encodes and sends one event, blocking until its frame is on the wire.
   // An encoder failure surfaces as-is and leaves the session untouched;
@@ -330,7 +373,9 @@ class EventStream {
   // stream closes the session and leaves them failing softly with
   // Error::Transport. Call from the thread that owns the stream (it mutates
   // the stream), as many times as you like.
-  EventStreamHandle<Tx> Share() { return EventStreamHandle<Tx>(view_.Ensure(socket_), encode_); }
+  EventStreamHandle<Tx> Share() {
+    return EventStreamHandle<Tx>(view_.Ensure(socket_, owned_), encode_);
+  }
 
  private:
   // Both receive overloads: nullopt through, decode the message, and treat
@@ -355,7 +400,8 @@ class EventStream {
   Encoder encode_;
   Decoder decode_;
   // Last member on purpose: its teardown (End) runs first and needs the
-  // socket members above still alive.
+  // socket members above still alive. Move-assignment takes it first for
+  // the same reason.
   internal::SharedViewOwner view_;
 };
 

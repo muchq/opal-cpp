@@ -62,6 +62,18 @@ TEST(JsonRpcStreamSocketTest, EventsRoundTripBetweenTwoWrappedEnds) {
   EXPECT_EQ(**echoed, event);
 }
 
+// The kick and the close it reads are the inner session's: the wrapper
+// passes the code through both ways.
+TEST(JsonRpcStreamSocketTest, AKickAndThePeersCloseReasonAreTheInnerSessions) {
+  auto [left, right] = http::InMemoryWebSocketPair::Create();
+  auto server = Wrap(right, JsonRpcStreamSocket::Role::kServer);
+  auto client = Wrap(left, JsonRpcStreamSocket::Role::kClient);
+  server->Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(100));
+  EXPECT_EQ(left->PeerCloseReason(), (http::CloseReason{.code = 4001, .reason = "superseded"}));
+  EXPECT_EQ(client->PeerCloseReason(), (http::CloseReason{.code = 4001, .reason = "superseded"}));
+  EXPECT_EQ(server->PeerCloseReason(), std::nullopt);
+}
+
 TEST(JsonRpcStreamSocketTest, TheWireCarriesThePinnedNotificationText) {
   // One end unwrapped: what it receives is the wire — a headerless
   // message whose payload is the notification text, byte-pinned.

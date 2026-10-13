@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <future>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
@@ -31,9 +32,11 @@
 
 #include "opal/eventstream/async_event_stream.h"
 #include "opal/eventstream/envelope.h"
+#include "opal/eventstream/event_stream.h"
 #include "opal/eventstream/json_frame.h"
 #include "opal/http/beast_transport.h"
 #include "opal/http/websocket.h"
+#include "opal/server/session_registry.h"
 #include "opal/testing/connection_event_recorder.h"
 #include "opal/testing/tls_test_identity.h"
 #include "opal/testing/websocket_contract_test.h"
@@ -1432,6 +1435,212 @@ TEST(BeastWebSocketTest, AThrowingServeCallbackStillClosesTheSessionCleanly) {
   auto again = BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()});
   EXPECT_TRUE(again.ok());
   server.Stop();
+}
+
+// A server whose one session hands the test its socket and then sits in
+// Receive, reporting how that receive ended — so the test can end the
+// session from outside, as a hub does, and time it. The socket is the
+// serve callback's borrow: use it only before the session has ended.
+class HeldSessionServer {
+ public:
+  struct Ended {
+    Outcome<std::optional<Message>> received;
+    std::optional<CloseReason> peer_close;  // read before the borrow ends
+  };
+
+  explicit HeldSessionServer(int request_timeout_seconds = 30) {
+    BeastServerTransport::Options options;
+    options.request_timeout_seconds = request_timeout_seconds;
+    options.on_websocket = [this](const HttpRequest&, WebSocket& socket) {
+      socket_.set_value(&socket);
+      auto received = socket.Receive();
+      ended_promise_.set_value(Ended{std::move(received), socket.PeerCloseReason()});
+      // The borrow outlives the receive until the test lets go of it.
+      (void)released_.wait_for(std::chrono::seconds(30));
+    };
+    server_ = std::make_unique<BeastServerTransport>(options);
+    EXPECT_TRUE(server_->Start(NotFoundHandler()).ok());
+  }
+  ~HeldSessionServer() {
+    Release();
+    server_->Stop();
+  }
+  // Lets the serve callback return, ending the borrow: call once anything
+  // built on Socket() (a stream, say) is gone.
+  void Release() {
+    if (!released_set_) release_.set_value();
+    released_set_ = true;
+  }
+
+  int port() const { return server_->port(); }
+  // The server's end of the session, once a peer has upgraded.
+  WebSocket& Socket() {
+    if (held_ == nullptr) {
+      auto socket = socket_.get_future();
+      if (socket.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        ADD_FAILURE() << "no peer upgraded";
+        std::abort();  // nothing to hand back; get() would wait forever
+      }
+      held_ = socket.get();
+    }
+    return *held_;
+  }
+  // How the server's receive ended, if it did within `budget`.
+  std::optional<Ended> EndedWithin(std::chrono::milliseconds budget) {
+    if (!ended_.has_value() && ended_future_.wait_for(budget) == std::future_status::ready) {
+      ended_ = ended_future_.get();
+    }
+    return ended_;
+  }
+
+ private:
+  std::promise<WebSocket*> socket_;
+  WebSocket* held_ = nullptr;
+  std::promise<void> release_;
+  std::shared_future<void> released_ = release_.get_future().share();
+  bool released_set_ = false;
+  std::promise<Ended> ended_promise_;
+  std::future<Ended> ended_future_ = ended_promise_.get_future();
+  std::optional<Ended> ended_;
+  std::unique_ptr<BeastServerTransport> server_;
+};
+
+// Why Kick exists: Close's closing handshake waits for the peer's answer,
+// and a peer that is gone never sends one.
+TEST(BeastWebSocketTest, ACloseWaitsOutTheHandshakeForAPeerThatNeverAnswers) {
+  HeldSessionServer server(/*request_timeout_seconds=*/2);
+  RawWsPeer peer(server.port());  // never reads, so never answers a close
+  server.Socket().Close();
+  EXPECT_FALSE(server.EndedWithin(std::chrono::milliseconds(1000)).has_value())
+      << "the close ended before the handshake timeout";
+  ASSERT_TRUE(server.EndedWithin(std::chrono::seconds(6)).has_value());
+}
+
+TEST(BeastWebSocketTest, AKickEndsTheSessionOfAPeerThatNeverAnswersWithinItsGrace) {
+  HeldSessionServer server;  // a 30s closing handshake, were it Close
+  RawWsPeer peer(server.port());
+  WebSocket& socket = server.Socket();
+  const auto kicked = std::chrono::steady_clock::now();
+  socket.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(200));
+  auto ended = server.EndedWithin(std::chrono::seconds(5));
+  ASSERT_TRUE(ended.has_value()) << "the kick waited for a peer that never answers";
+  EXPECT_FALSE(ended->received.ok()) << "an unanswered close is not a clean end";
+  EXPECT_LT(std::chrono::steady_clock::now() - kicked, std::chrono::seconds(2));
+}
+
+TEST(BeastWebSocketTest, AKickTellsAPeerThatAnswersItsCodeAndReason) {
+  HeldSessionServer server;
+  RawWsPeer peer(server.port());
+  server.Socket().Kick({.code = 4001, .reason = "superseded"}, std::chrono::seconds(5));
+  EXPECT_EQ(peer.DrainToCloseCode(), boost::beast::websocket::error::closed);
+  EXPECT_EQ(peer.reason().code, 4001);
+  EXPECT_EQ(std::string(peer.reason().reason), "superseded");
+  auto ended = server.EndedWithin(std::chrono::seconds(5));
+  ASSERT_TRUE(ended.has_value());
+  ASSERT_TRUE(ended->received.ok()) << ended->received.error().message();
+  EXPECT_FALSE(ended->received->has_value()) << "an answered kick is a clean end";
+}
+
+TEST(BeastWebSocketTest, TheClientReadsTheCodeAKickSent) {
+  HeldSessionServer server;
+  auto dialed = BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()});
+  ASSERT_TRUE(dialed.ok()) << dialed.error().message();
+  server.Socket().Kick({.code = 4001, .reason = "superseded"}, std::chrono::seconds(5));
+  auto ended = (*dialed)->Receive(std::chrono::seconds(5));
+  ASSERT_TRUE(ended.ok()) << ended.error().message();
+  EXPECT_FALSE(ended->has_value());
+  EXPECT_EQ((*dialed)->PeerCloseReason(), (CloseReason{.code = 4001, .reason = "superseded"}));
+}
+
+TEST(BeastWebSocketTest, AServerCloseReadsAsANormalClosureAtTheClient) {
+  HeldSessionServer server;
+  auto dialed = BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()});
+  ASSERT_TRUE(dialed.ok()) << dialed.error().message();
+  EXPECT_EQ((*dialed)->PeerCloseReason(), std::nullopt) << "nothing closed yet";
+  server.Socket().Close();
+  auto ended = (*dialed)->Receive(std::chrono::seconds(5));
+  ASSERT_TRUE(ended.ok()) << ended.error().message();
+  EXPECT_FALSE(ended->has_value());
+  EXPECT_EQ((*dialed)->PeerCloseReason(), (CloseReason{.code = 1000, .reason = ""}));
+  // The server started that close: its end read no close of the peer's.
+  auto server_end = server.EndedWithin(std::chrono::seconds(5));
+  ASSERT_TRUE(server_end.has_value());
+  EXPECT_EQ(server_end->peer_close, std::nullopt);
+}
+
+// Two redials under one identity can kick the same session twice: the
+// second must not cut the first kick's frame short, or the peer never
+// learns it was superseded.
+TEST(BeastWebSocketTest, ASecondKickLeavesTheFirstKicksFrameAlone) {
+  HeldSessionServer server;
+  RawWsPeer peer(server.port());
+  WebSocket& socket = server.Socket();
+  socket.Kick({.code = 4001, .reason = "superseded"}, std::chrono::seconds(5));
+  socket.Kick({.code = 4002, .reason = "again"}, std::chrono::milliseconds(0));
+  EXPECT_EQ(peer.DrainToCloseCode(), boost::beast::websocket::error::closed);
+  EXPECT_EQ(peer.reason().code, 4001);
+  ASSERT_TRUE(server.EndedWithin(std::chrono::seconds(5)).has_value());
+}
+
+// The first kick's deadline governs: a later one with a shorter grace
+// neither re-arms nor hurries it.
+TEST(BeastWebSocketTest, ASecondKickKeepsTheFirstKicksDeadline) {
+  HeldSessionServer server;
+  RawWsPeer peer(server.port());  // never answers
+  WebSocket& socket = server.Socket();
+  socket.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(1500));
+  socket.Kick({.code = 4002, .reason = "again"}, std::chrono::milliseconds(0));
+  EXPECT_FALSE(server.EndedWithin(std::chrono::milliseconds(700)).has_value())
+      << "the second kick cut the first one's grace short";
+  ASSERT_TRUE(server.EndedWithin(std::chrono::seconds(5)).has_value());
+}
+
+// A client may kick too: the server's end reads why.
+TEST(BeastWebSocketTest, AClientKickTellsTheServerWhy) {
+  HeldSessionServer server;
+  auto dialed = BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()});
+  ASSERT_TRUE(dialed.ok()) << dialed.error().message();
+  (void)server.Socket();  // the server's receive is parked
+  (*dialed)->Kick({.code = 4100, .reason = "leaving"}, std::chrono::seconds(5));
+  auto ended = server.EndedWithin(std::chrono::seconds(5));
+  ASSERT_TRUE(ended.has_value());
+  ASSERT_TRUE(ended->received.ok()) << ended->received.error().message();
+  EXPECT_FALSE(ended->received->has_value());
+  EXPECT_EQ(ended->peer_close, (CloseReason{.code = 4100, .reason = "leaving"}));
+}
+
+// The hub's path end to end: a registry Kick through the session's handle
+// carries the grace down to the wire.
+TEST(BeastWebSocketTest, ARegistryKickBoundsTheWaitForAPeerThatNeverAnswers) {
+  HeldSessionServer server;
+  RawWsPeer peer(server.port());
+  {
+    eventstream::EventStream<Message, Message> stream(
+        server.Socket(), [](const Message& m) -> Outcome<Message> { return m; }, nullptr);
+    server::SessionRegistry<Message> registry;
+    ASSERT_TRUE(registry.Add("ada", stream.Share()));
+    const auto kicked = std::chrono::steady_clock::now();
+    ASSERT_TRUE(registry.Kick("ada", {.code = 4001, .reason = "superseded"},
+                              std::chrono::milliseconds(200)));
+    ASSERT_TRUE(server.EndedWithin(std::chrono::seconds(5)).has_value())
+        << "the kick waited for a peer that never answers";
+    EXPECT_LT(std::chrono::steady_clock::now() - kicked, std::chrono::seconds(2));
+    EXPECT_TRUE(registry.Remove("ada"));
+  }  // the stream goes before the borrow it was built on
+  server.Release();
+}
+
+TEST(BeastWebSocketTest, AKickOnASessionAlreadyClosingStopsWaitingForThePeer) {
+  HeldSessionServer server;
+  RawWsPeer peer(server.port());
+  WebSocket& socket = server.Socket();
+  socket.Close();
+  ASSERT_FALSE(server.EndedWithin(std::chrono::milliseconds(300)).has_value());
+  const auto kicked = std::chrono::steady_clock::now();
+  socket.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(200));
+  ASSERT_TRUE(server.EndedWithin(std::chrono::seconds(5)).has_value())
+      << "the kick left the close waiting out its handshake";
+  EXPECT_LT(std::chrono::steady_clock::now() - kicked, std::chrono::seconds(2));
 }
 
 TEST(BeastWebSocketTest, AVanishedPeerIsDetectedByTheServerIdleTimeout) {
