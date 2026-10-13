@@ -54,9 +54,8 @@ struct SharedSessionState {
   std::condition_variable idle;
   http::WebSocket* socket = nullptr;  // null once the stream ended
   int active = 0;                     // pinned handle operations inside socket calls
-  // Engaged when the stream owns its socket (the coroutine adapter): handle
-  // operations then hold it by reference instead of a pin
-  // (EventStreamHandle::Acquire).
+  // Engaged when the stream owns its socket: handle operations then hold it
+  // by reference instead of a pin (EventStreamHandle::Acquire).
   std::weak_ptr<http::WebSocket> owner;
 };
 
@@ -374,7 +373,9 @@ class EventStream {
   // stream closes the session and leaves them failing softly with
   // Error::Transport. Call from the thread that owns the stream (it mutates
   // the stream), as many times as you like.
-  EventStreamHandle<Tx> Share() { return EventStreamHandle<Tx>(view_.Ensure(socket_), encode_); }
+  EventStreamHandle<Tx> Share() {
+    return EventStreamHandle<Tx>(view_.Ensure(socket_, owned_), encode_);
+  }
 
  private:
   // Both receive overloads: nullopt through, decode the message, and treat

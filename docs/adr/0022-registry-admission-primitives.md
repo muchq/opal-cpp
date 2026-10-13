@@ -102,10 +102,12 @@ in-memory pair does, as its contract allows — and the loop then ends and
 destroys its stream inside the handle's call, where the stream's teardown
 waited for the pin that call held. Any hub calling `Close(id)` on a
 pair-backed session parked in `Receive` deadlocked, and so did a delivery
-the peer answered by closing. The coroutine adapter owns its socket, so a
-handle now holds a strong reference across each call (to completion, for
-`SendAsync`) instead; a borrowed socket is still pinned, and a borrowing
-stream is never torn down by its own socket's completions.
+the peer answered by closing. When the stream owns its socket (the
+coroutine adapter always does; a blocking `EventStream` built from a
+`shared_ptr` does too), a handle now holds a strong reference across each
+call (to completion, for `SendAsync`) instead; a borrowed socket is still
+pinned, and a borrowing stream is never torn down by its own socket's
+completions.
 
 ## Non-goals
 

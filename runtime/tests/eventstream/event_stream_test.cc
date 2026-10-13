@@ -335,6 +335,27 @@ void MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket() {
   EXPECT_FALSE(new_socket->owners_at_close().has_value()) << "the new session was ended";
 }
 
+// A handle call on a stream that owns its socket holds the socket by
+// reference for the call — the test's, the stream's and the call's — never
+// by a pin the stream's teardown would wait on.
+template <typename Stream>
+void AHandleCallHoldsAnOwnedSocketByReference() {
+  auto socket = std::make_shared<OwnershipAtClose>();
+  auto identity = [](const Message& m) -> Outcome<Message> { return m; };
+  Stream stream(socket, identity, identity);
+  stream.Share().Close();
+  ASSERT_TRUE(socket->owners_at_close().has_value());
+  EXPECT_EQ(*socket->owners_at_close(), 3);
+}
+
+TEST(EventStreamTest, AHandleCallHoldsAnOwnedSocketByReference) {
+  AHandleCallHoldsAnOwnedSocketByReference<EventStream<Message, Message>>();
+}
+
+TEST(AsyncEventStreamTest, AHandleCallHoldsAnOwnedSocketByReference) {
+  AHandleCallHoldsAnOwnedSocketByReference<AsyncEventStream<Message, Message>>();
+}
+
 TEST(EventStreamTest, MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket) {
   MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket<EventStream<Message, Message>>();
 }

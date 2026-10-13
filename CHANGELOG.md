@@ -287,9 +287,10 @@ policy in [docs/versioning.md](docs/versioning.md).
   thread, so a hub calling `registry.Close(id)` on a session parked in
   `co_await Receive()` — or delivering to a peer that answered by closing
   — destroyed the stream inside that call, and the stream's teardown
-  waited forever for the pin the call held. A handle minted by
-  `AsyncEventStream` now keeps the socket alive by ownership rather than
-  by a pin, for every operation.
+  waited forever for the pin the call held. A handle on a stream that owns
+  its socket (`AsyncEventStream`, or an `EventStream` built from a
+  `shared_ptr`) now keeps the socket alive by ownership rather than by a
+  pin, for every operation.
 
 - **A dialed WebSocket released on its own io thread no longer terminates
   the process.** When the last handle to a `BeastWebSocketClient::Dial`
