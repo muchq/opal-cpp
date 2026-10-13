@@ -270,8 +270,7 @@ class AsyncEventStream {
   AsyncEventStream(AsyncEventStream&&) noexcept = default;
   // Not defaulted: that assigns in declaration order, so the socket would
   // be released before view_'s assignment ends the old session through it.
-  // No noexcept: std::function's move-assignment is not required to be.
-  AsyncEventStream& operator=(AsyncEventStream&& other) {
+  AsyncEventStream& operator=(AsyncEventStream&& other) noexcept {
     if (this != &other) {
       view_ = std::move(other.view_);
       socket_ = std::move(other.socket_);

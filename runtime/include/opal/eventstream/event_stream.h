@@ -315,8 +315,7 @@ class EventStream {
   EventStream(EventStream&&) noexcept = default;
   // Not defaulted: that assigns in declaration order, so the socket would
   // be released before view_'s assignment ends the old session through it.
-  // No noexcept: std::function's move-assignment is not required to be.
-  EventStream& operator=(EventStream&& other) {
+  EventStream& operator=(EventStream&& other) noexcept {
     if (this != &other) {
       view_ = std::move(other.view_);
       owned_ = std::move(other.owned_);
