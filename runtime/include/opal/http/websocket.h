@@ -2,16 +2,42 @@
 #define OPAL_HTTP_WEBSOCKET_H_
 
 #include <chrono>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 
+#include "opal/core/fatal.h"
 #include "opal/eventstream/frame.h"
 #include "opal/http/headers.h"
 #include "opal/http/transport.h"
 
 namespace opal::http {
+
+// A close frame's status and reason (RFC 6455 §7.4): 1000 is a normal end,
+// 4000-4999 are the application's own (a hub's "superseded", say), and the
+// reason is UTF-8 for people.
+struct CloseReason {
+  std::uint16_t code = 1000;
+  std::string reason;
+
+  friend bool operator==(const CloseReason&, const CloseReason&) = default;
+};
+
+// Kick's precondition: a code an endpoint may send (1000, or 3000-4999 —
+// the protocol's own failure codes are the transport's to send) and a
+// reason that fits a control frame beside it. Fails fast (ADR-0009).
+inline void CheckCloseReason(const CloseReason& why) {
+  if (why.code != 1000 && (why.code < 3000 || why.code > 4999)) {
+    internal::Fatal("websocket Kick: close code " + std::to_string(why.code) +
+                    " is not 1000 or in 3000-4999");
+  }
+  if (why.reason.size() > 123) {
+    internal::Fatal("websocket Kick: close reason is " + std::to_string(why.reason.size()) +
+                    " bytes; a close frame holds 123");
+  }
+}
 
 // A blocking, full-duplex event-stream session over one WebSocket
 // connection (ADR-0015). What travels is eventstream::Message — exactly one
@@ -113,6 +139,34 @@ class WebSocket {
   // reach it. That distinction is load-bearing for implementors; see
   // TerminalWaiters.
   virtual void Close() = 0;
+
+  // Ends the session for a peer the caller has given up on (ADR-0022's
+  // kick): a close frame carrying `why`, then the connection torn down
+  // after at most `grace` waiting for the peer's answer, where Close()
+  // waits out the transport's whole closing handshake. A peer that is
+  // still there reads `why` (a browser's CloseEvent.code and .reason); one
+  // that is gone costs `grace`, not the handshake timeout. Everything else
+  // is Close()'s contract: idempotent, non-blocking, safe from any thread,
+  // and it unblocks and completes what is parked — a peer that does not
+  // answer in time ends the session with an error rather than a clean
+  // nullopt. On a session already closing it stops waiting for the peer
+  // and the frame already sent stands. `why.code` must be 1000 or in
+  // 3000-4999 and `why.reason` at most 123 bytes (RFC 6455 §5.5, §7.4);
+  // anything else is a contract violation and fails fast (ADR-0009).
+  //
+  // The default is Close(), for an implementation with neither close
+  // frames nor a handshake to bound.
+  virtual void Kick(const CloseReason& why, std::chrono::milliseconds grace) {
+    (void)grace;
+    CheckCloseReason(why);
+    Close();
+  }
+
+  // The close frame the peer ended the session with: engaged once a close
+  // the peer started has been read (its code and reason, as sent), and
+  // never for a session this end closed or one that failed. Safe from any
+  // thread.
+  virtual std::optional<CloseReason> PeerCloseReason() const { return std::nullopt; }
 
   // --- Completion-driven twins (ADR-0019) ------------------------------
   //

@@ -75,6 +75,8 @@ class JsonRpcStreamSocket final : public http::WebSocket {
   Outcome<std::optional<Message>> Receive(std::chrono::milliseconds timeout) override;
   Outcome<Unit> Send(const Message& message) override;
   void Close() override;
+  void Kick(const http::CloseReason& why, std::chrono::milliseconds grace) override;
+  std::optional<http::CloseReason> PeerCloseReason() const override;
   void ReceiveAsync(ReceiveCallback callback) override;
   // The async deadline (#130), worn by the wrapper the way the blocking
   // one is: a timeout is the inner Error::Timeout verbatim — no envelope

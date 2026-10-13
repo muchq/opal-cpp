@@ -14,6 +14,8 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdlib>
+#include <functional>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -667,6 +669,50 @@ TEST(AsyncEventStreamTest, SharedHandlesOutliveTheLoopAndItsStream) {
   const auto stale = handle.Send(Pong{"too-late"});
   ASSERT_FALSE(stale.ok());
   EXPECT_EQ(stale.error().kind(), ErrorKind::kTransport);
+}
+
+// A hub ending a session from outside the loop (a registry Close or Kick)
+// on a transport that completes the parked receive inline on the closing
+// thread — the pair's documented behavior: the loop ends and its stream
+// is destroyed inside that very call, so the handle's call must not hold
+// anything the stream's teardown waits for.
+void EndFromOutsideTheParkedLoop(const std::function<void(const EventStreamHandle<Pong>&)>& end) {
+  auto [client_socket, server_socket] = http::InMemoryWebSocketPair::Create();
+  Mailbox<EventStreamHandle<Pong>> minted;
+  std::atomic<bool> done{false};
+  [](std::shared_ptr<http::WebSocket> socket, Mailbox<EventStreamHandle<Pong>>* minted,
+     std::atomic<bool>* done) -> Detached {
+    AsyncServer stream(std::move(socket), EncodePong, DecodePing);
+    minted->Post(stream.Share());
+    (void)co_await stream.Receive();  // parked until the handle ends it
+    *done = true;
+  }(server_socket, &minted, &done);
+  EventStreamHandle<Pong> handle = minted.Wait();
+
+  std::promise<void> returned;
+  std::thread ender([&] {
+    end(handle);
+    returned.set_value();
+  });
+  if (returned.get_future().wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+    ender.detach();  // wedged for good; the assertion below names it
+    FAIL() << "ending the session through its handle deadlocked on the stream's teardown";
+  }
+  ender.join();
+  EXPECT_TRUE(done.load());
+  auto at_client = client_socket->Receive();
+  ASSERT_TRUE(at_client.ok()) << at_client.error().message();
+  EXPECT_FALSE(at_client->has_value());
+}
+
+TEST(AsyncEventStreamTest, AHandleCloseThatEndsTheLoopInlineReturns) {
+  EndFromOutsideTheParkedLoop([](const EventStreamHandle<Pong>& handle) { handle.Close(); });
+}
+
+TEST(AsyncEventStreamTest, AHandleKickThatEndsTheLoopInlineReturns) {
+  EndFromOutsideTheParkedLoop([](const EventStreamHandle<Pong>& handle) {
+    handle.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(100));
+  });
 }
 
 TEST(AsyncEventStreamTest, HandleSendAsyncCompletesAndFailsSoftlyAfterRevocation) {

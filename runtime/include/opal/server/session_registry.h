@@ -462,29 +462,38 @@ class SessionRegistry {
     return Broadcast([&event](const Id&) { return event; }, delivery);
   }
 
-  // Closes id's current session — the kick primitive (ADR-0022): the
-  // session observes the close and its handler runs its normal exit path,
-  // making the id admittable on the next dial — freed outright on a
-  // Remove exit; parked-resumable on a Detach exit, where the next
-  // ResumeOrAdd reports kResumed and snapshot replay carries the old
-  // session's identity across. Policy stays
-  // with the application: this is how a ResumeOrAdd refusal becomes
-  // actionable when the old session is known dead (a silent partition, an
-  // operator action) instead of waiting out TCP. On a detached entry it
-  // closes an already-closed handle — a harmless no-op (detached ids are
-  // Resume's and Remove's business). False for an unknown id. The handle
-  // copy is taken under the entry lock (the Resume-swap discipline) and
-  // closed outside all locks.
+  // Closes id's current session (ADR-0022): the session observes the
+  // close and its handler runs its normal exit path, making the id
+  // admittable on the next dial — freed outright on a Remove exit;
+  // parked-resumable on a Detach exit, where the next ResumeOrAdd reports
+  // kResumed and snapshot replay carries the old session's identity
+  // across. Close runs the transport's whole closing handshake, so a peer
+  // that never answers holds the id until the handshake times out; Kick,
+  // below, is the kick for one the application has given up on. On a
+  // detached entry it closes an already-closed handle — a harmless no-op
+  // (detached ids are Resume's and Remove's business). False for an
+  // unknown id. The handle copy is taken under the entry lock (the
+  // Resume-swap discipline) and closed outside all locks.
   bool Close(const Id& id) {
-    std::optional<Handle> doomed;
-    {
-      const std::scoped_lock lock(mutex_);
-      const auto it = sessions_.find(id);
-      if (it == sessions_.end()) return false;
-      const std::scoped_lock entry_lock(it->second->mutex);
-      doomed.emplace(it->second->handle);
-    }
+    std::optional<Handle> doomed = CurrentHandle(id);
+    if (!doomed.has_value()) return false;
     doomed->Close();
+    return true;
+  }
+
+  // The kick primitive (ADR-0022): Close for a session the application
+  // has given up on — a silent partition, a newer connection under the
+  // same identity, an operator action. The peer, if still there, reads
+  // `why` (an application code says why it was dropped, so it can stop
+  // redialing); one that is gone holds the id for at most `grace` rather
+  // than the closing handshake's timeout. Policy stays with the
+  // application: ResumeOrAdd never kicks on its own. Everything else is
+  // Close's, false for an unknown id included.
+  bool Kick(const Id& id, const http::CloseReason& why, std::chrono::milliseconds grace) {
+    http::CheckCloseReason(why);
+    std::optional<Handle> doomed = CurrentHandle(id);
+    if (!doomed.has_value()) return false;
+    doomed->Kick(why, grace);
     return true;
   }
 
@@ -532,6 +541,15 @@ class SessionRegistry {
   }
 
  private:
+  // A copy of id's current handle, taken under the entry lock Resume swaps
+  // under; nullopt for an unknown id.
+  std::optional<Handle> CurrentHandle(const Id& id) {
+    const std::scoped_lock lock(mutex_);
+    const auto it = sessions_.find(id);
+    if (it == sessions_.end()) return std::nullopt;
+    const std::scoped_lock entry_lock(it->second->mutex);
+    return it->second->handle;
+  }
   struct Queued {
     Tx event;
     DeliveryClass delivery;

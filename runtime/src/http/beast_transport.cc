@@ -578,6 +578,40 @@ class WsSession final : public WebSocketSessionBase,
     }
   }
 
+  // Close with `why` on the frame and the closing handshake bounded by
+  // `grace` (Beast's handshake timeout for this close only). A handshake
+  // already running is Close's own, waiting on the peer for the whole
+  // request timeout: the kick closes the socket under it instead.
+  void Kick(const CloseReason& why, std::chrono::milliseconds grace) override {
+    CheckCloseReason(why);
+    auto self = this->shared_from_this();
+    try {
+      asio::post(ws_.get_executor(), [self, why, grace] {
+        std::unique_lock<std::mutex> lock(self->mutex_);
+        if (self->close_started_) {
+          if (self->failed_ || self->peer_closed_) return;
+          lock.unlock();
+          beast::error_code ignored;
+          (void)beast::get_lowest_layer(self->ws_).socket().close(ignored);
+          return;
+        }
+        if (!self->close_requested_) {
+          self->close_reason_ =
+              bws::close_reason(static_cast<bws::close_code>(why.code), why.reason);
+        }
+        self->close_grace_ = grace;
+        self->RequestCloseLocked(lock);
+      });
+    } catch (...) {
+      Abort("websocket: cannot schedule the kick");
+    }
+  }
+
+  std::optional<CloseReason> PeerCloseReason() const override {
+    const std::scoped_lock lock(mutex_);
+    return peer_close_;
+  }
+
   // Fails both facade calls immediately and closes the socket out from
   // under any outstanding op — Stop()-time and client-teardown semantics,
   // safe from any thread even when the io context is already stopped.
@@ -625,6 +659,9 @@ class WsSession final : public WebSocketSessionBase,
       {
         const std::scoped_lock lock(mutex_);
         peer_closed_ = true;
+        // The peer started this close: its frame is what reason() holds.
+        peer_close_ = CloseReason{.code = static_cast<std::uint16_t>(ws_.reason().code),
+                                  .reason = std::string(ws_.reason().reason)};
         waiters = TakeAsyncWaitersLocked();
         wake_.notify_all();
       }
@@ -846,13 +883,23 @@ class WsSession final : public WebSocketSessionBase,
 
   void StartCloseLocked(std::unique_lock<std::mutex>& lock) {
     close_started_ = true;
-    const bws::close_code code = close_code_;
+    const bws::close_reason why = close_reason_;
+    const std::optional<std::chrono::milliseconds> grace = close_grace_;
     lock.unlock();
+    if (grace.has_value()) {
+      // Read when the close starts (Beast arms the closing phase's timer
+      // from it then), so it bounds this handshake and nothing else.
+      constexpr std::chrono::milliseconds kMaxGrace = std::chrono::hours(24);
+      bws::stream_base::timeout timeout;
+      ws_.get_option(timeout);
+      timeout.handshake_timeout = std::clamp(*grace, std::chrono::milliseconds::zero(), kMaxGrace);
+      ws_.set_option(timeout);
+    }
     auto self = this->shared_from_this();
     // Beast's close op performs the whole closing handshake (it reads
     // until the peer's close arrives, then tears down): its success IS
     // the session's clean end.
-    ws_.async_close(code, [self](beast::error_code ec) {
+    ws_.async_close(why, [self](beast::error_code ec) {
       AsyncWaiters waiters;
       bool clean = false;
       std::string why;
@@ -906,7 +953,7 @@ class WsSession final : public WebSocketSessionBase,
       waiters = TakeAsyncWaitersLocked();
       why = error_;
       wake_.notify_all();
-      close_code_ = bws::close_code::protocol_error;
+      close_reason_ = bws::close_reason(bws::close_code::protocol_error);
       close_requested_ = true;
       if (!close_started_ && !wire_write_busy_) {
         StartCloseLocked(lock);  // leaves the lock released
@@ -957,7 +1004,7 @@ class WsSession final : public WebSocketSessionBase,
 
   std::mutex send_mutex_;  // serializes Send callers end to end
 
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
   std::condition_variable wake_;
   std::deque<eventstream::Message> received_;
   // The ADR-0019 parked completions: at most one of each; every terminal
@@ -980,7 +1027,11 @@ class WsSession final : public WebSocketSessionBase,
   bool wire_write_busy_ = false;
   bool close_requested_ = false;
   bool close_started_ = false;
-  bws::close_code close_code_ = bws::close_code::normal;
+  bws::close_reason close_reason_{bws::close_code::normal};
+  // Engaged by Kick: the closing handshake's bound.
+  std::optional<std::chrono::milliseconds> close_grace_;
+  // The close the peer started, as its frame carried it.
+  std::optional<CloseReason> peer_close_;
 };
 
 // The websocket_gate and on_websocket callbacks are contained the way
@@ -2476,6 +2527,12 @@ class DialedWebSocket final : public WebSocket {
     return io_->session->Send(message);
   }
   void Close() override { io_->session->Close(); }
+  void Kick(const CloseReason& why, std::chrono::milliseconds grace) override {
+    io_->session->Kick(why, grace);
+  }
+  std::optional<CloseReason> PeerCloseReason() const override {
+    return io_->session->PeerCloseReason();
+  }
   void ReceiveAsync(WebSocket::ReceiveCallback callback) override {
     io_->session->ReceiveAsync(std::move(callback));
   }

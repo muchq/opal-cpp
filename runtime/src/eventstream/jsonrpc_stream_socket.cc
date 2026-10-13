@@ -129,6 +129,14 @@ Outcome<Unit> JsonRpcStreamSocket::Send(const Message& message) {
 
 void JsonRpcStreamSocket::Close() { inner_->Close(); }
 
+void JsonRpcStreamSocket::Kick(const http::CloseReason& why, std::chrono::milliseconds grace) {
+  inner_->Kick(why, grace);
+}
+
+std::optional<http::CloseReason> JsonRpcStreamSocket::PeerCloseReason() const {
+  return inner_->PeerCloseReason();
+}
+
 void JsonRpcStreamSocket::ReceiveAsync(ReceiveCallback callback) {
   inner_->ReceiveAsync(PoliceAsync(std::move(callback)));
 }

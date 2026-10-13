@@ -54,6 +54,9 @@ struct SharedSessionState {
   std::condition_variable idle;
   http::WebSocket* socket = nullptr;  // null once the stream ended
   int active = 0;                     // handle operations inside socket calls
+  // Engaged when the stream owns its socket (the coroutine adapter): what
+  // lets a handle end the session without a pin (EventStreamHandle::End).
+  std::weak_ptr<http::WebSocket> owner;
 };
 
 // Drops one pin; the revoking stream's drain wait wakes at zero. Free so
@@ -86,10 +89,12 @@ class SharedViewOwner {
 
   // The state handles share, created on first use (a stream that never
   // shares carries none and End() is a no-op).
-  std::shared_ptr<SharedSessionState> Ensure(http::WebSocket* socket) {
+  std::shared_ptr<SharedSessionState> Ensure(http::WebSocket* socket,
+                                             std::weak_ptr<http::WebSocket> owner = {}) {
     if (state_ == nullptr) {
       state_ = std::make_shared<SharedSessionState>();
       state_->socket = socket;
+      state_->owner = std::move(owner);
       socket_ = socket;
     }
     return state_;
@@ -161,10 +166,15 @@ class EventStreamHandle {
   // session from outside the handler (the slow-consumer policy): the
   // owner's blocked Receive/Send unblock exactly as for any other close.
   void Close() const {
-    http::WebSocket* socket = Acquire();
-    if (socket == nullptr) return;
-    socket->Close();
-    Release();
+    End([](http::WebSocket& socket) { socket.Close(); });
+  }
+
+  // The socket's Kick (opal/http/websocket.h): Close for a peer the caller
+  // has given up on — `why` on the close frame, and at most `grace` spent
+  // waiting for an answer. A no-op once the session ended.
+  void Kick(const http::CloseReason& why, std::chrono::milliseconds grace) const {
+    http::CheckCloseReason(why);
+    End([&why, grace](http::WebSocket& socket) { socket.Kick(why, grace); });
   }
 
   // The completion-driven send (ADR-0019): the socket's SendAsync contract
@@ -226,6 +236,35 @@ class EventStreamHandle {
   }
 
   void Release() const { internal::ReleasePin(*state_); }
+
+  // Close and Kick. A transport may complete the parked receive inline on
+  // the closing thread (the in-memory pair does), ending the loop and
+  // destroying the stream inside this very call — and the stream's
+  // teardown waits for every pin, this frame's included. So a socket the
+  // stream owns is kept alive by ownership instead of a pin; only a
+  // borrowed one is pinned, and a borrowing stream is never torn down by
+  // its own socket's completions.
+  template <typename Ending>
+  void End(const Ending& ending) const {
+    if (state_ == nullptr) return;
+    std::shared_ptr<http::WebSocket> owned;
+    http::WebSocket* borrowed = nullptr;
+    {
+      const std::scoped_lock lock(state_->mutex);
+      if (state_->socket == nullptr) return;
+      owned = state_->owner.lock();
+      if (owned == nullptr) {
+        ++state_->active;
+        borrowed = state_->socket;
+      }
+    }
+    if (owned != nullptr) {
+      ending(*owned);
+      return;
+    }
+    ending(*borrowed);
+    Release();
+  }
 
   std::shared_ptr<internal::SharedSessionState> state_;
   std::function<Outcome<Message>(const Tx&)> encode_;

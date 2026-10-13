@@ -404,7 +404,7 @@ class AsyncEventStream {
   // stream after a Share() closes it, waits out pinned operations, and
   // leaves every handle failing softly.
   EventStreamHandle<Tx> Share() {
-    return EventStreamHandle<Tx>(view_.Ensure(socket_.get()), encode_);
+    return EventStreamHandle<Tx>(view_.Ensure(socket_.get(), socket_), encode_);
   }
 
  private:

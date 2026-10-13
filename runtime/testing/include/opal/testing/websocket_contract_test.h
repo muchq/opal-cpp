@@ -312,6 +312,24 @@ TYPED_TEST_P(WebSocketContractTest, ATerminalTransitionCompletesALoneParkedRecei
   AwaitLoopEnd(loop_ended, "a lone parked receive was left hanging");
 }
 
+// A kick ends the session without the peer's help (ADR-0022): the driver's
+// peer never reads, so it never answers a close either, and the parked
+// receive must still complete within the grace rather than the closing
+// handshake's timeout.
+TYPED_TEST_P(WebSocketContractTest, AKickCompletesAParkedReceiveWithoutThePeer) {
+  TypeParam driver;
+  std::shared_ptr<http::WebSocket> socket = driver.Socket();
+  ContractMailbox<Outcome<std::optional<eventstream::Message>>> ended;
+  socket->ReceiveAsync([&ended](Outcome<std::optional<eventstream::Message>> received) {
+    ended.Post(std::move(received));
+  });
+  ASSERT_FALSE(ended.WaitFor(std::chrono::milliseconds(100))) << "nothing has ended the session";
+  socket->Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(200));
+  ASSERT_TRUE(ended.WaitFor(std::chrono::seconds(5)))
+      << "the kick waited for a peer that never answers";
+  (void)ended.Wait();
+}
+
 // One outstanding send-class operation per session: the second refuses
 // inline with Validation rather than queueing behind the first.
 TYPED_TEST_P(WebSocketContractTest, ASecondSendClassOperationRefusesWhileOneIsParked) {
@@ -459,6 +477,7 @@ REGISTER_TYPED_TEST_SUITE_P(WebSocketContractTest,
                             ATerminalTransitionFiresTheParkedSendBeforeTheParkedReceive,
                             ATerminalTransitionCompletesALoneParkedCoroutineSend,
                             ATerminalTransitionCompletesALoneParkedReceive,
+                            AKickCompletesAParkedReceiveWithoutThePeer,
                             ASecondSendClassOperationRefusesWhileOneIsParked,
                             ATimedReceiveOnAQuietWireTimesOutAndReleasesItsSlot,
                             ANonPositiveTimedReceivePolls,

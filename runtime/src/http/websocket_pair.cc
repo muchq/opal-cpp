@@ -54,6 +54,9 @@ struct PairState {
   std::array<int, 2> blocked_receivers{};
   std::array<int, 2> blocked_senders{};
   bool closed = false;
+  // Indexed by the end that reads it (its send index): the close the other
+  // end started, set once by the first Close or Kick.
+  std::array<std::optional<CloseReason>, 2> peer_close;
 };
 
 class PairEnd final : public WebSocket {
@@ -102,7 +105,23 @@ class PairEnd final : public WebSocket {
     return Unit{};
   }
 
-  void Close() override {
+  void Close() override { End(CloseReason{}); }
+
+  // The pair has no handshake to wait out, so the grace is moot: the kick
+  // is a close that tells the peer why.
+  void Kick(const CloseReason& why, std::chrono::milliseconds grace) override {
+    (void)grace;
+    CheckCloseReason(why);
+    End(why);
+  }
+
+  std::optional<CloseReason> PeerCloseReason() const override {
+    const std::scoped_lock lock(state_->mutex);
+    return state_->peer_close[send_index_];
+  }
+
+ private:
+  void End(const CloseReason& why) {
     // One close ends the session for both ends, so both ends' waiters come
     // out here — one TerminalWaiters each, since the send-before-receive
     // rule it enforces is per-session-state: what an end's receive
@@ -110,6 +129,7 @@ class PairEnd final : public WebSocket {
     std::array<WebSocket::TerminalWaiters, 2> waiters;
     {
       const std::scoped_lock lock(state_->mutex);
+      if (!state_->closed) state_->peer_close[1 - send_index_] = why;
       state_->closed = true;
       for (std::size_t end = 0; end < 2; ++end) {
         WebSocket::SendCallback send;
@@ -138,6 +158,7 @@ class PairEnd final : public WebSocket {
     }
   }
 
+ public:
   void ReceiveAsync(WebSocket::ReceiveCallback callback) override {
     ReceiveAsyncWithin(std::nullopt, std::move(callback));
   }
