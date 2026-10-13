@@ -90,6 +90,19 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Added
 
+- **`SessionRegistry::Kick(id, why, grace)`: the kick that does not wait
+  for the peer** (ADR-0022 amendment). `Close(id)` runs the closing
+  handshake, which against a peer that has gone silent waits out
+  `request_timeout_seconds` (30s by default) while the id stays taken.
+  `Kick` puts a close code and reason on the frame and tears the
+  connection down after at most `grace`. The same call is
+  `EventStreamHandle::Kick` and `WebSocket::Kick`;
+  `WebSocket::PeerCloseReason()` reads the close the peer ended a session
+  with, so a client told 4001 "superseded" can stop redialing. The base
+  `WebSocket` defaults keep other implementations compiling: `Kick` is
+  `Close()`, `PeerCloseReason()` reads nothing. A code other than 1000 or
+  3000-4999, or a reason over 123 bytes, fails fast.
+
 - **`Observe` labels requests from their headers** (issue #235). An optional
   fifth argument, `RequestLabeler`, maps a request's headers to
   `RequestLabels` once, before dispatch; the result rides on both
@@ -261,6 +274,14 @@ policy in [docs/versioning.md](docs/versioning.md).
   deliberately no timestamp — every sink stamps its own.
 
 ### Fixed
+
+- **A handle's `Close` no longer deadlocks when the transport ends the
+  loop inline.** The in-memory pair completes a parked receive on the
+  closing thread, so a hub calling `registry.Close(id)` on a session
+  parked in `co_await Receive()` destroyed the stream inside that call,
+  and the stream's teardown waited forever for the pin the call held. A
+  handle minted by `AsyncEventStream` now keeps the socket alive by
+  ownership for `Close` and `Kick` rather than by a pin.
 
 - **A dialed WebSocket released on its own io thread no longer terminates
   the process.** When the last handle to a `BeastWebSocketClient::Dial`

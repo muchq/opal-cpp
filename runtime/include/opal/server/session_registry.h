@@ -106,7 +106,7 @@ struct DeliveryClass {
 // expire detached entries immediately. One lazy expiry thread serves the
 // whole registry — a detached session itself holds zero threads.
 // ResumeOrAdd is the blessed admission call (ADR-0022): resume-or-fresh-
-// join with the brief retry the reconnect race needs, and Close(id) is
+// join with the brief retry the reconnect race needs, and Kick(id) is
 // the kick primitive that makes its refusal actionable.
 //
 // All methods are safe from any thread, including a handler's own (a

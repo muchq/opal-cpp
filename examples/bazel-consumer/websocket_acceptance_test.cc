@@ -140,4 +140,29 @@ TEST(WebSocketAcceptanceTest, AConsumerBoundsAReceiveAndKeepsTheSession) {
   server.Stop();
 }
 
+// A server dropping a client it has replaced: the kick names why, and the
+// consumer's client reads the code off the close — how it knows to stop
+// redialing rather than take the identity back.
+TEST(WebSocketAcceptanceTest, AKickedClientReadsWhyItWasDropped) {
+  BeastServerTransport::Options options;
+  options.on_websocket = [](const HttpRequest&, WebSocket& socket) {
+    socket.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(250));
+    while (true) {
+      auto message = socket.Receive();
+      if (!message.ok() || !message->has_value()) return;
+    }
+  };
+  BeastServerTransport server(options);
+  ASSERT_TRUE(server.Start([](const opal::http::HttpRequest&) { return HttpResponse{}; }).ok());
+
+  auto dialed = BeastWebSocketClient::Dial({.host = "127.0.0.1", .port = server.port()});
+  ASSERT_TRUE(dialed.ok()) << dialed.error().message();
+  auto ended = (*dialed)->Receive(std::chrono::seconds(5));
+  ASSERT_TRUE(ended.ok()) << ended.error().message();
+  EXPECT_FALSE(ended->has_value());
+  EXPECT_EQ((*dialed)->PeerCloseReason(),
+            (opal::http::CloseReason{.code = 4001, .reason = "superseded"}));
+  server.Stop();
+}
+
 }  // namespace

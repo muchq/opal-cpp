@@ -4,7 +4,8 @@
 and ADR-0021 review panels twice deferred. Implemented:
 `SessionRegistry::{Admission, ResumeOrAdd, Close}`, the three example
 admission loops deleted, the production guide's canonical block replaced
-by the one call.
+by the one call. Amended 2026-10-13: `Close` does not bound a silent
+peer, so the kick is `Kick` (below).
 
 ## Context
 
@@ -53,6 +54,53 @@ convergent path instead of waiting out TCP. On a detached entry it
 closes an already-closed handle: a harmless no-op — detached entries
 are `Resume`'s and `Remove`'s business.
 
+## Amendment (2026-10-13): Kick
+
+`Close` was meant to be the kick for "a silent partition … instead of
+waiting out TCP", and on Beast it is not one. Its close is the graceful
+handshake: send the close frame, then read until the peer's close
+arrives, bounded only by Beast's handshake timeout — the transport's
+`request_timeout_seconds`, 30s by default. A peer that is gone never
+answers, so the old handler holds the id for that long, and a
+`ResumeOrAdd` behind it is refused the whole time. games_hub found it:
+a phone that dropped off the network kept its player locked out of a
+chess game for half a minute after it came back.
+
+**`Kick(id, why, grace) -> bool`** is the kick. It ends the session like
+`Close`, with two differences, both carried by new `WebSocket` members
+(every implementation in the repo overrides them; the base defaults to
+`Close()` and reads nothing):
+
+- **`WebSocket::Kick(CloseReason why, grace)`** puts `why` — a close code
+  and reason — on the close frame and waits at most `grace` for the
+  peer's answer before tearing the connection down. On Beast, `grace` is
+  the handshake timeout for that one close; a kick that finds Close's
+  handshake already running closes the socket under it. A peer that is
+  still there reads the code; one that is gone costs `grace`.
+- **`WebSocket::PeerCloseReason()`** is the close frame the peer ended the
+  session with. With an application code (4000-4999) the server can say
+  *why* it dropped a client — "superseded by a newer connection" — and a
+  client can stop redialing instead of taking its seat back, which is what
+  keeps two connections under one identity from trading it forever.
+
+`EventStreamHandle::Kick` is the handle's form. Codes outside 1000 and
+3000-4999, or a reason over 123 bytes, fail fast (ADR-0009): the
+protocol's own codes are the transport's to send.
+
+`Close` keeps its meaning — the polite end of a session whose peer is
+expected to answer — and its doc no longer claims the silent-partition
+case.
+
+A handle's `Close` and `Kick` also stopped pinning a socket the stream
+owns. A transport may complete the parked receive inline on the closing
+thread — the in-memory pair does, as its contract allows — and the loop
+then ends and destroys its stream inside the handle's call, where the
+stream's teardown waited for the pin that call held. Any hub calling
+`Close(id)` on a pair-backed session parked in `Receive` deadlocked. The
+coroutine adapter owns its socket, so the handle now holds a strong
+reference across the call instead; a borrowed socket is still pinned, and
+a borrowing stream is never torn down by its own socket's completions.
+
 ## Non-goals
 
 An async admission shape (`co_await ResumeOrAdd`) — admission runs
@@ -67,6 +115,6 @@ Changing `Resume`/`Add` themselves: the primitives compose unchanged.
 Consumers write one call and branch on the enum; the retry cadence and
 ordering subtleties live (and are tested) in exactly one place. The
 guide teaches the call instead of the loop. The silent-partition story
-gains its missing move. The registry's public surface grows two
+gains its missing move: `Kick`, since the amendment above. The registry's public surface grows two
 methods and one enum, all shallow compositions of existing primitives —
 no new locking, no new threads, no new states.
