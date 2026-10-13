@@ -106,8 +106,8 @@ struct DeliveryClass {
 // expire detached entries immediately. One lazy expiry thread serves the
 // whole registry — a detached session itself holds zero threads.
 // ResumeOrAdd is the blessed admission call (ADR-0022): resume-or-fresh-
-// join with the brief retry the reconnect race needs, and Kick(id) is
-// the kick primitive that makes its refusal actionable.
+// join with the brief retry the reconnect race needs, and Kick(id, why,
+// grace) is the kick primitive that makes its refusal actionable.
 //
 // All methods are safe from any thread, including a handler's own (a
 // handler may SendTo itself) and the slow-consumer callback (which runs
@@ -368,7 +368,7 @@ class SessionRegistry {
   // cannot occur. kRefused at the deadline almost always means the id is
   // live on another connection (rarely: a detached entry past its grace
   // that expiry has not yet claimed — a beat later the same call would
-  // report kAdded); whether to kick a live one (Close) is the
+  // report kAdded); whether to kick a live one (Kick) is the
   // application's call — ResumeOrAdd never kicks on its own.
   Admission ResumeOrAdd(const Id& id, const std::function<Handle()>& mint,
                         std::chrono::milliseconds deadline) {

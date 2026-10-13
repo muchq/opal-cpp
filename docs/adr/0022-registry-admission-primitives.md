@@ -68,15 +68,20 @@ chess game for half a minute after it came back.
 
 **`Kick(id, why, grace) -> bool`** is the kick. It ends the session like
 `Close`, with two differences, both carried by new `WebSocket` members
-(every implementation in the repo overrides them; the base defaults to
-`Close()` and reads nothing):
+(the runtime's transports — Beast, the in-memory pair, the dialed
+client, the JSON-RPC wrapper — override them; the base defaults to
+`Close()` and reads nothing, which is what test fakes and the consumer
+example's socket get):
 
 - **`WebSocket::Kick(CloseReason why, grace)`** puts `why` — a close code
   and reason — on the close frame and waits at most `grace` for the
-  peer's answer before tearing the connection down. On Beast, `grace` is
-  the handshake timeout for that one close; a kick that finds Close's
-  handshake already running closes the socket under it. A peer that is
-  still there reads the code; one that is gone costs `grace`.
+  peer's answer before tearing the connection down. On Beast the kick
+  arms its own deadline that closes the socket `grace` later, whatever
+  the close is waiting on — the peer's answer, a keep-alive frame
+  holding Beast's write lock, a Close's handshake already running, or a
+  close deferred behind a wedged write. Only the first kick arms it, so a
+  second neither re-arms it nor cuts the first one's frame short. A peer
+  that is still there reads the code; one that is gone costs `grace`.
 - **`WebSocket::PeerCloseReason()`** is the close frame the peer ended the
   session with. With an application code (4000-4999) the server can say
   *why* it dropped a client — "superseded by a newer connection" — and a
@@ -91,15 +96,16 @@ protocol's own codes are the transport's to send.
 expected to answer — and its doc no longer claims the silent-partition
 case.
 
-A handle's `Close` and `Kick` also stopped pinning a socket the stream
-owns. A transport may complete the parked receive inline on the closing
-thread — the in-memory pair does, as its contract allows — and the loop
-then ends and destroys its stream inside the handle's call, where the
-stream's teardown waited for the pin that call held. Any hub calling
-`Close(id)` on a pair-backed session parked in `Receive` deadlocked. The
-coroutine adapter owns its socket, so the handle now holds a strong
-reference across the call instead; a borrowed socket is still pinned, and
-a borrowing stream is never torn down by its own socket's completions.
+A handle's operations also stopped pinning a socket the stream owns. A
+transport may complete operations inline on the calling thread — the
+in-memory pair does, as its contract allows — and the loop then ends and
+destroys its stream inside the handle's call, where the stream's teardown
+waited for the pin that call held. Any hub calling `Close(id)` on a
+pair-backed session parked in `Receive` deadlocked, and so did a delivery
+the peer answered by closing. The coroutine adapter owns its socket, so a
+handle now holds a strong reference across each call (to completion, for
+`SendAsync`) instead; a borrowed socket is still pinned, and a borrowing
+stream is never torn down by its own socket's completions.
 
 ## Non-goals
 

@@ -298,7 +298,7 @@ TEST(EventStreamHandleTest, HandleWorksOnTheBorrowedServerPath) {
 }
 
 TEST(EventStreamHandleTest, HandleCloseEndsTheSessionForTheStreamOwner) {
-  // The hub's kick path: Close from a thread that only holds the handle
+  // A hub ending a session: Close from a thread that only holds the handle
   // unblocks the owner's Receive with the stream's natural end.
   auto [client_socket, server_socket] = http::InMemoryWebSocketPair::Create();
   ClientStream client(client_socket, EncodePing, DecodePong);

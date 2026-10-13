@@ -275,13 +275,14 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Fixed
 
-- **A handle's `Close` no longer deadlocks when the transport ends the
-  loop inline.** The in-memory pair completes a parked receive on the
-  closing thread, so a hub calling `registry.Close(id)` on a session
-  parked in `co_await Receive()` destroyed the stream inside that call,
-  and the stream's teardown waited forever for the pin the call held. A
-  handle minted by `AsyncEventStream` now keeps the socket alive by
-  ownership for `Close` and `Kick` rather than by a pin.
+- **A handle call no longer deadlocks when the transport ends the loop
+  inline.** The in-memory pair completes parked operations on the calling
+  thread, so a hub calling `registry.Close(id)` on a session parked in
+  `co_await Receive()` — or delivering to a peer that answered by closing
+  — destroyed the stream inside that call, and the stream's teardown
+  waited forever for the pin the call held. A handle minted by
+  `AsyncEventStream` now keeps the socket alive by ownership rather than
+  by a pin, for every operation.
 
 - **A dialed WebSocket released on its own io thread no longer terminates
   the process.** When the last handle to a `BeastWebSocketClient::Dial`

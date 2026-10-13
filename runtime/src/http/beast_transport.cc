@@ -578,28 +578,35 @@ class WsSession final : public WebSocketSessionBase,
     }
   }
 
-  // Close with `why` on the frame and the closing handshake bounded by
-  // `grace` (Beast's handshake timeout for this close only). A handshake
-  // already running is Close's own, waiting on the peer for the whole
-  // request timeout: the kick closes the socket under it instead.
+  // Close with `why` on the frame, plus a deadline of its own: `grace`
+  // after the kick, whatever the close is waiting on (the peer's answer, a
+  // stalled control frame holding Beast's write lock, a close deferred
+  // behind a wedged write), the socket closes under it. Only the first
+  // kick arms it, so a second cannot cut the first one's frame short. A
+  // close already requested keeps its frame.
   void Kick(const CloseReason& why, std::chrono::milliseconds grace) override {
     CheckCloseReason(why);
     auto self = this->shared_from_this();
     try {
       asio::post(ws_.get_executor(), [self, why, grace] {
         std::unique_lock<std::mutex> lock(self->mutex_);
-        if (self->close_started_) {
-          if (self->failed_ || self->peer_closed_) return;
-          lock.unlock();
-          beast::error_code ignored;
-          (void)beast::get_lowest_layer(self->ws_).socket().close(ignored);
-          return;
-        }
+        if (self->kick_deadline_.has_value() || self->peer_closed_) return;
+        constexpr std::chrono::milliseconds kMaxGrace = std::chrono::hours(24);
+        self->kick_deadline_.emplace(self->ws_.get_executor());
+        self->kick_deadline_->expires_after(
+            std::clamp(grace, std::chrono::milliseconds::zero(), kMaxGrace));
+        self->kick_deadline_->async_wait(
+            [weak = self->weak_from_this()](const boost::system::error_code& ec) {
+              if (ec) return;
+              if (auto session = weak.lock()) {
+                beast::error_code ignored;
+                (void)beast::get_lowest_layer(session->ws_).socket().close(ignored);
+              }
+            });
         if (!self->close_requested_) {
           self->close_reason_ =
               bws::close_reason(static_cast<bws::close_code>(why.code), why.reason);
         }
-        self->close_grace_ = grace;
         self->RequestCloseLocked(lock);
       });
     } catch (...) {
@@ -884,17 +891,7 @@ class WsSession final : public WebSocketSessionBase,
   void StartCloseLocked(std::unique_lock<std::mutex>& lock) {
     close_started_ = true;
     const bws::close_reason why = close_reason_;
-    const std::optional<std::chrono::milliseconds> grace = close_grace_;
     lock.unlock();
-    if (grace.has_value()) {
-      // Read when the close starts (Beast arms the closing phase's timer
-      // from it then), so it bounds this handshake and nothing else.
-      constexpr std::chrono::milliseconds kMaxGrace = std::chrono::hours(24);
-      bws::stream_base::timeout timeout;
-      ws_.get_option(timeout);
-      timeout.handshake_timeout = std::clamp(*grace, std::chrono::milliseconds::zero(), kMaxGrace);
-      ws_.set_option(timeout);
-    }
     auto self = this->shared_from_this();
     // Beast's close op performs the whole closing handshake (it reads
     // until the peer's close arrives, then tears down): its success IS
@@ -1028,8 +1025,9 @@ class WsSession final : public WebSocketSessionBase,
   bool close_requested_ = false;
   bool close_started_ = false;
   bws::close_reason close_reason_{bws::close_code::normal};
-  // Engaged by Kick: the closing handshake's bound.
-  std::optional<std::chrono::milliseconds> close_grace_;
+  // Armed by the first Kick: closes the socket `grace` later. Touched on
+  // the connection's executor only.
+  std::optional<asio::steady_timer> kick_deadline_;
   // The close the peer started, as its frame carried it.
   std::optional<CloseReason> peer_close_;
 };

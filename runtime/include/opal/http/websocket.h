@@ -149,8 +149,9 @@ class WebSocket {
   // is Close()'s contract: idempotent, non-blocking, safe from any thread,
   // and it unblocks and completes what is parked — a peer that does not
   // answer in time ends the session with an error rather than a clean
-  // nullopt. On a session already closing it stops waiting for the peer
-  // and the frame already sent stands. `why.code` must be 1000 or in
+  // nullopt. On a session already closing — a Close's handshake, a close
+  // deferred behind a wedged write — the requested frame stands and the
+  // kick only bounds the wait; a second kick changes nothing. `why.code` must be 1000 or in
   // 3000-4999 and `why.reason` at most 123 bytes (RFC 6455 §5.5, §7.4);
   // anything else is a contract violation and fails fast (ADR-0009).
   //

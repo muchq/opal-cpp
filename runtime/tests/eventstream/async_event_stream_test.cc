@@ -671,12 +671,17 @@ TEST(AsyncEventStreamTest, SharedHandlesOutliveTheLoopAndItsStream) {
   EXPECT_EQ(stale.error().kind(), ErrorKind::kTransport);
 }
 
-// A hub ending a session from outside the loop (a registry Close or Kick)
-// on a transport that completes the parked receive inline on the closing
-// thread — the pair's documented behavior: the loop ends and its stream
-// is destroyed inside that very call, so the handle's call must not hold
-// anything the stream's teardown waits for.
-void EndFromOutsideTheParkedLoop(const std::function<void(const EventStreamHandle<Pong>&)>& end) {
+// A hub reaching a session from outside the loop (a registry Close, Kick
+// or delivery) on a transport that completes parked operations inline on
+// the calling thread — the pair's documented behavior: the loop ends and
+// its stream is destroyed inside that very call, so the handle's call must
+// hold nothing the stream's teardown waits for, and must keep the socket
+// alive itself (the test drops its own reference first). `arm` runs on the
+// client end before the handle's call.
+void ReachFromOutsideTheParkedLoop(
+    const std::function<void(const std::shared_ptr<http::WebSocket>&)>& arm,
+    const std::function<void(const EventStreamHandle<Pong>&)>& reach,
+    std::optional<http::CloseReason> peer_reads) {
   auto [client_socket, server_socket] = http::InMemoryWebSocketPair::Create();
   Mailbox<EventStreamHandle<Pong>> minted;
   std::atomic<bool> done{false};
@@ -684,35 +689,64 @@ void EndFromOutsideTheParkedLoop(const std::function<void(const EventStreamHandl
      std::atomic<bool>* done) -> Detached {
     AsyncServer stream(std::move(socket), EncodePong, DecodePing);
     minted->Post(stream.Share());
-    (void)co_await stream.Receive();  // parked until the handle ends it
+    (void)co_await stream.Receive();  // parked until the handle's call ends it
     *done = true;
-  }(server_socket, &minted, &done);
+  }(std::exchange(server_socket, nullptr), &minted, &done);
   EventStreamHandle<Pong> handle = minted.Wait();
+  arm(client_socket);
 
   std::promise<void> returned;
-  std::thread ender([&] {
-    end(handle);
+  std::thread caller([&] {
+    reach(handle);
     returned.set_value();
   });
   if (returned.get_future().wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
-    ender.detach();  // wedged for good; the assertion below names it
-    FAIL() << "ending the session through its handle deadlocked on the stream's teardown";
+    // The caller is wedged on this frame's locals; nothing can unwind it.
+    ADD_FAILURE() << "the handle's call deadlocked on the stream's teardown";
+    std::abort();
   }
-  ender.join();
+  caller.join();
   EXPECT_TRUE(done.load());
-  auto at_client = client_socket->Receive();
-  ASSERT_TRUE(at_client.ok()) << at_client.error().message();
-  EXPECT_FALSE(at_client->has_value());
+  EXPECT_EQ(client_socket->PeerCloseReason(), peer_reads);
 }
 
+void NothingToArm(const std::shared_ptr<http::WebSocket>&) {}
+
 TEST(AsyncEventStreamTest, AHandleCloseThatEndsTheLoopInlineReturns) {
-  EndFromOutsideTheParkedLoop([](const EventStreamHandle<Pong>& handle) { handle.Close(); });
+  ReachFromOutsideTheParkedLoop(
+      NothingToArm, [](const EventStreamHandle<Pong>& handle) { handle.Close(); },
+      http::CloseReason{.code = 1000, .reason = ""});
 }
 
 TEST(AsyncEventStreamTest, AHandleKickThatEndsTheLoopInlineReturns) {
-  EndFromOutsideTheParkedLoop([](const EventStreamHandle<Pong>& handle) {
-    handle.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(100));
-  });
+  ReachFromOutsideTheParkedLoop(
+      NothingToArm,
+      [](const EventStreamHandle<Pong>& handle) {
+        handle.Kick({.code = 4001, .reason = "superseded"}, std::chrono::milliseconds(100));
+      },
+      http::CloseReason{.code = 4001, .reason = "superseded"});
+}
+
+// A delivery the peer answers by closing: the peer's receive completes
+// inside the handle's Send, its close completes the loop's receive, and
+// the loop's stream is torn down below the Send on the same thread.
+TEST(AsyncEventStreamTest, AHandleSendThePeerAnswersByClosingReturns) {
+  ReachFromOutsideTheParkedLoop(
+      [](const std::shared_ptr<http::WebSocket>& client) {
+        client->ReceiveAsync([client](Outcome<std::optional<Message>>) { client->Close(); });
+      },
+      [](const EventStreamHandle<Pong>& handle) { (void)handle.Send(Pong{"bye"}); }, std::nullopt);
+}
+
+TEST(AsyncEventStreamTest, AHandleSendAsyncThePeerAnswersByClosingReturns) {
+  ReachFromOutsideTheParkedLoop(
+      [](const std::shared_ptr<http::WebSocket>& client) {
+        client->ReceiveAsync([client](Outcome<std::optional<Message>>) { client->Close(); });
+      },
+      [](const EventStreamHandle<Pong>& handle) {
+        handle.SendAsync(Pong{"bye"}, [](Outcome<Unit>) {});
+      },
+      std::nullopt);
 }
 
 TEST(AsyncEventStreamTest, HandleSendAsyncCompletesAndFailsSoftlyAfterRevocation) {
