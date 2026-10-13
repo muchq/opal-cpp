@@ -275,6 +275,13 @@ policy in [docs/versioning.md](docs/versioning.md).
 
 ### Fixed
 
+- **Move-assigning over a stream that had shared its session no longer
+  closes a released socket.** The defaulted move-assignment of
+  `EventStream` and `AsyncEventStream` assigned the socket before the
+  shared view, so ending the old session (the view's assignment) called
+  `Close()` on a socket the stream might already have freed. Both now end
+  the old session first.
+
 - **A handle call no longer deadlocks when the transport ends the loop
   inline.** The in-memory pair completes parked operations on the calling
   thread, so a hub calling `registry.Close(id)` on a session parked in

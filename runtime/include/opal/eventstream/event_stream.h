@@ -313,9 +313,19 @@ class EventStream {
   // session fans out, so the stream itself stays single-owner.
   ~EventStream() = default;
   EventStream(EventStream&&) noexcept = default;
-  // No explicit noexcept: the computed one depends on std::function's
-  // move-assignment, which the standard leaves unspecified.
-  EventStream& operator=(EventStream&&) = default;
+  // Not defaulted: that assigns in declaration order, so the socket would
+  // be released before view_'s assignment ends the old session through it.
+  // No noexcept: std::function's move-assignment is not required to be.
+  EventStream& operator=(EventStream&& other) {
+    if (this != &other) {
+      view_ = std::move(other.view_);
+      owned_ = std::move(other.owned_);
+      socket_ = other.socket_;
+      encode_ = std::move(other.encode_);
+      decode_ = std::move(other.decode_);
+    }
+    return *this;
+  }
 
   // Encodes and sends one event, blocking until its frame is on the wire.
   // An encoder failure surfaces as-is and leaves the session untouched;
@@ -390,7 +400,8 @@ class EventStream {
   Encoder encode_;
   Decoder decode_;
   // Last member on purpose: its teardown (End) runs first and needs the
-  // socket members above still alive.
+  // socket members above still alive. Move-assignment takes it first for
+  // the same reason.
   internal::SharedViewOwner view_;
 };
 

@@ -20,6 +20,7 @@
 #include <thread>
 #include <utility>
 
+#include "opal/eventstream/async_event_stream.h"
 #include "opal/eventstream/frame.h"
 #include "opal/http/websocket.h"
 #include "opal/http/websocket_pair.h"
@@ -295,6 +296,51 @@ TEST(EventStreamHandleTest, HandleWorksOnTheBorrowedServerPath) {
   const auto stale = handle->Send(Pong{"late"});
   ASSERT_FALSE(stale.ok());
   EXPECT_EQ(stale.error().kind(), ErrorKind::kTransport);
+}
+
+// A socket that records, when the stream ends it, whether the stream still
+// owned it then — how a test sees a close land on a socket its stream had
+// already let go of (on a real one, a use after free) without committing
+// it: the test keeps its own reference throughout.
+class OwnershipAtClose final : public http::WebSocket,
+                               public std::enable_shared_from_this<OwnershipAtClose> {
+ public:
+  Outcome<std::optional<Message>> Receive() override { return std::optional<Message>(); }
+  Outcome<std::optional<Message>> Receive(std::chrono::milliseconds) override {
+    return std::optional<Message>();
+  }
+  Outcome<Unit> Send(const Message&) override { return Unit{}; }
+  void Close() override {
+    // The test's reference, plus the stream's while it still holds one.
+    if (!owners_at_close_.has_value()) owners_at_close_ = weak_from_this().use_count();
+  }
+  std::optional<long> owners_at_close() const { return owners_at_close_; }
+
+ private:
+  std::optional<long> owners_at_close_;
+};
+
+template <typename Stream>
+void MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket() {
+  auto old_socket = std::make_shared<OwnershipAtClose>();
+  auto new_socket = std::make_shared<OwnershipAtClose>();
+  auto identity = [](const Message& m) -> Outcome<Message> { return m; };
+  Stream stream(old_socket, identity, identity);
+  auto handle = stream.Share();  // a shared view, so the old session has one to end
+  stream = Stream(new_socket, identity, identity);
+  ASSERT_TRUE(old_socket->owners_at_close().has_value()) << "the old session was never ended";
+  EXPECT_EQ(*old_socket->owners_at_close(), 2)
+      << "the old socket was closed after the stream had released it";
+  EXPECT_FALSE(handle.Send(Message{}).ok()) << "the old session's handle still reaches a socket";
+  EXPECT_FALSE(new_socket->owners_at_close().has_value()) << "the new session was ended";
+}
+
+TEST(EventStreamTest, MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket) {
+  MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket<EventStream<Message, Message>>();
+}
+
+TEST(AsyncEventStreamTest, MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket) {
+  MoveAssignmentEndsTheOldSessionWhileItStillOwnsTheSocket<AsyncEventStream<Message, Message>>();
 }
 
 TEST(EventStreamHandleTest, HandleCloseEndsTheSessionForTheStreamOwner) {
