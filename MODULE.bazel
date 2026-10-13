@@ -46,7 +46,7 @@ bazel_dep(name = "llvm", version = "0.8.24", dev_dependency = True)
 # resolved graph — a lower pin here only buys the check_direct_dependencies
 # warning on every invocation.
 bazel_dep(name = "rules_java", version = "9.9.0")
-bazel_dep(name = "rules_jvm_external", version = "7.1")
+bazel_dep(name = "rules_jvm_external", version = "7.2")
 
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
