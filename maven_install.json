@@ -3,20 +3,20 @@
   "__INPUT_ARTIFACTS_HASH": {
     "com.disneystreaming.alloy:alloy-core": 1488650836,
     "repositories": -1949687017,
-    "software.amazon.smithy:smithy-build": 910329758,
-    "software.amazon.smithy:smithy-codegen-core": -221110479,
-    "software.amazon.smithy:smithy-protocol-test-traits": -10900653,
-    "software.amazon.smithy:smithy-protocol-traits": 65561386
+    "software.amazon.smithy:smithy-build": -897124705,
+    "software.amazon.smithy:smithy-codegen-core": -2028564942,
+    "software.amazon.smithy:smithy-protocol-test-traits": -1818355116,
+    "software.amazon.smithy:smithy-protocol-traits": -1741893077
   },
   "__RESOLVED_ARTIFACTS_HASH": {
-    "com.disneystreaming.alloy:alloy-core": 814190152,
-    "software.amazon.smithy:smithy-build": -365184394,
-    "software.amazon.smithy:smithy-codegen-core": 146214004,
-    "software.amazon.smithy:smithy-jmespath": -634903530,
-    "software.amazon.smithy:smithy-model": -1140368011,
-    "software.amazon.smithy:smithy-protocol-test-traits": -1267215192,
-    "software.amazon.smithy:smithy-protocol-traits": -1591169356,
-    "software.amazon.smithy:smithy-utils": 1831663989
+    "com.disneystreaming.alloy:alloy-core": -1821394139,
+    "software.amazon.smithy:smithy-build": 830806866,
+    "software.amazon.smithy:smithy-codegen-core": 1281378369,
+    "software.amazon.smithy:smithy-jmespath": -2050261743,
+    "software.amazon.smithy:smithy-model": -1090746139,
+    "software.amazon.smithy:smithy-protocol-test-traits": 1737922020,
+    "software.amazon.smithy:smithy-protocol-traits": -395178096,
+    "software.amazon.smithy:smithy-utils": -779127374
   },
   "artifacts": {
     "com.disneystreaming.alloy:alloy-core": {
@@ -29,43 +29,43 @@
       "shasums": {
         "jar": "1c74e9f6c0e0b79a1d5c169351775f266a43bea9698bd70906feff8080070d52"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     },
     "software.amazon.smithy:smithy-codegen-core": {
       "shasums": {
         "jar": "b51b89221eae6e0b8f8f26acc9f60f6f1ce83fc27878dc2e10b24c7c04a23c1a"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     },
     "software.amazon.smithy:smithy-jmespath": {
       "shasums": {
         "jar": "2abf99938ae88132c976d73880d42d75018ea9c68bab08c9e48d205306a381d6"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     },
     "software.amazon.smithy:smithy-model": {
       "shasums": {
-        "jar": "5bd61bdc656e6c51cb0bfbcf4f83868c9bf1a8b828564decd8ade0fc51e1723f"
+        "jar": "d04a2c5ad5a727b619ed82ef87035e7e282c40e632cb06d9993e53049720c883"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     },
     "software.amazon.smithy:smithy-protocol-test-traits": {
       "shasums": {
         "jar": "be0af3d1c6d05981e6ae4f4d980a156e21d93be8c7d2a5e5eaab57b24d140b5e"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     },
     "software.amazon.smithy:smithy-protocol-traits": {
       "shasums": {
         "jar": "bdc10a1eb56eaa6704994211b78778a9a8566d5b540a2c83d5d8d13292639c7f"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     },
     "software.amazon.smithy:smithy-utils": {
       "shasums": {
-        "jar": "1d89fa0624ebf8e0f3032cc6b8283ee58335d3ee43e1826b24b1e951b3bdf8d2"
+        "jar": "40854236654b9122bb99079c3f4be8af009dedb20f5e11ea14a19deb1de62a52"
       },
-      "version": "1.74.0"
+      "version": "1.74.1"
     }
   },
   "dependencies": {
