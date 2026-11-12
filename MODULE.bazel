@@ -53,7 +53,7 @@ maven.install(
     name = "smithy_cpp_codegen_maven",
     artifacts = [
         # alloy#simpleRestJson — the vendor-neutral REST/JSON protocol trait.
-        "com.disneystreaming.alloy:alloy-core:0.3.40",
+        "com.disneystreaming.alloy:alloy-core:0.3.41",
         "software.amazon.smithy:smithy-build:1.74.0",
         "software.amazon.smithy:smithy-codegen-core:1.74.0",
         "software.amazon.smithy:smithy-protocol-test-traits:1.74.0",
