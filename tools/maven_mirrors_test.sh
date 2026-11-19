@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Every pinned jar must be fetchable from more than one Maven Central host:
-# repo1.maven.org intermittently 404s existing jars to CI runners, and the
-# fallback URL only exists when the pin lists the artifact under each host.
+# Every pinned jar must be fetchable from a host outside Maven Central's own
+# CDN: Central intermittently 404s existing jars to CI runners, and
+# repo1.maven.org and repo.maven.apache.org fail together. The fallback URL
+# only exists when the pin lists the artifact under each host.
 set -euo pipefail
 
 LOCK=${1:-maven_install.json}
@@ -26,6 +27,10 @@ if [ -z "$pairs" ]; then
 fi
 if [ "$n_repos" -lt 2 ]; then
   echo "FAIL: $LOCK pins against one host only: $repos" >&2
+  failures=$((failures + 1))
+fi
+if ! grep -qvE '^https://(repo1\.maven\.org|repo\.maven\.apache\.org)/' <<<"$repos"; then
+  echo "FAIL: every host is Maven Central's CDN, which fails as one: $(tr '\n' ' ' <<<"$repos")" >&2
   failures=$((failures + 1))
 fi
 while read -r repo; do
