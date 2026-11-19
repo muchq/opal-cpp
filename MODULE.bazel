@@ -60,6 +60,11 @@ maven.install(
         "software.amazon.smithy:smithy-protocol-traits:1.75.0",
     ],
     lock_file = "//:maven_install.json",
-    repositories = ["https://repo1.maven.org/maven2"],
+    # Both hosts serve Maven Central. repo1 intermittently 404s existing jars
+    # to CI runners; listing both gives every jar a fallback URL.
+    repositories = [
+        "https://repo1.maven.org/maven2",
+        "https://repo.maven.apache.org/maven2",
+    ],
 )
 use_repo(maven, "smithy_cpp_codegen_maven")

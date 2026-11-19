@@ -18,3 +18,11 @@ sh_test(
         "//runtime:tests/core/version_test.cc",
     ],
 )
+
+sh_test(
+    name = "maven_mirrors_test",
+    size = "small",
+    srcs = ["maven_mirrors_test.sh"],
+    args = ["$(rootpath //:maven_install.json)"],
+    data = ["//:maven_install.json"],
+)
