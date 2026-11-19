@@ -215,16 +215,15 @@ final class HttpBindingCodeGen {
     var bindings =
         response ? index.getResponseBindings(operation) : index.getRequestBindings(operation);
     return bindings.values().stream()
-        .anyMatch(
-            b -> {
-              if (b.getLocation() != HttpBinding.Location.PAYLOAD) {
-                return false;
-              }
-              Shape target = context.model().expectShape(b.getMember().getTarget());
-              return target.isBlobShape()
-                  && !target.hasTrait(MediaTypeTrait.class)
-                  && !b.getMember().hasTrait(MediaTypeTrait.class);
-            });
+        .anyMatch(b -> {
+          if (b.getLocation() != HttpBinding.Location.PAYLOAD) {
+            return false;
+          }
+          Shape target = context.model().expectShape(b.getMember().getTarget());
+          return target.isBlobShape()
+              && !target.hasTrait(MediaTypeTrait.class)
+              && !b.getMember().hasTrait(MediaTypeTrait.class);
+        });
   }
 
   /**

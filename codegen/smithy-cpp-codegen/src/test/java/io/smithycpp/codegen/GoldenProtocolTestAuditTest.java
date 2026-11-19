@@ -145,58 +145,56 @@ class GoldenProtocolTestAuditTest {
     for (OperationShape operation : operations) {
       operation
           .getTrait(HttpRequestTestsTrait.class)
-          .ifPresent(
-              trait -> {
-                for (HttpRequestTestCase c : trait.getTestCasesFor(AppliesTo.CLIENT)) {
-                  if (c.getProtocol().equals(suite.protocolTrait())
-                      && !excluded(exclusions, "request", c.getId())) {
-                    out.add(
-                        new Expected(
-                            "tests/request_tests.cc",
-                            svc + "RequestTest",
-                            c.getId(),
-                            List.of("EXPECT_EQ(request.method, \"" + c.getMethod() + "\")")));
-                  }
-                }
-                for (HttpRequestTestCase c : trait.getTestCasesFor(AppliesTo.SERVER)) {
-                  if (c.getProtocol().equals(suite.protocolTrait())
-                      && !excluded(exclusions, "server-request", c.getId())) {
-                    out.add(
-                        new Expected(
-                            "tests/server_request_tests.cc",
-                            svc + "ServerRequestTest",
-                            c.getId(),
-                            List.of("\"" + c.getMethod() + "\"")));
-                  }
-                }
-              });
+          .ifPresent(trait -> {
+            for (HttpRequestTestCase c : trait.getTestCasesFor(AppliesTo.CLIENT)) {
+              if (c.getProtocol().equals(suite.protocolTrait())
+                  && !excluded(exclusions, "request", c.getId())) {
+                out.add(
+                    new Expected(
+                        "tests/request_tests.cc",
+                        svc + "RequestTest",
+                        c.getId(),
+                        List.of("EXPECT_EQ(request.method, \"" + c.getMethod() + "\")")));
+              }
+            }
+            for (HttpRequestTestCase c : trait.getTestCasesFor(AppliesTo.SERVER)) {
+              if (c.getProtocol().equals(suite.protocolTrait())
+                  && !excluded(exclusions, "server-request", c.getId())) {
+                out.add(
+                    new Expected(
+                        "tests/server_request_tests.cc",
+                        svc + "ServerRequestTest",
+                        c.getId(),
+                        List.of("\"" + c.getMethod() + "\"")));
+              }
+            }
+          });
       operation
           .getTrait(HttpResponseTestsTrait.class)
-          .ifPresent(
-              trait -> {
-                for (HttpResponseTestCase c : trait.getTestCasesFor(AppliesTo.CLIENT)) {
-                  if (c.getProtocol().equals(suite.protocolTrait())
-                      && !excluded(exclusions, "response", c.getId())) {
-                    out.add(
-                        new Expected(
-                            "tests/response_tests.cc",
-                            svc + "ResponseTest",
-                            c.getId(),
-                            List.of("next_response.status = " + c.getCode() + ";")));
-                  }
-                }
-                for (HttpResponseTestCase c : trait.getTestCasesFor(AppliesTo.SERVER)) {
-                  if (c.getProtocol().equals(suite.protocolTrait())
-                      && !excluded(exclusions, "server-response", c.getId())) {
-                    out.add(
-                        new Expected(
-                            "tests/server_response_tests.cc",
-                            svc + "ServerResponseTest",
-                            c.getId(),
-                            List.of("EXPECT_EQ(response.status, " + c.getCode() + ")")));
-                  }
-                }
-              });
+          .ifPresent(trait -> {
+            for (HttpResponseTestCase c : trait.getTestCasesFor(AppliesTo.CLIENT)) {
+              if (c.getProtocol().equals(suite.protocolTrait())
+                  && !excluded(exclusions, "response", c.getId())) {
+                out.add(
+                    new Expected(
+                        "tests/response_tests.cc",
+                        svc + "ResponseTest",
+                        c.getId(),
+                        List.of("next_response.status = " + c.getCode() + ";")));
+              }
+            }
+            for (HttpResponseTestCase c : trait.getTestCasesFor(AppliesTo.SERVER)) {
+              if (c.getProtocol().equals(suite.protocolTrait())
+                  && !excluded(exclusions, "server-response", c.getId())) {
+                out.add(
+                    new Expected(
+                        "tests/server_response_tests.cc",
+                        svc + "ServerResponseTest",
+                        c.getId(),
+                        List.of("EXPECT_EQ(response.status, " + c.getCode() + ")")));
+              }
+            }
+          });
       // Error-shape response tests (deduped: errors are shared across operations).
       for (ShapeId errorId : operation.getErrors()) {
         StructureShape error = model.expectShape(errorId, StructureShape.class);
@@ -231,22 +229,20 @@ class GoldenProtocolTestAuditTest {
       }
       operation
           .getTrait(HttpMalformedRequestTestsTrait.class)
-          .ifPresent(
-              trait -> {
-                // getTestCases() expands testParameters into concrete cases.
-                for (HttpMalformedRequestTestCase c : trait.getTestCases()) {
-                  if (c.getProtocol().equals(suite.protocolTrait())
-                      && !excluded(exclusions, "server-malformed", c.getId())) {
-                    out.add(
-                        new Expected(
-                            "tests/server_malformed_tests.cc",
-                            svc + "ServerMalformedTest",
-                            c.getId(),
-                            List.of(
-                                "EXPECT_EQ(response.status, " + c.getResponse().getCode() + ")")));
-                  }
-                }
-              });
+          .ifPresent(trait -> {
+            // getTestCases() expands testParameters into concrete cases.
+            for (HttpMalformedRequestTestCase c : trait.getTestCases()) {
+              if (c.getProtocol().equals(suite.protocolTrait())
+                  && !excluded(exclusions, "server-malformed", c.getId())) {
+                out.add(
+                    new Expected(
+                        "tests/server_malformed_tests.cc",
+                        svc + "ServerMalformedTest",
+                        c.getId(),
+                        List.of("EXPECT_EQ(response.status, " + c.getResponse().getCode() + ")")));
+              }
+            }
+          });
     }
     return out;
   }

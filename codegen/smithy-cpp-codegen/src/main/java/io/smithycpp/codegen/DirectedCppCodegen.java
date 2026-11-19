@@ -80,22 +80,20 @@ public final class DirectedCppCodegen
           new SmokeTestGenerator(directive.context(), service, operations).run();
           boolean hasProtocolTests =
               operations.stream()
-                  .anyMatch(
-                      op ->
-                          op.hasTrait(
-                                  software.amazon.smithy.protocoltests.traits.HttpRequestTestsTrait
-                                      .class)
-                              || op.hasTrait(
-                                  software.amazon.smithy.protocoltests.traits.HttpResponseTestsTrait
-                                      .class));
+                  .anyMatch(op ->
+                      op.hasTrait(
+                              software.amazon.smithy.protocoltests.traits.HttpRequestTestsTrait
+                                  .class)
+                          || op.hasTrait(
+                              software.amazon.smithy.protocoltests.traits.HttpResponseTestsTrait
+                                  .class));
           boolean hasMalformedTests =
               directive.settings().malformedTests()
                   && operations.stream()
-                      .anyMatch(
-                          op ->
-                              op.hasTrait(
-                                  software.amazon.smithy.protocoltests.traits
-                                      .HttpMalformedRequestTestsTrait.class));
+                      .anyMatch(op ->
+                          op.hasTrait(
+                              software.amazon.smithy.protocoltests.traits
+                                  .HttpMalformedRequestTestsTrait.class));
           if (hasProtocolTests || hasMalformedTests) {
             new ProtocolTestGenerator(
                     directive.context(),

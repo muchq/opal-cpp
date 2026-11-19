@@ -302,16 +302,15 @@ final class ProtocolTestGenerator {
               for (OperationShape operation : operations) {
                 operation
                     .getTrait(HttpResponseTestsTrait.class)
-                    .ifPresent(
-                        trait -> {
-                          for (HttpResponseTestCase testCase :
-                              trait.getTestCasesFor(AppliesTo.CLIENT)) {
-                            if (skipped("response", testCase.getProtocol(), testCase.getId())) {
-                              continue;
-                            }
-                            tests.add(responseTest(operation, testCase, null));
-                          }
-                        });
+                    .ifPresent(trait -> {
+                      for (HttpResponseTestCase testCase :
+                          trait.getTestCasesFor(AppliesTo.CLIENT)) {
+                        if (skipped("response", testCase.getProtocol(), testCase.getId())) {
+                          continue;
+                        }
+                        tests.add(responseTest(operation, testCase, null));
+                      }
+                    });
               }
               // Error cases run against the (alphabetically) first operation that
               // declares the error, so each case is generated exactly once.
@@ -670,18 +669,16 @@ final class ProtocolTestGenerator {
               for (OperationShape operation : operations) {
                 operation
                     .getTrait(HttpResponseTestsTrait.class)
-                    .ifPresent(
-                        trait -> {
-                          for (HttpResponseTestCase testCase :
-                              trait.getTestCasesFor(AppliesTo.SERVER)) {
-                            if (skipped(
-                                "server-response", testCase.getProtocol(), testCase.getId())) {
-                              continue;
-                            }
-                            needsRequest.add(operation);
-                            tests.add(serverResponseTest(operation, testCase, null));
-                          }
-                        });
+                    .ifPresent(trait -> {
+                      for (HttpResponseTestCase testCase :
+                          trait.getTestCasesFor(AppliesTo.SERVER)) {
+                        if (skipped("server-response", testCase.getProtocol(), testCase.getId())) {
+                          continue;
+                        }
+                        needsRequest.add(operation);
+                        tests.add(serverResponseTest(operation, testCase, null));
+                      }
+                    });
               }
               Map<String, OperationShape> firstDeclaringOp = new TreeMap<>();
               Map<String, StructureShape> errorByName = new TreeMap<>();

@@ -122,10 +122,9 @@ class CppCodegenRunnerTest {
     // prunes the other, and both must still fail (recursion) — omitting both
     // together generates cleanly with no false stale report for either.
     Path output = tmp.resolve("out-attributable");
-    assertDoesNotThrow(
-        () ->
-            CppCodegenRunner.run(
-                args(writeModel(TWO_BAD_MODEL), output, "test.omit#Bad", "test.omit#AlsoBad")));
+    assertDoesNotThrow(() ->
+        CppCodegenRunner.run(
+            args(writeModel(TWO_BAD_MODEL), output, "test.omit#Bad", "test.omit#AlsoBad")));
     String header = Files.readString(output.resolve("include/test/omit/types.h"));
     assertTrue(header.contains("struct GoodInput"), header);
     assertFalse(header.contains("TreeNode"), header);

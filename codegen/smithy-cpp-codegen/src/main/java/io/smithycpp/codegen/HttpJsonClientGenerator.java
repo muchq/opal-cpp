@@ -121,10 +121,9 @@ final class HttpJsonClientGenerator {
     HttpTrait http =
         operation
             .getTrait(HttpTrait.class)
-            .orElseThrow(
-                () ->
-                    new CodegenException(
-                        "cpp-codegen: HTTP+JSON operation missing @http: " + operation.getId()));
+            .orElseThrow(() ->
+                new CodegenException(
+                    "cpp-codegen: HTTP+JSON operation missing @http: " + operation.getId()));
     HttpBindingIndex index = HttpBindingIndex.of(context.model());
     StructureShape input = ProtocolSupport.inputShape(context, operation);
     StructureShape output = ProtocolSupport.outputShape(context, operation);
@@ -390,10 +389,9 @@ final class HttpJsonClientGenerator {
     HttpTrait http =
         operation
             .getTrait(HttpTrait.class)
-            .orElseThrow(
-                () ->
-                    new CodegenException(
-                        "cpp-codegen: HTTP+JSON operation missing @http: " + operation.getId()));
+            .orElseThrow(() ->
+                new CodegenException(
+                    "cpp-codegen: HTTP+JSON operation missing @http: " + operation.getId()));
     HttpBindingIndex index = HttpBindingIndex.of(context.model());
     StructureShape input = ProtocolSupport.inputShape(context, operation);
     SerdeCodeGen serde = new SerdeCodeGen(context, useJsonName);

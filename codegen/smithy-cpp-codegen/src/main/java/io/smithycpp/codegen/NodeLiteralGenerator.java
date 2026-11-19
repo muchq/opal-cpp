@@ -216,13 +216,12 @@ final class NodeLiteralGenerator {
   private String minimalNumberExpression(Shape shape, MemberShape member) {
     java.math.BigDecimal value =
         effective(shape, member, software.amazon.smithy.model.traits.RangeTrait.class)
-            .map(
-                range ->
-                    range
-                        .getMin()
-                        .filter(min -> min.signum() > 0)
-                        .or(() -> range.getMax().filter(max -> max.signum() < 0))
-                        .orElse(java.math.BigDecimal.ZERO))
+            .map(range ->
+                range
+                    .getMin()
+                    .filter(min -> min.signum() > 0)
+                    .or(() -> range.getMax().filter(max -> max.signum() < 0))
+                    .orElse(java.math.BigDecimal.ZERO))
             .orElse(java.math.BigDecimal.ZERO);
     String plain = value.stripTrailingZeros().toPlainString();
     return switch (shape.getType()) {
@@ -250,14 +249,13 @@ final class NodeLiteralGenerator {
       String candidate = fill.repeat((int) min);
       boolean matches =
           pattern
-              .map(
-                  p -> {
-                    try {
-                      return java.util.regex.Pattern.compile(p).matcher(candidate).find();
-                    } catch (java.util.regex.PatternSyntaxException e) {
-                      return true;
-                    }
-                  })
+              .map(p -> {
+                try {
+                  return java.util.regex.Pattern.compile(p).matcher(candidate).find();
+                } catch (java.util.regex.PatternSyntaxException e) {
+                  return true;
+                }
+              })
               .orElse(true);
       if (matches) {
         return CppLiterals.stringLiteral(candidate);
@@ -337,10 +335,9 @@ final class NodeLiteralGenerator {
                   > 0;
           case BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE ->
               effective(shape, member, software.amazon.smithy.model.traits.RangeTrait.class)
-                  .map(
-                      range ->
-                          range.getMin().map(min -> min.signum() > 0).orElse(false)
-                              || range.getMax().map(max -> max.signum() < 0).orElse(false))
+                  .map(range ->
+                      range.getMin().map(min -> min.signum() > 0).orElse(false)
+                          || range.getMax().map(max -> max.signum() < 0).orElse(false))
                   .orElse(false);
           default -> false;
         };

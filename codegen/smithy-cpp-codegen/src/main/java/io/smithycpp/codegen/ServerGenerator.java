@@ -207,12 +207,11 @@ final class ServerGenerator {
     boolean documented = operation.hasTrait(DocumentationTrait.class);
     operation
         .getTrait(DocumentationTrait.class)
-        .ifPresent(
-            docs -> {
-              for (String line : docs.getValue().split("\n", -1)) {
-                w.write("/// $L", line);
-              }
-            });
+        .ifPresent(docs -> {
+          for (String line : docs.getValue().split("\n", -1)) {
+            w.write("/// $L", line);
+          }
+        });
     return documented;
   }
 
