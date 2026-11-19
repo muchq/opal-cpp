@@ -5,18 +5,17 @@ release is one git tag (`vX.Y.Z`, signed) covering both, and generated code
 from generator X.Y is supported against runtime X.Y. `opal::Version()`
 returns the runtime's version.
 
-## Current state: 0.2.0 released, 0.3.0 in development
+## Current state: 0.3.0
 
-`v0.2.0` is the current release; `main` develops 0.3.0. The one product version
-consumers observe — `opal::Version()` (`runtime/src/core/version.cc`) and the
-client `User-Agent` (`opal::ClientConfig::user_agent`) — reports
-**`0.3.0-dev`** on `main` until that tag lands, and the generator's Gradle
-`version` (`codegen/gradle.properties`) tracks it, since the two ship under one
-tag. The bzlmod **module** version in `MODULE.bazel` is a separate identifier
-and stays `0.0.0` until the module is published to the Bazel Central Registry
-(deferred, PLAN Phase 6); consumers override the module source with
+`v0.3.0` is the current release. The one product version consumers observe —
+`opal::Version()` (`runtime/src/core/version.cc`) and the client `User-Agent`
+(`opal::ClientConfig::user_agent`) — reports **`0.3.0`**, and the generator's
+Gradle `version` (`codegen/gradle.properties`) tracks it, since the two ship
+under one tag. The bzlmod **module** version in `MODULE.bazel` is a separate
+identifier and stays `0.0.0` until the module is published to the Bazel Central
+Registry (deferred, PLAN Phase 6); consumers override the module source with
 `git_override`/`archive_override`, which ignores that value, so pin the
-`v0.2.0` tag — the released one, not `main`.
+`v0.3.0` tag.
 
 ## Semantic versioning
 

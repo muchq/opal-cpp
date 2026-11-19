@@ -2,7 +2,7 @@
 # Bazel Central Registry (deferred, PLAN Phase 6); consumers override the source
 # with git_override/local_path_override, which ignores this value. The product
 # version consumers actually observe is opal::Version() / the client
-# User-Agent ("0.2.0"). See docs/versioning.md.
+# User-Agent ("0.3.0"). See docs/versioning.md.
 module(
     name = "opal_cpp",
     version = "0.0.0",

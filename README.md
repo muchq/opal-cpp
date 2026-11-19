@@ -16,7 +16,7 @@ experience assumed. Day 2 (evolving the model) is
 - **Bazel-native:** Bazel 9 is the sole supported build system for the repo and consumers.
 - **Client tests server:** generated clients integration-test generated servers in CI.
 
-## What works today (0.2.0)
+## What works today (0.3.0)
 
 - **Clients and servers for all three protocols**, each green against a conformance suite in CI
   (the official alloy and rpcv2Cbor suites, an authored one for jsonRpc2) with documented,
