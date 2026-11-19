@@ -4,7 +4,14 @@ All notable changes to opal-cpp are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 policy in [docs/versioning.md](docs/versioning.md).
 
-## [Unreleased]
+## [0.3.0] - 2026-11-18
+
+The rename to opal lands across every surface — Bazel module `opal_cpp`,
+include root `opal/`, namespace `opal`, `User-Agent` `opal-cpp/<version>` —
+alongside bounded client responses, validated inbound stream events, streamed
+`@streaming` blob responses, `Retry-After`, a Prometheus `/metrics` endpoint,
+access logging, and `SessionRegistry::Kick`. Breaking: each item under
+Breaking carries its migration note.
 
 ### Breaking
 
@@ -957,5 +964,6 @@ Central publishing remain deferred (see [docs/versioning.md](docs/versioning.md)
   per-module summary, and uploads the rendered HTML report as an artifact;
   `make coverage` runs the same locally. Measurement only — no gate yet.
 
+[0.3.0]: https://github.com/muchq/opal-cpp/releases/tag/v0.3.0
 [0.2.0]: https://github.com/muchq/opal-cpp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/muchq/opal-cpp/releases/tag/v0.1.0

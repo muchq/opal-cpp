@@ -55,7 +55,7 @@ bazel_dep(name = "opal_cpp", version = "0.0.0")
 git_override(
     module_name = "opal_cpp",
     remote = "https://github.com/muchq/opal-cpp.git",
-    tag = "v0.2.0",
+    tag = "v0.3.0",
 )
 
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
