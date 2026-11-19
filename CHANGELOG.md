@@ -4,6 +4,8 @@ All notable changes to opal-cpp are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 policy in [docs/versioning.md](docs/versioning.md).
 
+## [Unreleased]
+
 ## [0.3.0] - 2026-11-18
 
 The rename to opal lands across every surface — Bazel module `opal_cpp`,
