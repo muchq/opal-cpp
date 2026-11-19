@@ -344,7 +344,7 @@ SIGTERM → drain → clean exit.
 
 The first `bazel build` fetches everything the module graph needs: the opal-cpp sources at
 your `git_override` tag, a hermetic JDK 17, the generator's five Maven jars from
-`repo1.maven.org`, and the C++ runtime's dependencies (BoringSSL, Boost.Beast/asio,
+Maven Central (`repo1.maven.org`, falling back to `repo.maven.apache.org`), and the C++ runtime's dependencies (BoringSSL, Boost.Beast/asio,
 nlohmann_json, zlib). That's hundreds of MB — expect a multi-minute cold build. It happens
 once: every archive lands in Bazel's caches and later builds fetch nothing. For CI or a team,
 point `--repository_cache=<dir>` at a persisted directory so machines share one download cache
@@ -368,11 +368,13 @@ version control):
   [Bazel Central Registry](https://registry.bazel.build/), and build with
   `--override_module=nlohmann_json=<checkout>`. Add `--lockfile_mode=off` while overrides are
   in effect so they don't rewrite your lockfile.
-- **Blocked `repo1.maven.org`** — the generator's jars come from Maven Central, and the same
-  `--downloader_config` file can rewrite them to an internal mirror (Artifactory, Nexus):
+- **Blocked Maven Central** — the generator's jars come from `repo1.maven.org`, with
+  `repo.maven.apache.org` as a fallback, and the same `--downloader_config` file can rewrite
+  both to an internal mirror (Artifactory, Nexus):
 
   ```
   rewrite repo1.maven.org/maven2/(.*) artifacts.example.com/maven-central/$1
+  rewrite repo.maven.apache.org/maven2/(.*) artifacts.example.com/maven-central/$1
   ```
 - **Fully air-gapped** — prefetch on a connected machine and carry the cache across:
   `bazel fetch //... --repository_cache=<dir>`, move `<dir>` inside, and build with the same
