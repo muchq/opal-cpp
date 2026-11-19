@@ -412,9 +412,8 @@ final class ValidationGenerator {
       CppWriter w, MemberShape member, String valueExpr, String pathVar, boolean enumAsRawString) {
     Shape memberTarget = target(member);
     constraint(member, LengthTrait.class)
-        .ifPresent(
-            length ->
-                writeLengthCheck(w, memberTarget, length, valueExpr, pathVar, enumAsRawString));
+        .ifPresent(length ->
+            writeLengthCheck(w, memberTarget, length, valueExpr, pathVar, enumAsRawString));
     constraint(member, RangeTrait.class)
         .ifPresent(range -> writeRangeCheck(w, range, valueExpr, pathVar));
     constraint(member, PatternTrait.class)
@@ -674,13 +673,12 @@ final class ValidationGenerator {
     // them (same policy as writeEnumCheck).
     String condition =
         shape.members().stream()
-            .map(
-                member ->
-                    valueExpr
-                        + " != "
-                        + type
-                        + "::"
-                        + TypeGenerators.enumConstant(member.getMemberName()))
+            .map(member ->
+                valueExpr
+                    + " != "
+                    + type
+                    + "::"
+                    + TypeGenerators.enumConstant(member.getMemberName()))
             .collect(java.util.stream.Collectors.joining(" && "));
     String set =
         shape.members().stream()
@@ -705,11 +703,10 @@ final class ValidationGenerator {
         target.asEnumShape().orElseThrow().members().stream()
             .filter(
                 member -> !member.hasTrait(software.amazon.smithy.model.traits.InternalTrait.class))
-            .map(
-                member ->
-                    member
-                        .expectTrait(software.amazon.smithy.model.traits.EnumValueTrait.class)
-                        .expectStringValue())
+            .map(member ->
+                member
+                    .expectTrait(software.amazon.smithy.model.traits.EnumValueTrait.class)
+                    .expectStringValue())
             .toList();
     // The wire values are model-controlled, so escape them for the literal — a
     // value containing " or \ would otherwise break the emitted string. Escaping

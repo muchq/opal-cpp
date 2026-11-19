@@ -94,12 +94,10 @@ final class SmokeTestGenerator {
     }
     var index = software.amazon.smithy.model.knowledge.HttpBindingIndex.of(context.model());
     return index.getResponseBindings(operation).values().stream()
-        .anyMatch(
-            b ->
-                b.getLocation()
-                        == software.amazon.smithy.model.knowledge.HttpBinding.Location
-                            .PREFIX_HEADERS
-                    && b.getLocationName().isEmpty());
+        .anyMatch(b ->
+            b.getLocation()
+                    == software.amazon.smithy.model.knowledge.HttpBinding.Location.PREFIX_HEADERS
+                && b.getLocationName().isEmpty());
   }
 
   /** "v.Status = 201;" when the output binds @httpResponseCode, else null. */

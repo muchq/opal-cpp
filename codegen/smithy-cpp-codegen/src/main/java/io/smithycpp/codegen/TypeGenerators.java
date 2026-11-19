@@ -31,12 +31,11 @@ final class TypeGenerators {
   private void writeDocs(Shape shape) {
     shape
         .getTrait(DocumentationTrait.class)
-        .ifPresent(
-            docs -> {
-              for (String line : docs.getValue().split("\n", -1)) {
-                writer.write("/// $L", line);
-              }
-            });
+        .ifPresent(docs -> {
+          for (String line : docs.getValue().split("\n", -1)) {
+            writer.write("/// $L", line);
+          }
+        });
   }
 
   private String typeName(Shape shape) {
@@ -118,19 +117,18 @@ final class TypeGenerators {
         .filter(shape -> shape.getId().getNamespace().equals(namespace))
         .filter(shape -> context.cppSymbols().toSymbol(shape).getName().equals(syntheticName))
         .findAny()
-        .ifPresent(
-            shape -> {
-              throw new software.amazon.smithy.codegen.core.CodegenException(
-                  "cpp-codegen: operation "
-                      + operation.getId()
-                      + " generates the "
-                      + what
-                      + " '"
-                      + syntheticName
-                      + "', which collides with shape "
-                      + shape.getId()
-                      + "; rename the shape or the operation");
-            });
+        .ifPresent(shape -> {
+          throw new software.amazon.smithy.codegen.core.CodegenException(
+              "cpp-codegen: operation "
+                  + operation.getId()
+                  + " generates the "
+                  + what
+                  + " '"
+                  + syntheticName
+                  + "', which collides with shape "
+                  + shape.getId()
+                  + "; rename the shape or the operation");
+        });
   }
 
   /**

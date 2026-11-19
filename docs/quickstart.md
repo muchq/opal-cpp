@@ -59,8 +59,8 @@ git_override(
 )
 
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
-bazel_dep(name = "rules_cc", version = "0.2.27")
-bazel_dep(name = "rules_shell", version = "0.8.0")  # only for shell-driven tests (sh_test)
+bazel_dep(name = "rules_cc", version = "0.2.28")
+bazel_dep(name = "rules_shell", version = "0.10.0")  # only for shell-driven tests (sh_test)
 ```
 
 `.bazelrc` (C++20 is the runtime baseline; the generator runs on a hermetic Java 17 toolchain,

@@ -97,12 +97,11 @@ final class ClientGenerator {
       boolean documented = operation.hasTrait(DocumentationTrait.class);
       operation
           .getTrait(DocumentationTrait.class)
-          .ifPresent(
-              docs -> {
-                for (String line : docs.getValue().split("\n", -1)) {
-                  w.write("/// $L", line);
-                }
-              });
+          .ifPresent(docs -> {
+            for (String line : docs.getValue().split("\n", -1)) {
+              w.write("/// $L", line);
+            }
+          });
       StructureShape input = ProtocolSupport.inputShape(context, operation);
       String inputType = context.cppSymbols().toSymbol(input).getName();
       String outputType =
@@ -259,12 +258,11 @@ final class ClientGenerator {
 
     List<TypeGenerators.TaggedMember> members =
         errors.stream()
-            .map(
-                error ->
-                    new TypeGenerators.TaggedMember(
-                        software.amazon.smithy.utils.CaseUtils.toSnakeCase(error.getId().getName()),
-                        context.cppSymbols().toSymbol(error).getName(),
-                        error.hasTrait(software.amazon.smithy.model.traits.SensitiveTrait.class)))
+            .map(error ->
+                new TypeGenerators.TaggedMember(
+                    software.amazon.smithy.utils.CaseUtils.toSnakeCase(error.getId().getName()),
+                    context.cppSymbols().toSymbol(error).getName(),
+                    error.hasTrait(software.amazon.smithy.model.traits.SensitiveTrait.class)))
             .toList();
 
     String opName = CppReservedWords.escape(operation.getId().getName());
@@ -328,17 +326,16 @@ final class ClientGenerator {
       OperationShape operation) {
     return software.amazon.smithy.model.knowledge.PaginatedIndex.of(context.model())
         .getPaginationInfo(service, operation)
-        .filter(
-            info ->
-                info.getOutputTokenMemberPath().size() == 1
-                    && context
-                        .model()
-                        .expectShape(info.getInputTokenMember().getTarget())
-                        .isStringShape()
-                    && context
-                        .model()
-                        .expectShape(info.getOutputTokenMemberPath().get(0).getTarget())
-                        .isStringShape());
+        .filter(info ->
+            info.getOutputTokenMemberPath().size() == 1
+                && context
+                    .model()
+                    .expectShape(info.getInputTokenMember().getTarget())
+                    .isStringShape()
+                && context
+                    .model()
+                    .expectShape(info.getOutputTokenMemberPath().get(0).getTarget())
+                    .isStringShape());
   }
 
   private String paginatorName(OperationShape operation) {
@@ -359,30 +356,28 @@ final class ClientGenerator {
     }
     service
         .getTrait(software.amazon.smithy.model.traits.HttpApiKeyAuthTrait.class)
-        .ifPresent(
-            trait -> {
-              w.write("// @httpApiKeyAuth: attach the configured key where the model binds it.");
-              w.openBlock("if (config_.api_key) {");
-              if (trait.getIn()
-                  == software.amazon.smithy.model.traits.HttpApiKeyAuthTrait.Location.HEADER) {
-                String prefix = trait.getScheme().map(scheme -> scheme + " ").orElse("");
-                if (prefix.isEmpty()) {
-                  w.write("request.headers.Set($S, config_.api_key());", trait.getName());
-                } else {
-                  w.write(
-                      "request.headers.Set($S, $S + config_.api_key());", trait.getName(), prefix);
-                }
-              } else {
-                w.write(
-                    "request.target += request.target.find('?') == std::string::npos "
-                        + "? \"?\" : \"&\";");
-                w.write(
-                    "request.target += \"$L=\" + "
-                        + "opal::http::EncodeQueryComponent(config_.api_key());",
-                    trait.getName());
-              }
-              w.closeBlock("}");
-            });
+        .ifPresent(trait -> {
+          w.write("// @httpApiKeyAuth: attach the configured key where the model binds it.");
+          w.openBlock("if (config_.api_key) {");
+          if (trait.getIn()
+              == software.amazon.smithy.model.traits.HttpApiKeyAuthTrait.Location.HEADER) {
+            String prefix = trait.getScheme().map(scheme -> scheme + " ").orElse("");
+            if (prefix.isEmpty()) {
+              w.write("request.headers.Set($S, config_.api_key());", trait.getName());
+            } else {
+              w.write("request.headers.Set($S, $S + config_.api_key());", trait.getName(), prefix);
+            }
+          } else {
+            w.write(
+                "request.target += request.target.find('?') == std::string::npos "
+                    + "? \"?\" : \"&\";");
+            w.write(
+                "request.target += \"$L=\" + "
+                    + "opal::http::EncodeQueryComponent(config_.api_key());",
+                trait.getName());
+          }
+          w.closeBlock("}");
+        });
   }
 
   private void writeSource(CppWriter w) {
