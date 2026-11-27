@@ -54,10 +54,10 @@ maven.install(
     artifacts = [
         # alloy#simpleRestJson — the vendor-neutral REST/JSON protocol trait.
         "com.disneystreaming.alloy:alloy-core:0.3.41",
-        "software.amazon.smithy:smithy-build:1.75.0",
-        "software.amazon.smithy:smithy-codegen-core:1.75.0",
-        "software.amazon.smithy:smithy-protocol-test-traits:1.75.0",
-        "software.amazon.smithy:smithy-protocol-traits:1.75.0",
+        "software.amazon.smithy:smithy-build:1.75.1",
+        "software.amazon.smithy:smithy-codegen-core:1.75.1",
+        "software.amazon.smithy:smithy-protocol-test-traits:1.75.1",
+        "software.amazon.smithy:smithy-protocol-traits:1.75.1",
     ],
     lock_file = "//:maven_install.json",
     # Maven Central 404s existing jars to CI runners, on repo1 and
